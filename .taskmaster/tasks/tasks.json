@@ -1,0 +1,445 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Configuration du projet Angular et architecture de base",
+        "description": "Initialiser le projet Angular 19.2 avec l'architecture standalone components et configurer les outils de développement",
+        "details": "Créer la structure de projet Angular avec standalone components, configurer SCSS comme préprocesseur par défaut, mettre en place l'architecture façade avec la structure features/data-access/ui. Configurer TypeScript en mode strict, installer les dépendances nécessaires et créer les modules de base. Structure: src/app/{core,features,shared} avec services, facades et composants UI séparés.",
+        "testStrategy": "Vérifier la compilation sans erreur, tester la structure des dossiers, valider la configuration TypeScript stricte et s'assurer que ng serve démarre correctement",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer la structure de dossiers de l'architecture Angular moderne",
+            "description": "Mettre en place l'architecture features/data-access/ui avec les dossiers src/app/{core,features,shared} et sous-structures",
+            "dependencies": [],
+            "details": "Créer l'architecture de dossiers suivant les conventions Angular modernes : src/app/core/{services,guards,interceptors}, src/app/features/{video-player,loop-manager}/{data-access,feature,ui}, src/app/shared/{components,directives,pipes,utils}. Cette structure supportera l'architecture façade avec séparation claire entre logique métier, état et UI.",
+            "status": "pending",
+            "testStrategy": "Vérifier la création de tous les dossiers requis avec ls -la, s'assurer que la structure respecte les conventions Angular et est compatible avec ng generate"
+          },
+          {
+            "id": 2,
+            "title": "Configurer TypeScript en mode strict et optimiser la configuration",
+            "description": "Actualiser tsconfig.json avec les options strictes supplémentaires et optimisations pour le projet",
+            "dependencies": [],
+            "details": "Étendre la configuration TypeScript existante avec noUnusedLocals, noUnusedParameters, exactOptionalPropertyTypes. Configurer les paths mapping pour @core/*, @features/*, @shared/*. Optimiser les options de compilation pour le développement et la production. Valider que la configuration stricte fonctionne avec l'architecture standalone components.",
+            "status": "pending",
+            "testStrategy": "Compiler le projet avec tsc --noEmit, vérifier qu'aucune erreur TypeScript n'apparaît, tester les path mappings avec imports relatifs"
+          },
+          {
+            "id": 3,
+            "title": "Installer et configurer les dépendances additionnelles requises",
+            "description": "Ajouter les packages npm nécessaires pour YouTube API et outils de développement avancés",
+            "dependencies": [],
+            "details": "Installer @types/youtube pour l'API YouTube IFrame Player, @angular/cdk pour les utilitaires, rxjs operators supplémentaires si nécessaires. Configurer les types globaux dans typings.d.ts pour l'API YouTube. Mettre à jour package.json avec scripts de lint et format si manquants. Préparer l'environnement pour l'intégration YouTube API.",
+            "status": "pending",
+            "testStrategy": "Vérifier l'installation avec npm ls, tester l'import des types YouTube dans un service test, compiler le projet sans erreurs"
+          },
+          {
+            "id": 4,
+            "title": "Créer les services de base et façades pour l'architecture",
+            "description": "Implémenter les services core et facades de base avec injection par fonction inject()",
+            "dependencies": [],
+            "details": "Créer core/services/storage.service.ts pour localStorage, core/services/validation.service.ts pour validation d'URLs. Implémenter les façades de base features/video-player/data-access/video-player.facade.ts et features/loop-manager/data-access/loop-manager.facade.ts avec signals pour gestion d'état. Utiliser inject() au lieu de l'injection par constructeur selon les conventions modernes Angular.",
+            "status": "pending",
+            "testStrategy": "Tests unitaires des services avec Jasmine, vérifier l'injection des dépendances avec inject(), tester la réactivité des signals dans les facades"
+          },
+          {
+            "id": 5,
+            "title": "Configurer SCSS global et variables de design système",
+            "description": "Mettre en place le système de design SCSS avec variables, mixins et architecture modulaire",
+            "dependencies": [],
+            "details": "Structurer src/styles.scss avec imports modulaires : variables.scss (couleurs, typographie, breakpoints), mixins.scss (responsive, animations), base.scss (reset, typography). Définir les variables CSS custom properties pour thèmes. Créer les breakpoints responsive (mobile: 320px, tablet: 768px, desktop: 1024px, large: 1440px). Établir la grille CSS Grid pour layouts adaptatifs.",
+            "status": "pending",
+            "testStrategy": "Compiler SCSS sans erreurs, vérifier les variables CSS dans DevTools, tester les breakpoints responsive avec différentes tailles d'écran"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Intégration de l'API YouTube IFrame Player",
+        "description": "Intégrer l'API YouTube Player officielle pour l'affichage et le contrôle des vidéos",
+        "details": "Créer le service youtube.service.ts dans core/services pour gérer l'API YouTube IFrame Player. Implémenter les méthodes de validation d'URL YouTube, extraction de videoId, chargement de la vidéo et contrôles de base (play, pause, stop). Gérer les états du player et les événements. Utiliser l'injection par fonction inject() et les signals pour la gestion d'état réactive.",
+        "testStrategy": "Tests unitaires pour validation d'URL, extraction de videoId, tests d'intégration avec l'API YouTube mockée, vérifier les événements du player",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Création du composant Video Player avec contrôles",
+        "description": "Développer le composant principal d'affichage vidéo avec interface de contrôle personnalisée",
+        "details": "Créer video-player.component.ts avec video-player.facade.ts pour orchestrer l'état. Implémenter l'interface de contrôle personnalisée (play/pause/stop) en utilisant les signals natifs Angular. Créer les sous-composants player-controls.component.ts et speed-control.component.ts. Utiliser la syntaxe moderne @if/@for pour le control flow et Reactive Forms pour les contrôles.",
+        "testStrategy": "Tests unitaires des composants, tests d'intégration de la façade, vérifier la réactivité des contrôles et les interactions avec l'API YouTube",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Implémentation du système de contrôle de vitesse",
+        "description": "Créer le système de contrôle de vitesse de lecture avec presets et saisie manuelle",
+        "details": "Implémenter le contrôle de vitesse dans speed-control.component.ts avec plage 0.25x à 2x par pas de 0.1x. Créer les boutons presets (0.5x, 0.75x, 1x, 1.25x, 1.5x) et un champ de saisie manuelle avec validation. Intégrer avec l'API YouTube pour modifier la vitesse de lecture. Sauvegarder la vitesse sélectionnée par boucle en utilisant les signals.",
+        "testStrategy": "Tests de validation des plages de vitesse, tests des presets, vérification de la sauvegarde de vitesse par boucle, tests d'intégration avec YouTube Player",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Développement du système de gestion des boucles",
+        "description": "Créer le système complet de création, édition et gestion des segments de boucle",
+        "details": "Créer loop.service.ts pour la logique métier des boucles et loop-manager.facade.ts pour orchestrer l'état. Implémenter les interfaces LoopSegment avec id, name, startTime, endTime, playbackSpeed, repeatCount. Créer loop-form.component.ts pour création/édition avec saisie temps mm:ss.d et validation. Implémenter loop-list.component.ts pour affichage et navigation entre boucles. Utiliser signals pour gestion réactive.",
+        "testStrategy": "Tests unitaires du service de boucles, tests de validation des temps, tests de création/édition/suppression, vérifier la navigation entre boucles",
+        "priority": "high",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Création de l'interface timeline graphique",
+        "description": "Développer une timeline interactive avec curseurs draggables pour sélection précise des segments",
+        "details": "Créer timeline.component.ts avec interface graphique permettant la sélection de segments via drag and drop. Implémenter les curseurs de début/fin draggables avec précision au dixième de seconde. Intégrer la visualisation de la durée totale de la vidéo et des segments existants. Utiliser les événements tactiles pour compatibilité mobile. Optimiser pour performance avec OnPush change detection.",
+        "testStrategy": "Tests d'interaction drag & drop, précision de sélection temporelle, tests tactiles mobile, vérification des performances sur différentes tailles d'écran",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implémentation du système de persistance localStorage",
+        "description": "Créer le système de sauvegarde et récupération des sessions via localStorage",
+        "details": "Créer storage.service.ts pour gérer localStorage avec les clés yl_sessions, yl_current, yl_settings, yl_history. Implémenter les interfaces LooperSession et SessionSettings selon les spécifications. Créer les méthodes de sérialisation/désérialisation JSON, compression des données et nettoyage automatique. Gérer les erreurs de quota localStorage et la synchronisation des données.",
+        "testStrategy": "Tests de sauvegarde/récupération, tests de gestion des erreurs de quota, vérification de la compression JSON, tests de nettoyage automatique",
+        "priority": "high",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Développement du gestionnaire de sessions",
+        "description": "Créer l'interface de gestion des sessions avec création, sauvegarde, chargement et historique",
+        "details": "Créer session-manager.component.ts avec session.facade.ts pour orchestrer l'état des sessions. Implémenter session-list.component.ts pour affichage des sessions sauvées et session-form.component.ts pour création/édition. Ajouter fonctionnalités d'export/import JSON, historique des vidéos récentes et sessions nommées. Utiliser Reactive Forms pour les formulaires et signals pour l'état.",
+        "testStrategy": "Tests de création/édition de session, tests d'export/import JSON, vérification de l'historique, tests de navigation entre sessions",
+        "priority": "medium",
+        "dependencies": [
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Implémentation du design responsive et mobile-first",
+        "description": "Développer l'interface responsive avec optimisations tactiles et adaptation multi-écrans",
+        "details": "Implémenter le design mobile-first avec breakpoints 320px, 768px, 1024px, 1440px en SCSS. Optimiser les contrôles tactiles pour timeline et boutons. Créer les layouts adaptatifs pour orientations portrait/paysage. Implémenter header.component.ts et footer.component.ts avec navigation responsive. Optimiser la performance mobile avec lazy loading et bundle splitting.",
+        "testStrategy": "Tests responsive sur différents viewports, tests d'interactions tactiles, vérification des layouts portrait/paysage, tests de performance mobile",
+        "priority": "high",
+        "dependencies": [
+          6,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Tests d'intégration, optimisations et finalisation",
+        "description": "Finaliser l'application avec tests complets, optimisations de performance et gestion d'erreurs",
+        "details": "Implémenter les tests d'intégration E2E avec Cypress/Playwright, optimiser le bundle pour respecter les 500KB, implémenter la gestion d'erreurs YouTube (vidéos privées, géo-blocking). Créer les utilitaires time.utils.ts et youtube.utils.ts. Configurer les métriques de performance, accessibility et SEO. Valider la compatibilité navigateurs et optimiser le first paint.",
+        "testStrategy": "Tests E2E complets, audit Lighthouse > 90, tests de gestion d'erreurs, validation accessibilité, tests de compatibilité cross-browser",
+        "priority": "high",
+        "dependencies": [
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Implémenter le système de thématisation CSS avec variables custom",
+        "description": "Créer le système de couleurs et thèmes (clair/sombre) avec variables CSS custom properties",
+        "details": "Créer les variables CSS dans :root et [data-theme='dark'] pour toutes les couleurs (--accent-color, --bg-primary, --text-primary, etc.). Implémenter le service de thème Angular avec Signal pour persister la préférence dans localStorage. Ajouter le toggle de thème dans le header avec transition fluide.",
+        "testStrategy": "Valider le changement de thème en temps réel, vérifier la persistance localStorage, tester le contraste d'accessibilité WCAG 2.1 AA sur tous les composants",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Développer le Header Component responsive avec input URL",
+        "description": "Créer le composant header avec logo, champ URL YouTube et actions",
+        "details": "Composant standalone avec input pour URL YouTube, validation d'URL en temps réel avec debounce. Layout responsive flex avec logo à gauche, input centré (max-width 400px), actions à droite. États focus avec box-shadow accent. Intégration du toggle de thème. Gestion des états loading/error pour l'URL.",
+        "testStrategy": "Tests unitaires pour validation URL, tests responsive sur toutes tailles d'écran, test accessibilité clavier, validation des états focus et hover",
+        "priority": "high",
+        "dependencies": [
+          11
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Créer le Video Player Component avec overlay et gestion responsive",
+        "description": "Implémenter le lecteur vidéo YouTube avec iframe et contrôles overlay",
+        "details": "Composant avec iframe YouTube responsive (aspect-ratio 16:9), overlay-controls avec gradient et transition opacity. Loading spinner centré. Gestion des événements YouTube API pour synchronisation. Adaptation mobile/tablet/desktop avec breakpoints SCSS. Intégration de la YouTube IFrame API pour contrôle programmatique.",
+        "testStrategy": "Tests d'intégration avec YouTube API, validation responsive sur tous devices, test des contrôles overlay au hover/touch, vérification loading states",
+        "priority": "high",
+        "dependencies": [
+          11,
+          12
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Développer le Player Controls Component avec slider temporel",
+        "description": "Créer les contrôles de lecture avec bouton play/pause, slider temps et contrôles vitesse",
+        "details": "Bouton play/pause circulaire (3rem/3.5rem mobile) avec états disabled. Slider temporel custom avec thumb styling webkit. Affichage temps monospace (Monaco/Consolas). Contrôles vitesse avec presets (0.25x, 0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x). Synchronisation temps réel avec YouTube API. Gestion des états loading et erreur.",
+        "testStrategy": "Tests de synchronisation avec vidéo YouTube, validation des contrôles tactiles mobile, test des presets de vitesse, vérification affichage temps formaté",
+        "priority": "high",
+        "dependencies": [
+          13
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Implémenter le Timeline Component avec gestion des segments de boucle",
+        "description": "Créer la timeline interactive avec visualisation et manipulation des loops",
+        "details": "Timeline de 4rem hauteur avec track horizontal. Indicateur temps courant (current-time-indicator) avec cercle. Segments de boucle draggables avec resize-handles. Gestion click pour navigation temporelle. Hover states et animations. Support touch pour mobile avec gestes swipe. Calculs de position basés sur durée vidéo totale. Collision detection entre loops.",
+        "testStrategy": "Tests drag & drop desktop et touch mobile, validation positionnement précis des segments, test collision detection, vérification responsive et performance",
+        "priority": "high",
+        "dependencies": [
+          14
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Créer le Loop Manager Component avec CRUD des boucles",
+        "description": "Interface de gestion des boucles avec création, édition, suppression et lecture",
+        "details": "Header avec bouton 'Ajouter boucle'. Liste responsive (vertical mobile, grid tablet+). Loop-items avec nom, temps début/fin, durée, contrôles lecture. Actions hover (edit, delete, duplicate). États active/inactive. Intégration avec timeline pour synchronisation visuelle. Compteur de répétitions par boucle. Tri et filtrage des boucles.",
+        "testStrategy": "Tests CRUD complets, validation synchronisation avec timeline, test responsive grid/list, vérification états active et interactions hover",
+        "priority": "medium",
+        "dependencies": [
+          15
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Développer la Loop Creation Modal avec formulaire et validation",
+        "description": "Modal de création/édition de boucles avec formulaires et validation temps",
+        "details": "Modal overlay avec backdrop. Formulaire nom, temps début/fin avec validation. Boutons 'Temps actuel' pour pré-remplir. Inputs time séparés (heures:minutes:secondes). Validation durée minimum/maximum. Prévisualisation du segment sur timeline. Actions Cancel/Save avec états disabled. Fermeture ESC et click backdrop.",
+        "testStrategy": "Tests validation formulaire (temps valides, durée minimale), test interactions clavier (ESC, Tab), validation UX prévisualisation, test persistance données",
+        "priority": "medium",
+        "dependencies": [
+          16
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Implémenter le Session Manager avec persistance localStorage",
+        "description": "Gestionnaire de sessions avec sauvegarde/chargement et interface de gestion",
+        "details": "Onglets Sessions avec liste des sessions sauvées. Session-items avec métadonnées (nom, URL vidéo, nombre loops, dernière modification). Actions load/delete/rename/duplicate. Auto-save session courante. Export/import JSON. Empty state avec CTA création. Interface de gestion avec recherche et tri. Structure JSON optimisée pour localStorage.",
+        "testStrategy": "Tests persistance localStorage (save/load), validation export/import JSON, test auto-save, vérification gestion des erreurs et limite de stockage",
+        "priority": "medium",
+        "dependencies": [
+          17
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Créer le système d'animations et micro-interactions",
+        "description": "Implémenter les animations, transitions et feedback utilisateur",
+        "details": "Transitions CSS 200-300ms ease-out. Hover states avec translateY(-1px) et box-shadow. Loading skeletons avec shimmer animation. Toast notifications avec slide-in. États focus-visible pour accessibilité. Respect prefers-reduced-motion. Micro-interactions boutons et cards. Animation drag feedback sur timeline.",
+        "testStrategy": "Tests animations sur tous devices, validation prefers-reduced-motion, test performance animations (60fps), vérification accessibilité focus states",
+        "priority": "medium",
+        "dependencies": [
+          18
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Finaliser l'accessibilité et les raccourcis clavier",
+        "description": "Implémenter l'accessibilité complète WCAG 2.1 AA et navigation clavier",
+        "details": "Navigation complète au clavier (Tab, Space, flèches). Raccourcis globaux (Space play/pause, L nouvelle loop, 1-9 sélection, Échap fermeture). Labels ARIA appropriés. Focus trap dans modals. Skip links. Contraste 4.5:1 minimum. Tests screen readers. Gestion états loading/error pour AT. Documentation accessibilité.",
+        "testStrategy": "Tests navigation clavier complète, validation contraste automatisée, test screen readers (NVDA/JAWS), audit accessibilité Axe, validation WCAG 2.1 AA",
+        "priority": "medium",
+        "dependencies": [
+          19
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 21,
+        "title": "Implémenter YouTubeService pour l'API YouTube IFrame",
+        "description": "Créer le service de base pour l'intégration de l'API YouTube IFrame avec chargement dynamique et gestion des événements",
+        "details": "Implémenter YouTubePlayerService avec les méthodes loadYouTubeAPI(), initializePlayer(), extractVideoId() et getVideoInfo(). Gérer le chargement asynchrone de l'API YouTube IFrame, les callbacks onReady et onStateChange, et la validation des URLs YouTube. Utiliser des Promises pour les opérations asynchrones et des signals pour l'état du player.",
+        "testStrategy": "Tests unitaires pour la validation d'URL YouTube, mocking de l'API YouTube, tests d'intégration pour le chargement du player, et tests de gestion d'erreurs pour les vidéos invalides.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 22,
+        "title": "Créer StorageService pour la persistance localStorage",
+        "description": "Développer le service de stockage sécurisé pour sauvegarder sessions, paramètres et historique dans localStorage",
+        "details": "Implémenter SecureStorageService avec validation de taille (max 5MB), sérialisation JSON sécurisée, et gestion d'erreurs robuste. Inclure les méthodes pour sessions (saveSessions, loadSessions), settings (saveSettings, loadSettings) et historique (addToHistory, getHistory, clearHistory). Ajouter la sanitisation des données et la récupération gracieuse en cas d'erreur.",
+        "testStrategy": "Tests unitaires pour chaque méthode de stockage, tests de validation de taille, tests de sérialisation/désérialisation, et tests de gestion d'erreurs localStorage plein ou inaccessible.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 23,
+        "title": "Implémenter LoopService pour la logique métier des boucles",
+        "description": "Créer le service utilitaire pour la création, validation et gestion des segments de boucles temporelles",
+        "details": "Développer LoopService avec createLoop(), validateLoop(), calculateLoopDuration(), formatTime(), parseTime() et isValidTimeRange(). Implémenter la validation des plages temporelles, le formatage du temps en MM:SS, et les utilitaires de conversion. Gérer les cas limites comme les boucles qui se chevauchent ou dépassent la durée vidéo.",
+        "testStrategy": "Tests unitaires pour chaque fonction utilitaire, tests de validation des plages temporelles, tests de formatage/parsing du temps, et tests de cas limites avec des valeurs invalides.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 24,
+        "title": "Développer VideoPlayerFacade avec architecture Signal",
+        "description": "Créer la façade principale du lecteur vidéo utilisant les Angular Signals pour la gestion d'état réactive",
+        "details": "Implémenter VideoPlayerFacade avec des signals privés (_currentVideo, _player, _isPlaying, _currentTime, _playbackRate, _loading, _error) et des signals publics en lecture seule. Créer un ViewModel computed pour l'interface, et implémenter les commandes publiques (loadVideo, play, pause, seekTo, setPlaybackRate). Intégrer avec YouTubeService pour les opérations player.",
+        "testStrategy": "Tests unitaires des signals et computed, tests d'intégration avec YouTubeService, tests des commandes publiques, et tests de réactivité du ViewModel.",
+        "priority": "high",
+        "dependencies": [
+          21,
+          22,
+          23
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 25,
+        "title": "Implémenter LoopManagerFacade pour la gestion des boucles",
+        "description": "Créer la façade de gestion des segments de boucles avec state management par signals",
+        "details": "Développer LoopManagerFacade avec gestion d'état via signals (_loops, _activeLoop, _isLooping, _repeatCount, _editingLoop). Implémenter les ViewModels computed (vm, timelineVm) et les commandes (createLoop, deleteLoop, startLoop, stopLoop, nextLoop, previousLoop). Intégrer la logique de répétition automatique et de navigation entre boucles.",
+        "testStrategy": "Tests unitaires des signals et computed, tests des commandes de gestion de boucles, tests de logique de répétition, et tests d'intégration avec LoopService.",
+        "priority": "high",
+        "dependencies": [
+          23,
+          24
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 26,
+        "title": "Créer SessionManagerFacade pour la gestion des sessions",
+        "description": "Développer la façade pour la gestion, sauvegarde et chargement des sessions de loops",
+        "details": "Implémenter SessionManagerFacade avec signals pour l'état (_sessions, _currentSession, _autoSave, _lastSaved) et ViewModel computed. Développer les commandes createSession(), saveSession(), loadSession(), deleteSession(), exportSession(), et importSession(). Intégrer la sauvegarde automatique et la détection des changements non sauvegardés.",
+        "testStrategy": "Tests unitaires des opérations de session, tests d'export/import JSON, tests de sauvegarde automatique, et tests de détection des changements non sauvegardés.",
+        "priority": "medium",
+        "dependencies": [
+          22,
+          25
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 27,
+        "title": "Développer PlayerControlsComponent UI pur",
+        "description": "Créer le composant de contrôles du lecteur sans état, avec inputs/outputs pour la communication",
+        "details": "Implémenter PlayerControlsComponent comme composant UI pur recevant PlayerViewModel via @Input() et émettant via @Output() (play, pause, seek). Inclure bouton play/pause, slider de progression temporelle, affichage du temps, et intégration du formatage via LoopService. Utiliser le control flow Angular moderne (@if).",
+        "testStrategy": "Tests unitaires des interactions utilisateur, tests des émissions d'événements, tests de l'affichage conditionnel, et tests d'intégration avec les ViewModels.",
+        "priority": "medium",
+        "dependencies": [
+          24
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 28,
+        "title": "Créer SpeedControlComponent pour le contrôle de vitesse",
+        "description": "Développer le composant de contrôle de vitesse de lecture avec presets et saisie personnalisée",
+        "details": "Implémenter SpeedControlComponent avec presets de vitesse (0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x) et input personnalisé (0.25-2.0). Gérer la sélection de preset, la validation de vitesse personnalisée, et l'émission d'événements speedChange. Styling avec bouton actif et validation des limites.",
+        "testStrategy": "Tests unitaires des interactions de preset, tests de validation de vitesse personnalisée, tests des limites min/max, et tests d'émission d'événements.",
+        "priority": "medium",
+        "dependencies": [
+          24
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 29,
+        "title": "Implémenter TimelineComponent pour la visualisation des boucles",
+        "description": "Créer le composant de timeline interactive pour afficher et manipuler les segments de boucles",
+        "details": "Développer TimelineComponent avec visualisation des segments de boucles, indicateur de temps courant, interaction de sélection de temps, et création de nouvelles boucles. Calculer les pourcentages de position et largeur des segments, gérer les clics sur timeline, et implémenter la création visuelle de boucles. Utiliser le control flow moderne (@for, @if).",
+        "testStrategy": "Tests unitaires des calculs de pourcentage, tests des interactions de clic, tests de sélection de boucles, et tests de création de nouvelles boucles via interface.",
+        "priority": "high",
+        "dependencies": [
+          25
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 30,
+        "title": "Créer l'architecture responsive SCSS et layout principal",
+        "description": "Développer le système de grille responsive et les composants de layout avec breakpoints mobiles/desktop",
+        "details": "Implémenter le système de breakpoints SCSS (mobile: 320px, tablet: 768px, desktop: 1024px, large: 1440px) avec mixins responsive. Créer l'app-layout avec CSS Grid adaptatif (mobile: colonnes empilées, desktop: sidebar + main). Développer les styles pour video-player-section avec aspect-ratio 16/9 sur mobile et centrage desktop.",
+        "testStrategy": "Tests visuels responsive sur différents breakpoints, tests d'aspect ratio vidéo, tests de layout grid, et validation d'accessibilité du layout.",
+        "priority": "medium",
+        "dependencies": [
+          27,
+          28,
+          29
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-29T14:42:32.942Z",
+      "updated": "2025-08-29T14:47:24.345Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

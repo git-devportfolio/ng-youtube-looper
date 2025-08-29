@@ -72,6 +72,7 @@ Les conventions de développement Angular sont définies dans :
 
 ### Principes Clés
 - **Standalone Components**: Obligatoire, pas de NgModules
+- **Templates HTML**: Toujours utiliser des fichiers HTML séparés, jamais de templates inline
 - **Signals**: Utiliser pour la gestion d'état locale
 - **Control Flow**: Utiliser `@if`, `@for`, `@switch` au lieu des directives structurelles
 - **Fonction inject()**: Préférer à l'injection par constructeur
