@@ -68,7 +68,7 @@
         "dependencies": [
           1
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -313,7 +313,7 @@
         "testStrategy": "Tests unitaires pour la validation d'URL YouTube, mocking de l'API YouTube, tests d'intégration pour le chargement du player, et tests de gestion d'erreurs pour les vidéos invalides.",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -438,7 +438,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-29T18:13:27.648Z",
+      "updated": "2025-08-29T19:40:35.213Z",
       "description": "Tasks for master context"
     }
   }
