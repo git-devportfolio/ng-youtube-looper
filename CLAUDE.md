@@ -67,13 +67,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Les conventions de développement Angular sont définies dans :
 - `C:/local.dev/labs/angular_lab/ng-youtube-looper/.ai/ng-with-ai/best-practices.md` - Bonnes pratiques Angular
 - `C:/local.dev/labs/angular_lab/ng-youtube-looper/.ai/ng-with-ai/instructions.md` - Instructions de développement
+- `C:/local.dev/labs/angular_lab/ng-youtube-looper/.ai/ng-with-ai/convention-facade-signals.md` - Conventions facade et signals
 - `C:/local.dev/labs/angular_lab/ng-youtube-looper/.ai/ng-with-ai/llms-full.txt` - Guide complet LLMs
 
 ### Principes Clés
 - **Standalone Components**: Obligatoire, pas de NgModules
 - **Signals**: Utiliser pour la gestion d'état locale
 - **Control Flow**: Utiliser `@if`, `@for`, `@switch` au lieu des directives structurelles
-- **OnPush Strategy**: Toujours utiliser `ChangeDetectionStrategy.OnPush`
 - **Fonction inject()**: Préférer à l'injection par constructeur
 - **Reactive Forms**: Préférer aux Template-driven forms
 
