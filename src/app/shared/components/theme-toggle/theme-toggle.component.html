@@ -1,0 +1,14 @@
+@if (themeService.vm(); as vm) {
+  <button 
+    type="button"
+    class="theme-toggle-btn"
+    [attr.aria-label]="vm.themeLabel"
+    [title]="vm.themeLabel"
+    (click)="onToggleTheme()"
+  >
+    <span class="theme-icon" [attr.aria-hidden]="true">
+      {{ vm.themeIcon }}
+    </span>
+    <span class="sr-only">{{ vm.themeLabel }}</span>
+  </button>
+}

@@ -1,0 +1,59 @@
+@import '../../../../styles/mixins';
+
+.theme-toggle-btn {
+  @include button-base();
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  padding: 0;
+  
+  @include hover-lift();
+  
+  &:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-hover);
+  }
+  
+  &:active {
+    background: var(--bg-tertiary);
+  }
+  
+  .theme-icon {
+    font-size: 1.25rem;
+    display: inline-block;
+    transition: transform 0.3s ease;
+  }
+  
+  // Animation de rotation lors du changement
+  &:active .theme-icon {
+    transform: rotate(180deg);
+  }
+  
+  // Focus états pour accessibilité
+  &:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+  }
+}
+
+// Mobile adaptations
+@include mobile {
+  .theme-toggle-btn {
+    width: 3rem;
+    height: 3rem;
+    
+    .theme-icon {
+      font-size: 1.5rem;
+    }
+  }
+}
+
+// Animation pour le changement de thème
+:root.theme-transition .theme-toggle-btn {
+  .theme-icon {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+}

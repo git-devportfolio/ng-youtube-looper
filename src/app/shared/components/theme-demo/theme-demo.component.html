@@ -1,0 +1,78 @@
+@if (themeService.vm(); as vm) {
+  <div class="theme-demo">
+    <div class="demo-header">
+      <h2>Demo du Système de Thématisation</h2>
+      <p>Thème actuel: <strong>{{ vm.currentTheme }}</strong></p>
+    </div>
+
+    <div class="demo-controls">
+      <button 
+        type="button" 
+        class="demo-btn"
+        [class.active]="vm.isLightMode"
+        (click)="onSetLightTheme()"
+      >
+        ☀️ Clair
+      </button>
+      
+      <button 
+        type="button" 
+        class="demo-btn"
+        [class.active]="vm.isDarkMode"
+        (click)="onSetDarkTheme()"
+      >
+        🌙 Sombre
+      </button>
+      
+      <button 
+        type="button" 
+        class="demo-btn toggle-btn"
+        (click)="onToggleTheme()"
+      >
+        🔄 Basculer
+      </button>
+      
+      <button 
+        type="button" 
+        class="demo-btn system-btn"
+        (click)="onResetToSystem()"
+      >
+        🖥️ Système
+      </button>
+    </div>
+
+    <div class="demo-grid">
+      @for (item of demoItems; track item.label) {
+        <div class="demo-item" [ngClass]="item.class">
+          <span>{{ item.label }}</span>
+        </div>
+      }
+    </div>
+
+    <div class="demo-components">
+      <h3>Composants de Test</h3>
+      
+      <div class="component-group">
+        <h4>Boutons</h4>
+        <button class="btn-primary">Bouton Principal</button>
+        <button class="btn-secondary">Bouton Secondaire</button>
+        <button class="btn-accent">Bouton Accent</button>
+      </div>
+      
+      <div class="component-group">
+        <h4>Champs de saisie</h4>
+        <input type="text" placeholder="Champ de texte" class="demo-input">
+        <textarea placeholder="Zone de texte" class="demo-textarea"></textarea>
+      </div>
+      
+      <div class="component-group">
+        <h4>Cards</h4>
+        <div class="demo-card">
+          <h5>Carte de démonstration</h5>
+          <p>Contenu de la carte avec du texte pour tester les couleurs.</p>
+          <button class="btn-primary">Action</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

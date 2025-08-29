@@ -1,0 +1,204 @@
+@import '../../../../styles/mixins';
+
+.theme-demo {
+  padding: var(--spacing-lg);
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .demo-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    
+    h2 {
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    p {
+      color: var(--text-secondary);
+      font-size: var(--font-size-lg);
+    }
+  }
+
+  .demo-controls {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+    
+    .demo-btn {
+      @include button-base();
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      
+      &:hover {
+        background: var(--bg-tertiary);
+      }
+      
+      &.active {
+        background: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+      }
+      
+      &.toggle-btn:hover {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  .demo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+    
+    .demo-item {
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-lg);
+      text-align: center;
+      font-weight: var(--font-weight-medium);
+      border: 1px solid var(--border-color);
+      
+      &.primary-text {
+        color: var(--text-primary);
+        background: var(--bg-primary);
+      }
+      
+      &.secondary-text {
+        color: var(--text-secondary);
+        background: var(--bg-primary);
+      }
+      
+      &.tertiary-text {
+        color: var(--text-tertiary);
+        background: var(--bg-primary);
+      }
+      
+      &.bg-primary {
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        border-color: var(--border-color);
+      }
+      
+      &.bg-secondary {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+      }
+      
+      &.bg-tertiary {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+      
+      &.accent-color {
+        background: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+      }
+      
+      &.border-demo {
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        border: 3px solid var(--border-color);
+      }
+    }
+  }
+
+  .demo-components {
+    .component-group {
+      margin-bottom: var(--spacing-xl);
+      
+      h4 {
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-md);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: var(--spacing-sm);
+      }
+      
+      .btn-primary {
+        @include button-primary();
+        margin-right: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+      }
+      
+      .btn-secondary {
+        @include button-secondary();
+        margin-right: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+      }
+      
+      .btn-accent {
+        @include button-base();
+        background: var(--accent-color);
+        color: white;
+        margin-right: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+        
+        &:hover {
+          background: var(--accent-hover);
+        }
+      }
+      
+      .demo-input,
+      .demo-textarea {
+        @include input-style();
+        display: block;
+        width: 100%;
+        max-width: 300px;
+        margin-bottom: var(--spacing-md);
+      }
+      
+      .demo-textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+      
+      .demo-card {
+        @include card-shadow();
+        background: var(--bg-secondary);
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        max-width: 300px;
+        
+        h5 {
+          color: var(--text-primary);
+          margin-bottom: var(--spacing-sm);
+        }
+        
+        p {
+          color: var(--text-secondary);
+          margin-bottom: var(--spacing-md);
+        }
+        
+        .btn-primary {
+          margin: 0;
+        }
+      }
+    }
+  }
+}
+
+// Responsive adaptations
+@include mobile {
+  .theme-demo {
+    padding: var(--spacing-md);
+    
+    .demo-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .demo-controls {
+      flex-direction: column;
+      align-items: center;
+      
+      .demo-btn {
+        width: 100%;
+        max-width: 200px;
+      }
+    }
+  }
+}

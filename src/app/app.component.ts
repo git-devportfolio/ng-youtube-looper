@@ -1,12 +1,21 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ThemeService } from '@core/services/theme.service';
+import { ThemeToggleComponent } from '@shared/components/theme-toggle/theme-toggle.component';
+import { ThemeDemoComponent } from '@shared/components/theme-demo/theme-demo.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, ThemeToggleComponent, ThemeDemoComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
+  readonly themeService = inject(ThemeService);
   title = 'ng-youtube-looper';
+
+  ngOnInit(): void {
+    // Initialiser l'écoute des changements système
+    this.themeService.watchSystemTheme();
+  }
 }
