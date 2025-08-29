@@ -9,7 +9,7 @@
         "testStrategy": "Vérifier la compilation sans erreur, tester la structure des dossiers, valider la configuration TypeScript stricte et s'assurer que ng serve démarre correctement",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -17,7 +17,7 @@
             "description": "Mettre en place l'architecture features/data-access/ui avec les dossiers src/app/{core,features,shared} et sous-structures",
             "dependencies": [],
             "details": "Créer l'architecture de dossiers suivant les conventions Angular modernes : src/app/core/{services,guards,interceptors}, src/app/features/{video-player,loop-manager}/{data-access,feature,ui}, src/app/shared/{components,directives,pipes,utils}. Cette structure supportera l'architecture façade avec séparation claire entre logique métier, état et UI.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Vérifier la création de tous les dossiers requis avec ls -la, s'assurer que la structure respecte les conventions Angular et est compatible avec ng generate"
           },
           {
@@ -26,7 +26,7 @@
             "description": "Actualiser tsconfig.json avec les options strictes supplémentaires et optimisations pour le projet",
             "dependencies": [],
             "details": "Étendre la configuration TypeScript existante avec noUnusedLocals, noUnusedParameters, exactOptionalPropertyTypes. Configurer les paths mapping pour @core/*, @features/*, @shared/*. Optimiser les options de compilation pour le développement et la production. Valider que la configuration stricte fonctionne avec l'architecture standalone components.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Compiler le projet avec tsc --noEmit, vérifier qu'aucune erreur TypeScript n'apparaît, tester les path mappings avec imports relatifs"
           },
           {
@@ -35,7 +35,7 @@
             "description": "Ajouter les packages npm nécessaires pour YouTube API et outils de développement avancés",
             "dependencies": [],
             "details": "Installer @types/youtube pour l'API YouTube IFrame Player, @angular/cdk pour les utilitaires, rxjs operators supplémentaires si nécessaires. Configurer les types globaux dans typings.d.ts pour l'API YouTube. Mettre à jour package.json avec scripts de lint et format si manquants. Préparer l'environnement pour l'intégration YouTube API.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Vérifier l'installation avec npm ls, tester l'import des types YouTube dans un service test, compiler le projet sans erreurs"
           },
           {
@@ -44,7 +44,7 @@
             "description": "Implémenter les services core et facades de base avec injection par fonction inject()",
             "dependencies": [],
             "details": "Créer core/services/storage.service.ts pour localStorage, core/services/validation.service.ts pour validation d'URLs. Implémenter les façades de base features/video-player/data-access/video-player.facade.ts et features/loop-manager/data-access/loop-manager.facade.ts avec signals pour gestion d'état. Utiliser inject() au lieu de l'injection par constructeur selon les conventions modernes Angular.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests unitaires des services avec Jasmine, vérifier l'injection des dépendances avec inject(), tester la réactivité des signals dans les facades"
           },
           {
@@ -53,7 +53,7 @@
             "description": "Mettre en place le système de design SCSS avec variables, mixins et architecture modulaire",
             "dependencies": [],
             "details": "Structurer src/styles.scss avec imports modulaires : variables.scss (couleurs, typographie, breakpoints), mixins.scss (responsive, animations), base.scss (reset, typography). Définir les variables CSS custom properties pour thèmes. Créer les breakpoints responsive (mobile: 320px, tablet: 768px, desktop: 1024px, large: 1440px). Établir la grille CSS Grid pour layouts adaptatifs.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Compiler SCSS sans erreurs, vérifier les variables CSS dans DevTools, tester les breakpoints responsive avec différentes tailles d'écran"
           }
         ]
@@ -438,7 +438,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-29T14:47:24.345Z",
+      "updated": "2025-08-29T17:41:52.457Z",
       "description": "Tasks for master context"
     }
   }
