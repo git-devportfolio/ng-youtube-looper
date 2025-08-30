@@ -1,0 +1,137 @@
+@import '../../../../styles/mixins';
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  
+  @include mobile {
+    justify-content: center;
+  }
+}
+
+.control-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-sm);
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 48px;
+  min-height: 48px;
+  position: relative;
+  overflow: hidden;
+
+  &:hover:not(:disabled) {
+    background: var(--accent-color-light);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--bg-disabled);
+    border-color: var(--border-color);
+    
+    .control-icon {
+      opacity: 0.5;
+    }
+  }
+
+  .control-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover:not(:disabled) .control-icon {
+    transform: scale(1.1);
+  }
+}
+
+.play-pause-button {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+  min-width: 56px;
+  min-height: 56px;
+
+  .control-icon {
+    font-size: 1.4rem;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--accent-color-dark);
+    border-color: var(--accent-color-dark);
+    transform: translateY(-2px) scale(1.05);
+  }
+
+  &:disabled {
+    background: var(--text-muted);
+    border-color: var(--text-muted);
+  }
+}
+
+.seek-button {
+  .seek-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-weight: var(--font-weight-medium);
+  }
+
+  &:hover:not(:disabled) .seek-label {
+    color: var(--accent-color);
+  }
+}
+
+.stop-button {
+  .control-icon {
+    color: var(--error-color);
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--error-color);
+    background: var(--error-color-light);
+  }
+}
+
+// Responsive adjustments
+@include mobile {
+  .player-controls {
+    gap: var(--spacing-xs);
+  }
+
+  .control-button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: var(--spacing-xs);
+    
+    .control-icon {
+      font-size: 1.1rem;
+    }
+  }
+
+  .play-pause-button {
+    min-width: 50px;
+    min-height: 50px;
+    
+    .control-icon {
+      font-size: 1.3rem;
+    }
+  }
+
+  .seek-button .seek-label {
+    font-size: 10px;
+  }
+}
