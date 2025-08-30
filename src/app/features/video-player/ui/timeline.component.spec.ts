@@ -24,6 +24,7 @@ describe('TimelineComponent', () => {
     expect(component.duration).toBe(0);
     expect(component.disabled).toBe(false);
     expect(component.isLoading).toBe(false);
+    expect(component.isPlaying).toBe(false);
     expect(component.loops).toEqual([]);
   });
 
@@ -87,6 +88,61 @@ describe('TimelineComponent', () => {
     });
   });
 
+  describe('indicatorClasses', () => {
+    it('should return empty string for default state', () => {
+      component.isPlaying = true;
+      component.duration = 100;
+      expect(component.indicatorClasses).toBe('');
+    });
+
+    it('should return "paused" when not playing and ready', () => {
+      component.isPlaying = false;
+      component.isLoading = false;
+      component.disabled = false;
+      component.duration = 100;
+      expect(component.indicatorClasses).toBe('paused');
+    });
+
+    it('should not return "paused" when not ready', () => {
+      component.isPlaying = false;
+      component.duration = 0; // Not ready
+      expect(component.indicatorClasses).toBe('');
+    });
+  });
+
+  describe('getTimeAtPosition', () => {
+    it('should calculate correct time for position percentage', () => {
+      component.duration = 200;
+      expect(component.getTimeAtPosition(0)).toBe(0);
+      expect(component.getTimeAtPosition(50)).toBe(100);
+      expect(component.getTimeAtPosition(100)).toBe(200);
+    });
+
+    it('should handle edge cases', () => {
+      component.duration = 150;
+      expect(component.getTimeAtPosition(33.33)).toBeCloseTo(50, 1);
+    });
+  });
+
+  describe('getPositionForTime', () => {
+    it('should calculate correct position percentage for time', () => {
+      component.duration = 200;
+      expect(component.getPositionForTime(0)).toBe(0);
+      expect(component.getPositionForTime(100)).toBe(50);
+      expect(component.getPositionForTime(200)).toBe(100);
+    });
+
+    it('should return 0 when duration is 0', () => {
+      component.duration = 0;
+      expect(component.getPositionForTime(50)).toBe(0);
+    });
+
+    it('should not exceed 100%', () => {
+      component.duration = 100;
+      expect(component.getPositionForTime(150)).toBe(100);
+    });
+  });
+
   describe('onTrackClick', () => {
     let mockEvent: jasmine.SpyObj<MouseEvent>;
     let mockElement: jasmine.SpyObj<HTMLElement>;
@@ -112,6 +168,8 @@ describe('TimelineComponent', () => {
 
       spyOn(component.seekTo, 'emit');
       spyOn(component.timelineClick, 'emit');
+      spyOn(component.seekStart, 'emit');
+      spyOn(component.seekEnd, 'emit');
     });
 
     it('should not emit when not ready', () => {
@@ -122,6 +180,7 @@ describe('TimelineComponent', () => {
 
       expect(component.seekTo.emit).not.toHaveBeenCalled();
       expect(component.timelineClick.emit).not.toHaveBeenCalled();
+      expect(component.seekStart.emit).not.toHaveBeenCalled();
     });
 
     it('should calculate correct time and emit events when ready', () => {
@@ -134,6 +193,7 @@ describe('TimelineComponent', () => {
       // Click at x=100 on width=200 should be 50% = 100 seconds
       expect(component.seekTo.emit).toHaveBeenCalledWith(100);
       expect(component.timelineClick.emit).toHaveBeenCalledWith(100);
+      expect(component.seekStart.emit).toHaveBeenCalled();
     });
 
     it('should handle click at start of timeline', () => {
@@ -202,6 +262,93 @@ describe('TimelineComponent', () => {
     it('should pad seconds correctly', () => {
       expect(component.formatDuration(65)).toBe('1:05');
       expect(component.formatDuration(125)).toBe('2:05');
+    });
+  });
+
+  describe('Current Time Indicator Enhancement (Task 15.2)', () => {
+    it('should apply indicator classes correctly', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      
+      // Playing state - no special classes
+      component.isPlaying = true;
+      component.duration = 100;
+      fixture.detectChanges();
+      
+      const indicator = compiled.querySelector('.current-time-indicator');
+      expect(indicator?.classList.contains('paused')).toBe(false);
+      expect(indicator?.classList.contains('seeking')).toBe(false);
+    });
+
+    it('should apply paused class when not playing and ready', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      
+      component.isPlaying = false;
+      component.isLoading = false;
+      component.disabled = false;
+      component.duration = 100;
+      fixture.detectChanges();
+      
+      const indicator = compiled.querySelector('.current-time-indicator');
+      expect(indicator?.classList.contains('paused')).toBe(true);
+    });
+
+    it('should set correct aria-label for accessibility', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      
+      component.currentTime = 65; // 1:05
+      fixture.detectChanges();
+      
+      const indicator = compiled.querySelector('.current-time-indicator');
+      expect(indicator?.getAttribute('aria-label')).toBe('Position: 1:05');
+    });
+
+    it('should position indicator correctly with enhanced precision', () => {
+      component.currentTime = 37.5;
+      component.duration = 150;
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const indicator = compiled.querySelector('.current-time-indicator') as HTMLElement;
+      
+      expect(indicator.style.left).toBe('25%'); // 37.5/150 = 0.25 = 25%
+    });
+
+    it('should emit seeking events when track is clicked', (done) => {
+      spyOn(component.seekStart, 'emit');
+      spyOn(component.seekEnd, 'emit');
+      
+      component.isLoading = false;
+      component.disabled = false;
+      component.duration = 100;
+
+      const mockTrack = {
+        getBoundingClientRect: () => ({
+          left: 0,
+          width: 200,
+          top: 0,
+          right: 200,
+          bottom: 40,
+          height: 40,
+          x: 0,
+          y: 0,
+          toJSON: () => ({})
+        } as DOMRect)
+      };
+
+      const mockEvent = {
+        clientX: 100,
+        currentTarget: mockTrack
+      } as any;
+
+      component.onTrackClick(mockEvent);
+
+      expect(component.seekStart.emit).toHaveBeenCalled();
+      
+      // Check seekEnd is called after timeout
+      setTimeout(() => {
+        expect(component.seekEnd.emit).toHaveBeenCalled();
+        done();
+      }, 250);
     });
   });
 

@@ -13,9 +13,11 @@
     
     <!-- Current Time Indicator Container -->
     <div class="current-time-indicator-container">
-      <!-- Current Time Indicator (will be implemented in 15.2) -->
+      <!-- Current Time Indicator with enhanced states -->
       <div class="current-time-indicator"
-           [style.left.%]="currentTimePercentage">
+           [class]="indicatorClasses"
+           [style.left.%]="currentTimePercentage"
+           [attr.aria-label]="'Position: ' + formatDuration(currentTime)">
         <div class="indicator-circle"></div>
         <div class="indicator-line"></div>
       </div>
