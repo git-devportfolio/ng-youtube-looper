@@ -25,6 +25,27 @@ describe('SpeedControlComponent', () => {
     expect(component.disabled).toBe(false);
   });
 
+  it('should have correct speed presets including 0.25x and excluding 0.5x', () => {
+    const expectedPresets = [
+      { value: 0.25, display: '0.25x', label: 'Quart de vitesse' },
+      { value: 0.75, display: '0.75x', label: 'Trois quarts vitesse' },
+      { value: 1, display: '1x', label: 'Vitesse normale' },
+      { value: 1.25, display: '1.25x', label: 'Vitesse accélérée' },
+      { value: 1.5, display: '1.5x', label: 'Une fois et demie' },
+      { value: 2, display: '2x', label: 'Double vitesse' }
+    ];
+    
+    expect(component.speedPresets).toEqual(expectedPresets);
+    
+    // Ensure 0.5x is not included
+    const includes05x = component.speedPresets.some(preset => preset.value === 0.5);
+    expect(includes05x).toBe(false);
+    
+    // Ensure 0.25x is included
+    const includes025x = component.speedPresets.some(preset => preset.value === 0.25);
+    expect(includes025x).toBe(true);
+  });
+
   it('should initialize manual speed control with correct validators', () => {
     expect(component.manualSpeedControl.value).toBe(1);
     expect(component.manualSpeedControl.hasError('required')).toBe(false);

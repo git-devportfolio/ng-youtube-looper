@@ -17,7 +17,7 @@ export class SpeedControlComponent {
   @Output() decreaseSpeed = new EventEmitter<void>();
 
   readonly speedPresets = [
-    { value: 0.5, display: '0.5x', label: 'Moitié vitesse' },
+    { value: 0.25, display: '0.25x', label: 'Quart de vitesse' },
     { value: 0.75, display: '0.75x', label: 'Trois quarts vitesse' },
     { value: 1, display: '1x', label: 'Vitesse normale' },
     { value: 1.25, display: '1.25x', label: 'Vitesse accélérée' },
