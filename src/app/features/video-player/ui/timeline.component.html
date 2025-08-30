@@ -1,0 +1,48 @@
+<div class="timeline-container"
+     [class.loading]="isLoading"
+     [class.disabled]="disabled"
+     [class.ready]="isReady">
+  
+  <!-- Timeline Track -->
+  <div class="timeline-track"
+       (click)="onTrackClick($event)"
+       [style.cursor]="isReady ? 'pointer' : 'default'">
+    
+    <!-- Background Track -->
+    <div class="track-background"></div>
+    
+    <!-- Current Time Indicator Container -->
+    <div class="current-time-indicator-container">
+      <!-- Current Time Indicator (will be implemented in 15.2) -->
+      <div class="current-time-indicator"
+           [style.left.%]="currentTimePercentage">
+        <div class="indicator-circle"></div>
+        <div class="indicator-line"></div>
+      </div>
+    </div>
+    
+    <!-- Loop Segments Container -->
+    <div class="loop-segments-container">
+      <!-- Loop segments will be implemented in 15.4 -->
+      @for (loop of loops; track loop.id) {
+        <div class="loop-segment"
+             [attr.data-loop-id]="loop.id">
+          <!-- Loop segment content -->
+        </div>
+      }
+    </div>
+  </div>
+  
+  <!-- Timeline Labels (optional) -->
+  <div class="timeline-labels" *ngIf="isReady">
+    <span class="time-label start">0:00</span>
+    <span class="time-label end">{{ formatDuration(duration) }}</span>
+  </div>
+  
+  <!-- Loading State -->
+  @if (isLoading) {
+    <div class="timeline-loading">
+      <div class="loading-shimmer"></div>
+    </div>
+  }
+</div>
