@@ -23,6 +23,7 @@ describe('PlayerControlsComponent', () => {
     expect(component.canPlay).toBe(false);
     expect(component.canPause).toBe(false);
     expect(component.isPlaying).toBe(false);
+    expect(component.circular).toBe(false);
   });
 
   it('should calculate canSeek correctly', () => {
@@ -148,5 +149,91 @@ describe('PlayerControlsComponent', () => {
     expect(component.stop.emit).toHaveBeenCalled();
     expect(component.seekBack.emit).toHaveBeenCalled();
     expect(component.seekForward.emit).toHaveBeenCalled();
+  });
+
+  // Tests for circular button functionality (Task 14.1)
+  describe('Circular Button Functionality', () => {
+    it('should apply circular class when circular input is true', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      
+      component.circular = true;
+      fixture.detectChanges();
+      
+      const playPauseButton = compiled.querySelector('.play-pause-button');
+      expect(playPauseButton?.classList.contains('circular')).toBe(true);
+    });
+
+    it('should not apply circular class when circular input is false', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      
+      component.circular = false;
+      fixture.detectChanges();
+      
+      const playPauseButton = compiled.querySelector('.play-pause-button');
+      expect(playPauseButton?.classList.contains('circular')).toBe(false);
+    });
+
+    it('should maintain proper button states when circular', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      
+      component.circular = true;
+      component.canPlay = false;
+      component.canPause = false;
+      fixture.detectChanges();
+      
+      const playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
+      expect(playPauseButton.disabled).toBe(true);
+      expect(playPauseButton.classList.contains('circular')).toBe(true);
+    });
+
+    it('should emit events correctly when circular button is clicked', () => {
+      spyOn(component.play, 'emit');
+      
+      component.circular = true;
+      component.canPlay = true;
+      component.isPlaying = false;
+      fixture.detectChanges();
+      
+      const compiled = fixture.nativeElement as HTMLElement;
+      const playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
+      
+      playPauseButton.click();
+      
+      expect(component.play.emit).toHaveBeenCalled();
+    });
+
+    it('should have proper accessibility attributes when circular', () => {
+      component.circular = true;
+      component.canPlay = true;
+      component.isPlaying = false;
+      fixture.detectChanges();
+      
+      const compiled = fixture.nativeElement as HTMLElement;
+      const playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
+      
+      expect(playPauseButton.title).toBe('Lire');
+      expect(playPauseButton.type).toBe('button');
+    });
+
+    it('should update title attribute based on playing state when circular', () => {
+      component.circular = true;
+      component.canPlay = true;
+      component.canPause = true;
+      
+      // Test play state
+      component.isPlaying = false;
+      fixture.detectChanges();
+      
+      const compiled = fixture.nativeElement as HTMLElement;
+      let playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
+      expect(playPauseButton.title).toBe('Lire');
+      
+      // Test pause state
+      component.isPlaying = true;
+      fixture.detectChanges();
+      
+      playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
+      expect(playPauseButton.title).toBe('Mettre en pause');
+    });
   });
 });

@@ -11,6 +11,7 @@ export class PlayerControlsComponent {
   @Input() canPlay = false;
   @Input() canPause = false;
   @Input() isPlaying = false;
+  @Input() circular = false;
 
   @Output() play = new EventEmitter<void>();
   @Output() pause = new EventEmitter<void>();

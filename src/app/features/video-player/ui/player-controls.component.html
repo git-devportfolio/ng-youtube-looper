@@ -15,6 +15,7 @@
   <button 
     type="button"
     class="control-button play-pause-button"
+    [class.circular]="circular"
     (click)="togglePlayPause()"
     [disabled]="!canPlay && !canPause"
     [title]="isPlaying ? 'Mettre en pause' : 'Lire'"

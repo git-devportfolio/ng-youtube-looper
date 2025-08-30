@@ -71,14 +71,75 @@
   }
 
   &:hover:not(:disabled) {
-    background: var(--accent-color-dark);
-    border-color: var(--accent-color-dark);
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
     transform: translateY(-2px) scale(1.05);
   }
 
   &:disabled {
-    background: var(--text-muted);
-    border-color: var(--text-muted);
+    background: var(--bg-disabled);
+    border-color: var(--bg-disabled);
+  }
+  
+  // Circular variant for main play/pause button
+  &.circular {
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    min-width: 3rem;
+    min-height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    .control-icon {
+      font-size: 1.5rem;
+      transition: transform 0.2s ease;
+    }
+    
+    &:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-3px) scale(1.08);
+      box-shadow: var(--shadow-lg);
+      
+      .control-icon {
+        transform: scale(1.1);
+      }
+    }
+    
+    &:active:not(:disabled) {
+      transform: translateY(-1px) scale(1.02);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    &:focus-visible {
+      outline: 3px solid rgba(var(--accent-rgb), 0.3);
+      outline-offset: 4px;
+    }
+    
+    // Enhanced mobile sizing
+    @include mobile {
+      width: 3.5rem;
+      height: 3.5rem;
+      min-width: 3.5rem;
+      min-height: 3.5rem;
+      
+      .control-icon {
+        font-size: 1.6rem;
+      }
+      
+      &:hover:not(:disabled) {
+        transform: scale(1.05);
+      }
+    }
+    
+    @include tablet-up {
+      width: 3rem;
+      height: 3rem;
+    }
   }
 }
 
