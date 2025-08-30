@@ -1,0 +1,218 @@
+@import '../../../../styles/mixins';
+
+.time-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: 0.5px;
+  user-select: none;
+  
+  // Enhanced readability with monospace font
+  font-variant-numeric: tabular-nums;
+  
+  @include mobile {
+    font-size: var(--font-size-md);
+    gap: 3px;
+  }
+  
+  @include desktop-up {
+    font-size: var(--font-size-sm);
+  }
+  
+  // Loading state styling
+  &.loading {
+    color: var(--text-tertiary);
+    
+    .current-time,
+    .duration {
+      opacity: 0.7;
+    }
+  }
+  
+  // Error state styling
+  &.error {
+    color: var(--error-color);
+    
+    .current-time,
+    .duration {
+      font-weight: var(--font-weight-bold);
+    }
+  }
+}
+
+.current-time {
+  font-weight: var(--font-weight-bold);
+  color: inherit;
+  min-width: 4ch; // Ensure consistent width for MM:SS
+  text-align: right;
+  
+  // Adjust width for longer durations
+  .time-display:has(.duration:contains(":"):contains(":")) & {
+    min-width: 6ch; // For HH:MM:SS format
+  }
+}
+
+.time-separator {
+  color: var(--text-tertiary);
+  font-weight: var(--font-weight-normal);
+  opacity: 0.7;
+  margin: 0 1px;
+  
+  .time-display.error & {
+    color: var(--error-color);
+    opacity: 1;
+  }
+}
+
+.duration {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+  min-width: 4ch; // Ensure consistent width
+  text-align: left;
+  
+  // Adjust width for longer durations
+  .time-display:has(& :contains(":"):contains(":")) {
+    min-width: 6ch; // For HH:MM:SS format
+  }
+  
+  .time-display.loading & {
+    opacity: 0.5;
+  }
+}
+
+// Loading indicator with animated dots
+.loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--spacing-xs);
+  
+  .loading-dots {
+    display: flex;
+    gap: 2px;
+    
+    .dot {
+      width: 3px;
+      height: 3px;
+      background: var(--text-tertiary);
+      border-radius: 50%;
+      animation: loading-pulse 1.4s infinite ease-in-out;
+      
+      &:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+      
+      &:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+      
+      &:nth-child(3) {
+        animation-delay: 0s;
+      }
+    }
+  }
+}
+
+// Enhanced responsiveness
+@include mobile {
+  .time-display {
+    // Larger touch-friendly display
+    padding: var(--spacing-xs) 0;
+    
+    .current-time {
+      min-width: 5ch;
+    }
+    
+    .duration {
+      min-width: 5ch;
+    }
+  }
+}
+
+@include tablet-up {
+  .time-display {
+    // Compact display for larger screens
+    font-size: var(--font-size-xs);
+    
+    .current-time {
+      min-width: 4ch;
+    }
+    
+    .duration {
+      min-width: 4ch;
+    }
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .time-display {
+    .time-separator {
+      opacity: 1;
+      color: currentColor;
+    }
+    
+    .duration {
+      color: var(--text-primary);
+    }
+    
+    &.error {
+      background: rgba(var(--error-color), 0.1);
+      padding: 2px 4px;
+      border-radius: var(--radius-sm);
+    }
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .loading-dots .dot {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+// Animation for loading dots
+@keyframes loading-pulse {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Additional utility classes for different contexts
+.time-display {
+  // Compact variant
+  &.compact {
+    font-size: var(--font-size-xs);
+    gap: 1px;
+    
+    .current-time,
+    .duration {
+      min-width: 3.5ch;
+    }
+  }
+  
+  // Large variant
+  &.large {
+    font-size: var(--font-size-lg);
+    gap: 4px;
+    
+    .current-time,
+    .duration {
+      min-width: 5ch;
+    }
+    
+    @include mobile {
+      font-size: var(--font-size-xl);
+    }
+  }
+}

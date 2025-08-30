@@ -1,0 +1,29 @@
+<div class="time-display" 
+     [class.loading]="isLoading"
+     [class.error]="hasError"
+     role="timer"
+     [attr.aria-label]="'Temps de lecture: ' + timeDisplayString"
+     [attr.aria-valuenow]="progressPercentage"
+     [attr.aria-valuemin]="0"
+     [attr.aria-valuemax]="100">
+  
+  <!-- Current time -->
+  <span class="current-time">{{ formattedCurrentTime }}</span>
+  
+  <!-- Separator and duration (if enabled) -->
+  @if (showDuration) {
+    <span class="time-separator"> / </span>
+    <span class="duration">{{ formattedDuration }}</span>
+  }
+  
+  <!-- Loading indicator -->
+  @if (isLoading) {
+    <span class="loading-indicator" aria-label="Chargement du temps">
+      <span class="loading-dots">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </span>
+    </span>
+  }
+</div>
