@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, ViewChild, ElementRef, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ViewChild, ElementRef, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
 import { VideoPlayerFacade } from '../data-access/video-player.facade';
@@ -31,6 +31,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
   // Subscription cleanup
   private playerInitialized = false;
   private overlayHideTimeout: number | null = null;
+  private currentTimePolling: number | null = null;
 
   ngOnInit() {
     // Sync URL input with facade
@@ -41,9 +42,18 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     // Detect touch device capability
     this.detectTouchDevice();
 
-    // Auto-initialize player when video changes
-    // Note: For signals, we would use effect() instead of subscribe()
-    // For now, we'll initialize the player manually in loadVideo()
+    // Set up iframe event listeners for YouTube API synchronization
+    this.setupIFrameEventListeners();
+
+    // Effect to start/stop currentTime polling based on playback state
+    effect(() => {
+      const isPlaying = this.facade.vm().playerState.isPlaying;
+      if (isPlaying) {
+        this.startCurrentTimePolling();
+      } else {
+        this.stopCurrentTimePolling();
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -51,6 +61,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     if (this.overlayHideTimeout) {
       clearTimeout(this.overlayHideTimeout);
     }
+    this.stopCurrentTimePolling();
+    this.removeIFrameEventListeners();
   }
 
   async loadVideo() {
@@ -107,6 +119,38 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     });
 
     return `${baseUrl}/${videoId}?${params.toString()}`;
+  }
+
+  /**
+   * Override facade play method to use iframe communication
+   */
+  playVideo(): void {
+    this.sendYouTubeCommand('playVideo');
+    this.facade.play(); // Also call facade for state management
+  }
+
+  /**
+   * Override facade pause method to use iframe communication
+   */
+  pauseVideo(): void {
+    this.sendYouTubeCommand('pauseVideo');
+    this.facade.pause(); // Also call facade for state management
+  }
+
+  /**
+   * Override facade seekTo method to use iframe communication
+   */
+  seekToTime(seconds: number): void {
+    this.sendYouTubeCommand('seekTo', [seconds, true]);
+    this.facade.seekTo(seconds); // Also call facade for state management
+  }
+
+  /**
+   * Override facade setPlaybackRate method to use iframe communication
+   */
+  setVideoPlaybackRate(rate: number): void {
+    this.sendYouTubeCommand('setPlaybackRate', [rate]);
+    this.facade.setPlaybackRate(rate); // Also call facade for state management
   }
 
   /**
@@ -200,4 +244,137 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Sets up event listeners for iframe-parent communication via postMessage API
+   */
+  private setupIFrameEventListeners(): void {
+    window.addEventListener('message', this.handleIFrameMessage.bind(this));
+  }
+
+  /**
+   * Removes iframe event listeners
+   */
+  private removeIFrameEventListeners(): void {
+    window.removeEventListener('message', this.handleIFrameMessage.bind(this));
+  }
+
+  /**
+   * Handles postMessage events from YouTube iframe
+   */
+  private handleIFrameMessage(event: MessageEvent): void {
+    // Ensure message is from YouTube
+    if (event.origin !== 'https://www.youtube.com') {
+      return;
+    }
+
+    try {
+      const data = JSON.parse(event.data);
+      
+      if (data.event === 'video-progress') {
+        // Sync current time from iframe
+        // Note: For now, we'll delegate to the existing facade implementation
+        // In a real implementation, we'd need to expose updatePlayerState on the facade
+        console.log('Video progress:', data.info?.currentTime);
+      } else if (data.event === 'onStateChange') {
+        // Sync playback state changes
+        this.handleYouTubeStateChange(data.info);
+      } else if (data.event === 'onReady') {
+        // Video is ready
+        this.handleYouTubeReady(data.info);
+      } else if (data.event === 'onError') {
+        // Handle YouTube errors
+        this.handleYouTubeError(data.data);
+      }
+    } catch (error) {
+      // Ignore non-JSON messages
+    }
+  }
+
+  /**
+   * Handles YouTube player ready event
+   */
+  private handleYouTubeReady(info: any): void {
+    // For now, log the ready state - in real implementation would sync with facade
+    console.log('YouTube player ready:', info);
+    // TODO: Need facade method to expose updatePlayerState or use different sync approach
+  }
+
+  /**
+   * Handles YouTube player state changes
+   */
+  private handleYouTubeStateChange(info: any): void {
+    const isPlaying = info?.playerState === 1; // YT.PlayerState.PLAYING = 1
+    
+    // For now, log state changes - in real implementation would sync with facade
+    console.log('YouTube state change:', { isPlaying, info });
+    // TODO: Need facade method to expose updatePlayerState or use different sync approach
+  }
+
+  /**
+   * Handles YouTube player errors
+   */
+  private handleYouTubeError(errorCode: number): void {
+    const errorMessages: { [key: number]: string } = {
+      2: 'ID vidéo invalide',
+      5: 'Erreur de lecture HTML5',
+      100: 'Vidéo introuvable ou privée',
+      101: 'Lecture non autorisée par le propriétaire',
+      150: 'Lecture non autorisée par le propriétaire'
+    };
+
+    const errorMessage = errorMessages[errorCode] || `Erreur YouTube inconnue (${errorCode})`;
+    
+    // For now, log errors - in real implementation would sync with facade
+    console.error('YouTube player error:', errorMessage);
+    // TODO: Need facade method to expose updatePlayerState or use different sync approach
+  }
+
+  /**
+   * Starts polling for current time updates during video playback
+   */
+  private startCurrentTimePolling(): void {
+    if (this.currentTimePolling) {
+      return; // Already polling
+    }
+
+    this.currentTimePolling = window.setInterval(() => {
+      if (this.youtubePlayerRef?.nativeElement) {
+        // Send postMessage to iframe to get current time
+        this.youtubePlayerRef.nativeElement.contentWindow?.postMessage(
+          '{"event":"command","func":"getCurrentTime","args":""}',
+          'https://www.youtube.com'
+        );
+      }
+    }, 250); // Update every 250ms for smooth progress
+  }
+
+  /**
+   * Stops current time polling
+   */
+  private stopCurrentTimePolling(): void {
+    if (this.currentTimePolling) {
+      clearInterval(this.currentTimePolling);
+      this.currentTimePolling = null;
+    }
+  }
+
+  /**
+   * Sends commands to YouTube iframe via postMessage
+   */
+  private sendYouTubeCommand(command: string, args?: any[]): void {
+    if (!this.youtubePlayerRef?.nativeElement) {
+      return;
+    }
+
+    const message = {
+      event: 'command',
+      func: command,
+      args: args ? JSON.stringify(args) : ''
+    };
+
+    this.youtubePlayerRef.nativeElement.contentWindow?.postMessage(
+      JSON.stringify(message),
+      'https://www.youtube.com'
+    );
+  }
 }

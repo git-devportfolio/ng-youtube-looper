@@ -97,18 +97,18 @@
                       [canPlay]="facade.vm().canPlay"
                       [canPause]="facade.vm().canPause"
                       [isPlaying]="facade.vm().playerState.isPlaying"
-                      (play)="facade.play()"
-                      (pause)="facade.pause()"
+                      (play)="playVideo()"
+                      (pause)="pauseVideo()"
                       (stop)="facade.stop()"
-                      (seekBack)="facade.seekBy(-10)"
-                      (seekForward)="facade.seekBy(10)"
+                      (seekBack)="seekToTime(facade.vm().playerState.currentTime - 10)"
+                      (seekForward)="seekToTime(facade.vm().playerState.currentTime + 10)"
                       class="overlay-player-controls">
                     </app-player-controls>
 
                     <app-speed-control
                       [currentRate]="facade.vm().playerState.playbackRate"
                       [disabled]="!facade.vm().playerState.isReady"
-                      (rateChange)="facade.setPlaybackRate($event)"
+                      (rateChange)="setVideoPlaybackRate($event)"
                       (increaseSpeed)="facade.increaseSpeed()"
                       (decreaseSpeed)="facade.decreaseSpeed()"
                       class="overlay-speed-controls">

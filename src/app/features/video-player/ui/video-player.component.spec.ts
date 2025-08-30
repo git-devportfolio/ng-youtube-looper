@@ -231,7 +231,7 @@ describe('VideoPlayerComponent', () => {
     it('should maintain aspect-ratio styling for responsive design', () => {
       const compiled = fixture.nativeElement as HTMLElement;
       const playerWrapper = compiled.querySelector('.player-wrapper') as HTMLElement;
-      const computedStyle = window.getComputedStyle(playerWrapper);
+      window.getComputedStyle(playerWrapper);
       
       // Note: aspect-ratio may not be supported in all test environments
       // This test verifies the CSS class is applied
@@ -663,6 +663,210 @@ describe('VideoPlayerComponent', () => {
       
       // Should set loading to false after retry
       expect(component.loading()).toBe(false);
+    });
+  });
+
+  // Tests for task 13.4: YouTube API synchronization
+  describe('YouTube API Synchronization (Task 13.4)', () => {
+    let mockPostMessage: jasmine.Spy;
+
+    beforeEach(() => {
+      // Mock iframe and postMessage
+      const mockIframe = {
+        contentWindow: {
+          postMessage: jasmine.createSpy('postMessage')
+        }
+      };
+      
+      component.youtubePlayerRef = {
+        nativeElement: mockIframe as any
+      };
+      
+      mockPostMessage = mockIframe.contentWindow.postMessage as jasmine.Spy;
+    });
+
+    it('should set up iframe event listeners on init', () => {
+      spyOn(window, 'addEventListener');
+      
+      component.ngOnInit();
+      
+      expect(window.addEventListener).toHaveBeenCalledWith('message', jasmine.any(Function));
+    });
+
+    it('should clean up event listeners on destroy', () => {
+      spyOn(window, 'removeEventListener');
+      
+      component.ngOnDestroy();
+      
+      expect(window.removeEventListener).toHaveBeenCalledWith('message', jasmine.any(Function));
+    });
+
+    it('should send YouTube commands via postMessage', () => {
+      component['sendYouTubeCommand']('playVideo');
+      
+      expect(mockPostMessage).toHaveBeenCalledWith(
+        '{"event":"command","func":"playVideo","args":""}',
+        'https://www.youtube.com'
+      );
+    });
+
+    it('should send YouTube commands with arguments', () => {
+      component['sendYouTubeCommand']('seekTo', [30, true]);
+      
+      expect(mockPostMessage).toHaveBeenCalledWith(
+        jasmine.stringContaining('seekTo'),
+        'https://www.youtube.com'
+      );
+    });
+
+    it('should override play method to use iframe communication', () => {
+      spyOn(component.facade, 'play');
+      
+      component.playVideo();
+      
+      expect(mockPostMessage).toHaveBeenCalledWith(
+        '{"event":"command","func":"playVideo","args":""}',
+        'https://www.youtube.com'
+      );
+      expect(component.facade.play).toHaveBeenCalled();
+    });
+
+    it('should override pause method to use iframe communication', () => {
+      spyOn(component.facade, 'pause');
+      
+      component.pauseVideo();
+      
+      expect(mockPostMessage).toHaveBeenCalledWith(
+        '{"event":"command","func":"pauseVideo","args":""}',
+        'https://www.youtube.com'
+      );
+      expect(component.facade.pause).toHaveBeenCalled();
+    });
+
+    it('should override seekTo method to use iframe communication', () => {
+      spyOn(component.facade, 'seekTo');
+      
+      component.seekToTime(30);
+      
+      expect(mockPostMessage).toHaveBeenCalledWith(
+        jasmine.stringContaining('seekTo'),
+        'https://www.youtube.com'
+      );
+      expect(component.facade.seekTo).toHaveBeenCalledWith(30);
+    });
+
+    it('should override setPlaybackRate method to use iframe communication', () => {
+      spyOn(component.facade, 'setPlaybackRate');
+      
+      component.setVideoPlaybackRate(1.5);
+      
+      expect(mockPostMessage).toHaveBeenCalledWith(
+        jasmine.stringContaining('setPlaybackRate'),
+        'https://www.youtube.com'
+      );
+      expect(component.facade.setPlaybackRate).toHaveBeenCalledWith(1.5);
+    });
+
+    it('should handle YouTube iframe messages correctly', () => {
+      const mockEvent = {
+        origin: 'https://www.youtube.com',
+        data: '{"event":"onReady","info":{"duration":200}}'
+      };
+      
+      spyOn(console, 'log');
+      
+      component['handleIFrameMessage'](mockEvent as MessageEvent);
+      
+      expect(console.log).toHaveBeenCalledWith('YouTube player ready:', { duration: 200 });
+    });
+
+    it('should ignore messages from other origins', () => {
+      const mockEvent = {
+        origin: 'https://malicious-site.com',
+        data: '{"event":"onReady"}'
+      };
+      
+      spyOn(console, 'log');
+      
+      component['handleIFrameMessage'](mockEvent as MessageEvent);
+      
+      expect(console.log).not.toHaveBeenCalled();
+    });
+
+    it('should start current time polling when video is playing', () => {
+      spyOn(window, 'setInterval').and.returnValue(123 as any);
+      
+      // Set up video playing state
+      const mockVideoState = {
+        currentVideo: { videoId: 'test123', title: 'Test', author: 'Test', duration: 200 },
+        playerState: {
+          isReady: true,
+          isPlaying: true,
+          currentTime: 0,
+          duration: 200,
+          playbackRate: 1,
+          volume: 100,
+          error: null
+        },
+        urlInput: '',
+        isValidUrl: true,
+        canPlay: true,
+        canPause: true,
+        hasError: false
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      fixture.detectChanges();
+      
+      expect(window.setInterval).toHaveBeenCalledWith(jasmine.any(Function), 250);
+    });
+
+    it('should stop current time polling when video is paused', () => {
+      spyOn(window, 'clearInterval');
+      
+      // Start polling first
+      component['currentTimePolling'] = 123;
+      
+      component['stopCurrentTimePolling']();
+      
+      expect(window.clearInterval).toHaveBeenCalledWith(123);
+      expect(component['currentTimePolling']).toBeNull();
+    });
+
+    it('should handle malformed iframe messages gracefully', () => {
+      const mockEvent = {
+        origin: 'https://www.youtube.com',
+        data: 'invalid-json'
+      };
+      
+      spyOn(console, 'error');
+      
+      // Should not throw error
+      expect(() => {
+        component['handleIFrameMessage'](mockEvent as MessageEvent);
+      }).not.toThrow();
+    });
+
+    it('should handle YouTube error codes correctly', () => {
+      spyOn(console, 'error');
+      
+      component['handleYouTubeError'](100);
+      
+      expect(console.error).toHaveBeenCalledWith(
+        'YouTube player error:', 
+        'Vidéo introuvable ou privée'
+      );
+    });
+
+    it('should handle unknown YouTube error codes', () => {
+      spyOn(console, 'error');
+      
+      component['handleYouTubeError'](999);
+      
+      expect(console.error).toHaveBeenCalledWith(
+        'YouTube player error:', 
+        'Erreur YouTube inconnue (999)'
+      );
     });
   });
 });

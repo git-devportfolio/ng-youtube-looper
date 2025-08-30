@@ -1,12 +1,68 @@
 @import '../../../../styles/mixins';
 
+// Enhanced responsive breakpoints for video player
+$player-mobile-max: 479px;
+$player-tablet-min: 480px;
+$player-tablet-max: 767px;
+$player-desktop-min: 768px;
+$player-large-min: 1200px;
+
+// Video player specific responsive mixins
+@mixin player-mobile {
+  @media (max-width: $player-mobile-max) {
+    @content;
+  }
+}
+
+@mixin player-tablet {
+  @media (min-width: $player-tablet-min) and (max-width: $player-tablet-max) {
+    @content;
+  }
+}
+
+@mixin player-tablet-up {
+  @media (min-width: $player-tablet-min) {
+    @content;
+  }
+}
+
+@mixin player-desktop-up {
+  @media (min-width: $player-desktop-min) {
+    @content;
+  }
+}
+
+@mixin player-large {
+  @media (min-width: $player-large-min) {
+    @content;
+  }
+}
+
 .video-player-container {
   max-width: 800px;
   margin: 0 auto;
   padding: var(--spacing-md);
   background: var(--bg-primary);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
+  
+  // Enhanced responsive design
+  @include player-mobile {
+    margin: var(--spacing-xs);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+  }
+  
+  @include player-tablet {
+    margin: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+  
+  @include player-large {
+    max-width: 1000px;
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-xl);
+  }
 }
 
 // URL Input Section
@@ -23,9 +79,20 @@
     display: flex;
     gap: var(--spacing-sm);
     margin-bottom: var(--spacing-sm);
+    align-items: stretch;
 
-    @include mobile {
+    // Enhanced responsive behavior
+    @include player-mobile {
       flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+    
+    @include player-tablet {
+      gap: var(--spacing-md);
+    }
+    
+    @include player-desktop-up {
+      align-items: center;
     }
   }
 
@@ -33,11 +100,22 @@
     flex: 1;
     padding: var(--spacing-sm) var(--spacing-md);
     border: 2px solid var(--border-color);
-    border-radius: var(--border-radius);
+    border-radius: var(--radius-md);
     background: var(--bg-secondary);
     color: var(--text-primary);
     font-size: var(--font-size-sm);
+    min-height: 44px; // Touch target size
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    
+    // Enhanced responsive typography
+    @include player-mobile {
+      font-size: var(--font-size-md);
+      padding: var(--spacing-md);
+    }
+    
+    @include player-tablet-up {
+      font-size: var(--font-size-sm);
+    }
 
     &:focus {
       outline: none;
@@ -66,26 +144,39 @@
     background: var(--accent-color);
     color: white;
     border: none;
-    border-radius: var(--border-radius);
+    border-radius: var(--radius-md);
     font-weight: var(--font-weight-medium);
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
     min-width: 120px;
+    min-height: 44px; // Touch target size
     justify-content: center;
+    white-space: nowrap;
 
     &:hover:not(:disabled) {
-      background: var(--accent-color-dark);
+      background: var(--accent-hover);
       transform: translateY(-1px);
     }
 
     &:disabled {
-      background: var(--text-muted);
+      background: var(--bg-disabled);
       cursor: not-allowed;
       transform: none;
     }
 
-    @include mobile {
+    // Enhanced responsive behavior
+    @include player-mobile {
       width: 100%;
+      padding: var(--spacing-md) var(--spacing-lg);
+      font-size: var(--font-size-md);
+    }
+    
+    @include player-tablet {
+      min-width: 140px;
+    }
+    
+    @include player-desktop-up {
+      min-width: 160px;
     }
   }
 
@@ -103,16 +194,29 @@
     font-size: var(--font-size-xs);
     padding: var(--spacing-xs) var(--spacing-sm);
     background: var(--error-color-light);
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--radius-sm);
     border-left: 4px solid var(--error-color);
+    
+    @include player-mobile {
+      font-size: var(--font-size-sm);
+      padding: var(--spacing-sm) var(--spacing-md);
+    }
   }
 }
 
 // Player Section
 .player-section {
   background: var(--bg-secondary);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  
+  @include player-mobile {
+    border-radius: var(--radius-md);
+  }
+  
+  @include player-large {
+    border-radius: var(--radius-xl);
+  }
 }
 
 .video-container {
@@ -129,8 +233,26 @@
   overflow: hidden;
   border-radius: var(--radius-md);
   
-  @include mobile {
+  // Enhanced responsive aspect ratios and sizing
+  @include player-mobile {
     border-radius: var(--radius-sm);
+    // Maintain 16:9 but allow slight adjustment for very small screens
+    min-height: 180px;
+  }
+  
+  @include player-tablet {
+    border-radius: var(--radius-md);
+    min-height: 270px;
+  }
+  
+  @include player-desktop-up {
+    border-radius: var(--radius-lg);
+    min-height: 360px;
+  }
+  
+  @include player-large {
+    min-height: 450px;
+    max-height: 560px;
   }
 }
 
@@ -185,17 +307,37 @@
     align-items: flex-start;
     min-height: 60px;
     
-    @include mobile {
+    // Enhanced responsive padding and sizing
+    @include player-mobile {
       padding: var(--spacing-sm);
-      min-height: 50px;
+      min-height: 44px;
+    }
+    
+    @include player-tablet {
+      padding: var(--spacing-md);
+      min-height: 54px;
+    }
+    
+    @include player-desktop-up {
+      padding: var(--spacing-lg) var(--spacing-xl);
+      min-height: 70px;
     }
   }
   
   .overlay-bottom {
     padding: var(--spacing-md);
     
-    @include mobile {
-      padding: var(--spacing-sm);
+    // Enhanced responsive padding
+    @include player-mobile {
+      padding: var(--spacing-sm) var(--spacing-xs);
+    }
+    
+    @include player-tablet {
+      padding: var(--spacing-md) var(--spacing-sm);
+    }
+    
+    @include player-desktop-up {
+      padding: var(--spacing-lg) var(--spacing-xl);
     }
   }
   
@@ -204,30 +346,63 @@
     justify-content: space-between;
     align-items: center;
     gap: var(--spacing-md);
+    flex-wrap: wrap;
     
-    @include mobile {
+    // Enhanced responsive layout patterns
+    @include player-mobile {
       flex-direction: column;
-      gap: var(--spacing-sm);
+      gap: var(--spacing-xs);
       align-items: center;
+      justify-content: center;
     }
     
-    @include tablet {
+    @include player-tablet {
       gap: var(--spacing-sm);
+      justify-content: center;
+    }
+    
+    @include player-desktop-up {
+      gap: var(--spacing-lg);
+      justify-content: space-between;
     }
   }
   
-  // Enhanced controls styling for overlay context
+  // Enhanced controls styling for overlay context with responsive design
   ::ng-deep .overlay-player-controls {
     .control-button {
       background: rgba(255, 255, 255, 0.9);
       border: 2px solid rgba(255, 255, 255, 0.3);
       backdrop-filter: blur(8px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      min-width: 44px;
+      min-height: 44px;
+      
+      @include player-mobile {
+        min-width: 48px;
+        min-height: 48px;
+        // Enhanced touch targets
+        padding: var(--spacing-sm);
+      }
+      
+      @include player-tablet-up {
+        min-width: 40px;
+        min-height: 40px;
+      }
+      
+      @include player-desktop-up {
+        min-width: 44px;
+        min-height: 44px;
+      }
       
       &:hover:not(:disabled) {
         background: white;
         border-color: var(--accent-color);
         transform: translateY(-2px) scale(1.05);
+        
+        // Reduced hover effects on mobile
+        @include player-mobile {
+          transform: scale(1.02);
+        }
       }
       
       &:active {
@@ -237,6 +412,10 @@
       // Enhanced visibility for overlay
       .control-icon {
         filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+        
+        @include player-mobile {
+          font-size: 1.2em;
+        }
       }
     }
   }
@@ -248,17 +427,51 @@
       backdrop-filter: blur(8px);
       color: var(--text-primary);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      min-height: 36px;
+      
+      @include player-mobile {
+        min-height: 44px;
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--font-size-sm);
+      }
+      
+      @include player-tablet-up {
+        min-height: 32px;
+        font-size: var(--font-size-xs);
+      }
+      
+      @include player-desktop-up {
+        min-height: 36px;
+        font-size: var(--font-size-sm);
+      }
       
       &:hover:not(:disabled) {
         background: white;
         border-color: var(--accent-color);
         transform: translateY(-1px);
+        
+        // Reduced hover effects on mobile
+        @include player-mobile {
+          transform: none;
+        }
       }
     }
     
     .speed-display {
       font-weight: var(--font-weight-bold);
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      
+      @include player-mobile {
+        min-width: 60px;
+      }
+    }
+    
+    // Responsive layout for speed controls
+    @include player-mobile {
+      .speed-controls {
+        flex-direction: row;
+        gap: var(--spacing-xs);
+      }
     }
   }
 }
@@ -392,17 +605,44 @@
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
 
+  // Enhanced responsive typography and layout
+  @include player-mobile {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  @include player-desktop-up {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
   h3 {
     color: var(--text-primary);
     margin: 0 0 var(--spacing-xs) 0;
     font-size: var(--font-size-md);
     line-height: 1.4;
+    @include text-clamp(2); // Clamp to 2 lines
+    
+    @include player-mobile {
+      font-size: var(--font-size-lg);
+      line-height: 1.3;
+    }
+    
+    @include player-desktop-up {
+      font-size: var(--font-size-lg);
+    }
   }
 
   .video-meta {
-    color: var(--text-muted);
+    color: var(--text-tertiary);
     font-size: var(--font-size-xs);
     margin: 0;
+    
+    @include player-mobile {
+      font-size: var(--font-size-sm);
+    }
+    
+    @include player-desktop-up {
+      font-size: var(--font-size-sm);
+    }
   }
 }
 
@@ -411,6 +651,15 @@
   padding: var(--spacing-md);
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
+  
+  // Enhanced responsive padding
+  @include player-mobile {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  @include player-desktop-up {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
 
   .progress-bar {
     position: relative;
@@ -420,6 +669,19 @@
     overflow: hidden;
     margin-bottom: var(--spacing-xs);
     cursor: pointer;
+    
+    // Enhanced touch targets for mobile
+    @include player-mobile {
+      height: 8px;
+      border-radius: 4px;
+      // Add padding for easier touch interaction
+      padding: var(--spacing-xs) 0;
+      margin: var(--spacing-xs) 0;
+    }
+    
+    @include player-tablet-up {
+      height: 6px;
+    }
 
     .progress-fill {
       height: 100%;
@@ -437,19 +699,45 @@
       background: var(--accent-color);
       border-radius: 50%;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      transition: left 0.1s ease;
+      transition: left 0.1s ease, transform 0.2s ease;
+      
+      // Enhanced touch targets
+      @include player-mobile {
+        width: 16px;
+        height: 16px;
+        border: 2px solid white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+      
+      @include player-tablet-up {
+        width: 12px;
+        height: 12px;
+      }
     }
 
     &:hover .progress-handle {
       transform: translate(-50%, -50%) scale(1.2);
+      
+      // Reduce scale effect on touch devices
+      @include player-mobile {
+        transform: translate(-50%, -50%) scale(1.1);
+      }
     }
   }
 
   .time-display {
-    color: var(--text-muted);
+    color: var(--text-tertiary);
     font-size: var(--font-size-xs);
     text-align: center;
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-family-mono);
+    
+    @include player-mobile {
+      font-size: var(--font-size-sm);
+    }
+    
+    @include player-desktop-up {
+      font-size: var(--font-size-sm);
+    }
   }
 }
 
@@ -462,9 +750,23 @@
   background: var(--bg-secondary);
   gap: var(--spacing-md);
 
-  @include mobile {
+  // Enhanced responsive layout
+  @include player-mobile {
     flex-direction: column;
     gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  @include player-tablet {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-sm);
+  }
+  
+  @include player-desktop-up {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    padding: var(--spacing-lg) var(--spacing-md);
   }
 }
 
@@ -476,30 +778,75 @@
   justify-content: center;
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
+  min-height: 200px;
   
-  @include mobile {
+  // Enhanced responsive sizing and styling
+  @include player-mobile {
     border-radius: var(--radius-sm);
+    min-height: 180px;
+  }
+  
+  @include player-tablet {
+    min-height: 270px;
+  }
+  
+  @include player-desktop-up {
+    min-height: 360px;
   }
 
   .empty-state {
     text-align: center;
-    color: var(--text-muted);
+    color: var(--text-tertiary);
+    padding: var(--spacing-lg);
+    
+    @include player-mobile {
+      padding: var(--spacing-md);
+    }
 
     .empty-icon {
       font-size: 4rem;
       margin-bottom: var(--spacing-md);
       opacity: 0.6;
+      
+      @include player-mobile {
+        font-size: 3rem;
+        margin-bottom: var(--spacing-sm);
+      }
+      
+      @include player-desktop-up {
+        font-size: 5rem;
+        margin-bottom: var(--spacing-lg);
+      }
     }
 
     h3 {
       color: var(--text-secondary);
       margin-bottom: var(--spacing-sm);
       font-size: var(--font-size-md);
+      
+      @include player-mobile {
+        font-size: var(--font-size-sm);
+      }
+      
+      @include player-desktop-up {
+        font-size: var(--font-size-lg);
+      }
     }
 
     p {
       font-size: var(--font-size-sm);
       max-width: 300px;
+      line-height: 1.5;
+      
+      @include player-mobile {
+        font-size: var(--font-size-xs);
+        max-width: 250px;
+      }
+      
+      @include player-desktop-up {
+        font-size: var(--font-size-md);
+        max-width: 400px;
+      }
     }
   }
 }
@@ -512,13 +859,31 @@
   margin-top: var(--spacing-md);
   padding: var(--spacing-md);
   background: var(--error-color-light);
-  color: var(--error-color-dark);
-  border-radius: var(--border-radius);
+  color: var(--error-color);
+  border-radius: var(--radius-md);
   border-left: 4px solid var(--error-color);
   font-size: var(--font-size-sm);
+  line-height: 1.4;
+
+  // Enhanced responsive styling
+  @include player-mobile {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  @include player-desktop-up {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
 
   .error-icon {
     font-size: var(--font-size-lg);
+    flex-shrink: 0;
+    
+    @include player-mobile {
+      font-size: var(--font-size-xl);
+    }
   }
 }
 
@@ -529,10 +894,126 @@
   }
 }
 
-// Responsive adjustments
-@include mobile {
+// Enhanced responsive adjustments with performance optimizations
+@include player-mobile {
   .video-player-container {
-    margin: var(--spacing-sm);
+    margin: var(--spacing-xs);
     padding: var(--spacing-sm);
+    
+    // Optimize animations for mobile performance
+    * {
+      will-change: auto;
+    }
+    
+    // Reduce transform effects on low-power devices
+    .load-button, .control-button, .retry-button {
+      &:hover {
+        transform: none;
+      }
+    }
+  }
+}
+
+@include player-tablet {
+  .video-player-container {
+    // Optimize for tablet touch interactions
+    .progress-bar {
+      padding: var(--spacing-xs) 0;
+    }
+    
+    .overlay-controls {
+      // Better spacing for tablet
+      gap: var(--spacing-md);
+    }
+  }
+}
+
+@include player-desktop-up {
+  .video-player-container {
+    // Enhanced desktop experience
+    &:hover {
+      box-shadow: var(--shadow-lg);
+    }
+    
+    // Smoother animations on desktop
+    * {
+      transition-duration: 0.2s;
+    }
+  }
+}
+
+@include player-large {
+  .video-player-container {
+    // Optimizations for large screens
+    .overlay-controls {
+      gap: var(--spacing-xl);
+    }
+    
+    .video-info h3 {
+      font-size: var(--font-size-xl);
+    }
+  }
+}
+
+// Accessibility improvements
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .player-overlay {
+    .overlay-gradient {
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.8) 0%,
+        rgba(0, 0, 0, 0.4) 30%,
+        rgba(0, 0, 0, 0.4) 70%,
+        rgba(0, 0, 0, 0.9) 100%
+      );
+    }
+  }
+  
+  .loading-overlay, .error-overlay {
+    background: rgba(0, 0, 0, 0.95);
+  }
+}
+
+// Focus management for keyboard navigation
+.video-player-container {
+  &:focus-within {
+    .player-overlay {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .video-player-container {
+    .player-section {
+      background: #f5f5f5;
+      border: 2px solid #ddd;
+      
+      &::after {
+        content: 'Video Player - YouTube content not printable';
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+        font-size: var(--font-size-lg);
+        color: #666;
+      }
+    }
+    
+    .youtube-iframe, .player-overlay {
+      display: none;
+    }
   }
 }

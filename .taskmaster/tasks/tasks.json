@@ -308,7 +308,7 @@
               "13.1"
             ],
             "details": "Modifier le VideoPlayerComponent pour écouter les événements de l'iframe YouTube (onReady, onStateChange, onError). Synchroniser avec les signals existants du VideoPlayerFacade (currentTime, duration, isPlaying, playbackRate, error). Implémenter un polling pour currentTime pendant la lecture. Gérer la communication entre iframe et parent via postMessage API. Utiliser les méthodes existantes du YouTubeService pour la cohérence.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": "Tests de synchronisation temps réel, validation des événements YouTube, tests de communication iframe-parent, vérification du polling currentTime"
           },
           {
@@ -549,7 +549,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-30T13:52:58.215Z",
+      "updated": "2025-08-30T14:07:53.399Z",
       "description": "Tasks for master context"
     }
   }

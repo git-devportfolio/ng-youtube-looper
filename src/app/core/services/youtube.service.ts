@@ -10,10 +10,12 @@ declare let window: YouTubeWindow;
 
 export interface VideoInfo {
   id: string;
+  videoId: string;
   title: string;
   duration: number;
   author: string;
   thumbnail: string;
+  url?: string;
 }
 
 export interface PlayerState {
@@ -194,6 +196,7 @@ export class YouTubeService {
       
       return {
         id: videoId,
+        videoId: videoId,
         title: videoData.title || 'Titre non disponible',
         duration: duration || 0,
         author: videoData.author || 'Auteur non disponible',
