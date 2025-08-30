@@ -15,7 +15,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
   readonly facade = inject(VideoPlayerFacade);
   
   @ViewChild('youtubePlayer', { static: false }) 
-  youtubePlayerRef?: ElementRef<HTMLDivElement>;
+  youtubePlayerRef?: ElementRef<HTMLIFrameElement>;
 
   // Form control for URL input
   readonly urlControl = new FormControl('', [Validators.required]);
@@ -67,6 +67,34 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /**
+   * Generates the YouTube embed URL with appropriate parameters for programmatic control
+   */
+  getYouTubeEmbedUrl(): string {
+    const currentVideo = this.facade.vm().currentVideo;
+    if (!currentVideo || !currentVideo.videoId) {
+      return '';
+    }
+
+    const baseUrl = 'https://www.youtube.com/embed';
+    const videoId = currentVideo.videoId;
+    
+    // YouTube embed parameters for programmatic control
+    const params = new URLSearchParams({
+      autoplay: '0',           // Don't autoplay
+      controls: '0',           // Hide default YouTube controls
+      enablejsapi: '1',        // Enable JavaScript API
+      origin: window.location.origin, // Set origin for security
+      rel: '0',                // Don't show related videos
+      modestbranding: '1',     // Modest YouTube branding
+      iv_load_policy: '3',     // Hide video annotations
+      fs: '1',                 // Allow fullscreen
+      playsinline: '1'         // Play inline on mobile
+    });
+
+    return `${baseUrl}/${videoId}?${params.toString()}`;
   }
 
 }

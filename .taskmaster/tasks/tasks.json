@@ -268,7 +268,62 @@
           12
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer la structure HTML responsive du VideoPlayerComponent avec iframe YouTube",
+            "description": "Implémenter le template HTML avec iframe YouTube responsive utilisant aspect-ratio 16:9, container responsive avec breakpoints mobile/tablet/desktop",
+            "dependencies": [],
+            "details": "Modifier le template video-player.component.html pour remplacer le div youtube-player par un iframe YouTube avec aspect-ratio 16:9. Utiliser les mixins SCSS existants (@include mobile, @include tablet, @include desktop) pour la responsivité. Structurer le container avec position relative pour l'overlay. Intégrer les paramètres YouTube appropriés (autoplay=0, controls=0, enablejsapi=1, origin, rel=0) pour le contrôle programmatique.",
+            "status": "done",
+            "testStrategy": "Tests de rendu responsive sur différents breakpoints, validation de l'aspect-ratio 16:9, vérification des paramètres iframe YouTube"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter l'overlay de contrôles avec gradient et transitions",
+            "description": "Créer l'overlay-controls avec gradient background, transitions opacity au hover/touch, positionnement absolu sur le player",
+            "dependencies": [
+              "13.1"
+            ],
+            "details": "Ajouter un div overlay-controls positionné en absolu sur l'iframe YouTube. Implémenter un gradient CSS de transparent à semi-transparent noir. Gérer les transitions d'opacity (opacity: 0 par défaut, opacity: 1 au hover sur desktop et au touch sur mobile). Utiliser les variables CSS existantes et les mixins de transition. Intégrer avec les contrôles existants PlayerControlsComponent et SpeedControlComponent.",
+            "status": "pending",
+            "testStrategy": "Tests d'interaction hover desktop et touch mobile, validation des transitions CSS, vérification du positionnement overlay"
+          },
+          {
+            "id": 3,
+            "title": "Intégrer le loading spinner centré et les états de chargement",
+            "description": "Implémenter un spinner de chargement centré sur le player avec gestion des états loading, error et ready",
+            "dependencies": [
+              "13.1"
+            ],
+            "details": "Créer un loading spinner centré utilisant l'animation CSS existante @keyframes spin. Gérer l'affichage conditionnel avec le control flow Angular moderne (@if). Synchroniser avec les signals loading du VideoPlayerFacade. Implémenter les états visuels pour loading (spinner), error (message d'erreur), et ready (masquer le spinner). Utiliser les variables CSS pour cohérence visuelle.",
+            "status": "pending",
+            "testStrategy": "Tests des différents états de chargement, validation du centrage du spinner, tests de synchronisation avec les signals du facade"
+          },
+          {
+            "id": 4,
+            "title": "Synchroniser les événements YouTube API avec les signals du VideoPlayerFacade",
+            "description": "Implémenter la synchronisation bidirectionnelle entre les événements YouTube Player API et les signals Angular du facade",
+            "dependencies": [
+              "13.1"
+            ],
+            "details": "Modifier le VideoPlayerComponent pour écouter les événements de l'iframe YouTube (onReady, onStateChange, onError). Synchroniser avec les signals existants du VideoPlayerFacade (currentTime, duration, isPlaying, playbackRate, error). Implémenter un polling pour currentTime pendant la lecture. Gérer la communication entre iframe et parent via postMessage API. Utiliser les méthodes existantes du YouTubeService pour la cohérence.",
+            "status": "pending",
+            "testStrategy": "Tests de synchronisation temps réel, validation des événements YouTube, tests de communication iframe-parent, vérification du polling currentTime"
+          },
+          {
+            "id": 5,
+            "title": "Optimiser les styles SCSS responsive avec breakpoints et intégration mobile/tablet/desktop",
+            "description": "Finaliser les styles SCSS responsive en utilisant les mixins existants, optimiser pour tous les devices et intégrer les nouvelles fonctionnalités overlay",
+            "dependencies": [
+              "13.2",
+              "13.3"
+            ],
+            "details": "Compléter video-player.component.scss avec les styles pour iframe responsive (aspect-ratio: 16/9), overlay-controls avec gradient et transitions, loading spinner positioning. Utiliser les mixins existants (@include mobile, @include tablet, @include desktop) pour la responsivité. Intégrer les variables CSS du thème pour cohérence. Optimiser les performances CSS et gérer les z-index appropriés. Adapter les tailles de contrôles selon les breakpoints (3rem desktop, 3.5rem mobile).",
+            "status": "pending",
+            "testStrategy": "Tests responsive sur tous devices, validation aspect-ratio, tests de performance CSS, vérification cohérence thématique"
+          }
+        ]
       },
       {
         "id": 14,
@@ -494,7 +549,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-30T13:18:42.197Z",
+      "updated": "2025-08-30T13:35:04.569Z",
       "description": "Tasks for master context"
     }
   }

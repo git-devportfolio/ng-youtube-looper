@@ -120,19 +120,41 @@
   background: #000;
 }
 
-.youtube-player {
+// Responsive YouTube iframe with 16:9 aspect ratio
+.player-wrapper {
+  position: relative;
   width: 100%;
-  height: 450px;
+  aspect-ratio: 16/9;
   background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: var(--font-size-lg);
-
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  
   @include mobile {
-    height: 280px;
+    border-radius: var(--radius-sm);
   }
+}
+
+.youtube-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: inherit;
+}
+
+// Overlay container for future controls
+.player-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  
+  // Will be enhanced in subtask 13.2
 }
 
 .video-info {
@@ -218,14 +240,15 @@
 
 // Empty State
 .empty-player {
-  height: 450px;
+  aspect-ratio: 16/9;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-secondary);
-
+  border-radius: var(--radius-md);
+  
   @include mobile {
-    height: 280px;
+    border-radius: var(--radius-sm);
   }
 
   .empty-state {

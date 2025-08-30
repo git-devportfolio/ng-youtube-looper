@@ -38,8 +38,25 @@
   <div class="player-section">
     @if (facade.vm().currentVideo) {
       <div class="video-container">
-        <!-- YouTube Player Container -->
-        <div #youtubePlayer id="youtube-player" class="youtube-player"></div>
+        <!-- YouTube Player Container with responsive iframe -->
+        <div class="player-wrapper">
+          <iframe
+            #youtubePlayer
+            id="youtube-player"
+            class="youtube-iframe"
+            [src]="getYouTubeEmbedUrl()"
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen>
+          </iframe>
+          
+          <!-- Overlay container for future controls -->
+          <div class="player-overlay">
+            <!-- Overlay content will be added in subtask 13.2 -->
+          </div>
+        </div>
         
         <!-- Video Info -->
         <div class="video-info">

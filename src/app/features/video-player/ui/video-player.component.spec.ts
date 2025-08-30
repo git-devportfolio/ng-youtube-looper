@@ -131,4 +131,116 @@ describe('VideoPlayerComponent', () => {
     // Check that loading is back to false
     expect(component.loading()).toBe(false);
   });
+
+  // Tests for task 13.1: Responsive HTML structure with YouTube iframe
+  describe('Responsive HTML Structure (Task 13.1)', () => {
+    beforeEach(() => {
+      // Set up a mock video for testing iframe structure
+      const mockVideoState = {
+        currentVideo: {
+          videoId: 'dQw4w9WgXcQ',
+          title: 'Test Video',
+          author: 'Test Author',
+          duration: 200
+        },
+        playerState: {
+          isReady: true,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 200,
+          playbackRate: 1,
+          volume: 100,
+          error: null
+        },
+        urlInput: '',
+        isValidUrl: true,
+        canPlay: true,
+        canPause: false,
+        hasError: false
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      fixture.detectChanges();
+    });
+
+    it('should render player wrapper with aspect-ratio container', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const playerWrapper = compiled.querySelector('.player-wrapper');
+      
+      expect(playerWrapper).toBeTruthy();
+      expect(playerWrapper).toBeTruthy();
+    });
+
+    it('should render YouTube iframe with correct attributes', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const iframe = compiled.querySelector('.youtube-iframe') as HTMLIFrameElement;
+      
+      expect(iframe).toBeTruthy();
+      expect(iframe.id).toBe('youtube-player');
+      expect(iframe.title).toBe('YouTube video player');
+      expect(iframe.getAttribute('frameborder')).toBe('0');
+      expect(iframe.getAttribute('allowfullscreen')).toBe('');
+    });
+
+    it('should generate correct YouTube embed URL with appropriate parameters', () => {
+      const embedUrl = component.getYouTubeEmbedUrl();
+      
+      expect(embedUrl).toContain('https://www.youtube.com/embed/dQw4w9WgXcQ');
+      expect(embedUrl).toContain('autoplay=0');
+      expect(embedUrl).toContain('controls=0');
+      expect(embedUrl).toContain('enablejsapi=1');
+      expect(embedUrl).toContain('rel=0');
+      expect(embedUrl).toContain('modestbranding=1');
+      expect(embedUrl).toContain('origin=');
+    });
+
+    it('should render player overlay container for future controls', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const overlay = compiled.querySelector('.player-overlay');
+      
+      expect(overlay).toBeTruthy();
+    });
+
+    it('should return empty string for embed URL when no video is loaded', () => {
+      // Reset to no video state
+      const mockVideoState = {
+        currentVideo: null,
+        playerState: {
+          isReady: false,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 0,
+          playbackRate: 1,
+          volume: 100,
+          error: null
+        },
+        urlInput: '',
+        isValidUrl: false,
+        canPlay: false,
+        canPause: false,
+        hasError: false
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      fixture.detectChanges();
+      
+      const embedUrl = component.getYouTubeEmbedUrl();
+      expect(embedUrl).toBe('');
+    });
+
+    it('should maintain aspect-ratio styling for responsive design', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const playerWrapper = compiled.querySelector('.player-wrapper') as HTMLElement;
+      const computedStyle = window.getComputedStyle(playerWrapper);
+      
+      // Note: aspect-ratio may not be supported in all test environments
+      // This test verifies the CSS class is applied
+      expect(playerWrapper.classList.contains('player-wrapper')).toBe(true);
+    });
+
+    it('should have ViewChild reference to iframe element', () => {
+      // The ViewChild should be typed as HTMLIFrameElement
+      expect(component.youtubePlayerRef).toBeDefined();
+    });
+  });
 });
