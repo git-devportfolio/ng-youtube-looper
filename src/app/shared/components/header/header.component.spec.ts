@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { ReactiveFormsModule } from '@angular/forms';
 import { HeaderComponent } from './header.component';
 import { ValidationService } from '../../../core/services/validation.service';
+import { ThemeService } from '../../../core/services/theme.service';
 
 describe('HeaderComponent', () => {
   let component: HeaderComponent;
@@ -10,7 +11,7 @@ describe('HeaderComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [HeaderComponent, ReactiveFormsModule],
-      providers: [ValidationService]
+      providers: [ValidationService, ThemeService]
     })
     .compileComponents();
 
@@ -68,18 +69,17 @@ describe('HeaderComponent', () => {
     expect(submitButton).toBeTruthy();
   });
 
-  it('should render actions section with placeholder button', () => {
+  it('should render actions section with theme toggle', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     
     const actionsSection = compiled.querySelector('.header-actions');
     expect(actionsSection).toBeTruthy();
     
-    const actionsPlaceholder = compiled.querySelector('.actions-placeholder');
-    expect(actionsPlaceholder).toBeTruthy();
+    const actionsContainer = compiled.querySelector('.actions-container');
+    expect(actionsContainer).toBeTruthy();
     
-    const actionButton = compiled.querySelector('.action-button-mock');
-    expect(actionButton).toBeTruthy();
-    expect(actionButton?.textContent?.trim()).toBe('⚙️');
+    const themeToggle = compiled.querySelector('app-theme-toggle');
+    expect(themeToggle).toBeTruthy();
   });
 
   it('should initialize with empty URL control', () => {
@@ -252,5 +252,23 @@ describe('HeaderComponent', () => {
     
     expect(destroySpy).toHaveBeenCalled();
     expect(completeSpy).toHaveBeenCalled();
+  });
+
+  it('should integrate theme toggle in actions section', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    
+    // Verify theme toggle is positioned in actions
+    const actionsSection = compiled.querySelector('.header-actions');
+    const themeToggle = actionsSection?.querySelector('app-theme-toggle');
+    expect(themeToggle).toBeTruthy();
+  });
+
+  it('should apply correct structural classes with theme integration', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    
+    // Verify updated class structure
+    expect(compiled.querySelector('.header-actions')).toBeTruthy();
+    expect(compiled.querySelector('.actions-container')).toBeTruthy();
+    expect(compiled.querySelector('app-theme-toggle')).toBeTruthy();
   });
 });

@@ -4,10 +4,11 @@ import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ValidationService } from '../../../core/services/validation.service';
+import { ThemeToggleComponent } from '../theme-toggle/theme-toggle.component';
 
 @Component({
   selector: 'app-header',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ThemeToggleComponent],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss']
 })

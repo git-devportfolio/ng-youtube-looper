@@ -239,7 +239,7 @@
               "12.3"
             ],
             "details": "Importer ThemeToggleComponent dans le header. Positionner dans la zone actions à droite. Injecter ThemeService avec inject() pour accéder au thème actuel. S'assurer que les styles du header s'adaptent aux changements de thème. Gérer l'espacement entre les éléments d'action.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": "Tests d'intégration avec ThemeService, validation du positionnement responsive du toggle, tests de changement de thème"
           },
           {
@@ -494,7 +494,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-30T11:55:30.856Z",
+      "updated": "2025-08-30T11:58:51.908Z",
       "description": "Tasks for master context"
     }
   }

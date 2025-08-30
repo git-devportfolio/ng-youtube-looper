@@ -263,28 +263,42 @@
   @include flex-center;
   gap: var(--spacing-sm);
 
-  .actions-placeholder {
+  .actions-container {
     @include flex-center;
     gap: var(--spacing-sm);
   }
 
-  .action-button-mock {
-    @include button-secondary;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    font-size: var(--font-size-lg);
-    @include hover-lift;
-
-    &:disabled {
-      background: var(--bg-disabled);
-      cursor: not-allowed;
-      opacity: 0.7;
-      transform: none;
+  // Theme toggle integration styles
+  ::ng-deep app-theme-toggle {
+    .theme-toggle-btn {
+      // Ensure consistent sizing with other header elements
+      width: 44px;
+      height: 44px;
+      
+      // Harmonize with header design
+      border: 2px solid var(--border-color);
+      background: var(--bg-secondary);
       
       &:hover {
-        background: var(--bg-disabled);
-        transform: none;
+        background: var(--bg-tertiary);
+        border-color: var(--accent-color);
+        transform: translateY(-2px);
+      }
+      
+      &:active {
+        background: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+      }
+
+      .theme-icon {
+        font-size: var(--font-size-lg);
+        @include transition(transform, 0.3s, ease);
+      }
+
+      // Enhanced rotation animation
+      &:active .theme-icon {
+        transform: rotate(180deg) scale(1.1);
       }
     }
   }
@@ -293,18 +307,24 @@
     order: 1;
     align-self: flex-end;
     
-    .action-button-mock {
+    ::ng-deep app-theme-toggle .theme-toggle-btn {
       width: 40px;
       height: 40px;
-      font-size: var(--font-size-md);
+      
+      .theme-icon {
+        font-size: var(--font-size-md);
+      }
     }
   }
 
   @include tablet-up {
-    .action-button-mock {
+    ::ng-deep app-theme-toggle .theme-toggle-btn {
       width: 48px;
       height: 48px;
-      font-size: var(--font-size-xl);
+      
+      .theme-icon {
+        font-size: var(--font-size-xl);
+      }
     }
   }
 }
