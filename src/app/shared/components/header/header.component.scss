@@ -14,15 +14,22 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--spacing-md);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  @include flex-between;
   gap: var(--spacing-lg);
+  min-height: 80px;
 
   @include mobile {
     flex-direction: column;
     gap: var(--spacing-md);
     padding: 0 var(--spacing-sm);
+    min-height: auto;
+    padding-top: var(--spacing-sm);
+    padding-bottom: var(--spacing-sm);
+  }
+
+  @include tablet-up {
+    min-height: 88px;
+    padding: 0 var(--spacing-lg);
   }
 }
 
@@ -31,14 +38,19 @@
   flex-shrink: 0;
 
   .logo-text {
-    display: flex;
-    align-items: center;
+    @include flex-center;
     gap: var(--spacing-sm);
     margin: 0;
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-bold);
     color: var(--text-primary);
     line-height: var(--line-height-tight);
+    @include transition(color, 0.3s, ease);
+    text-decoration: none;
+    
+    &:hover {
+      color: var(--accent-color);
+    }
   }
 
   .logo-icon {
@@ -52,6 +64,16 @@
       
       .logo-icon {
         font-size: var(--font-size-xl);
+      }
+    }
+  }
+
+  @include tablet-up {
+    .logo-text {
+      font-size: var(--font-size-2xl);
+      
+      .logo-icon {
+        font-size: var(--font-size-3xl);
       }
     }
   }
@@ -75,34 +97,35 @@
   }
 
   .url-input {
+    @include input-style;
     width: 100%;
-    padding: var(--spacing-sm) var(--spacing-md);
     padding-right: 60px; // Space for icons and clear button
-    border: 2px solid var(--border-color);
+    border-width: 2px;
     border-radius: var(--radius-lg);
-    background: var(--bg-secondary);
-    color: var(--text-primary);
     font-size: var(--font-size-sm);
-    transition: all 0.3s ease;
-    
-    &::placeholder {
-      color: var(--text-tertiary);
-    }
+    @include transition(all, 0.3s, ease);
     
     &:focus {
-      outline: none;
       border-color: var(--accent-color);
       box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
     }
     
     &.valid {
       border-color: var(--success-color);
-      background: var(--bg-secondary);
+      box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2);
+      
+      &:focus {
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+      }
     }
     
     &.invalid {
       border-color: var(--error-color);
-      background: var(--bg-secondary);
+      box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2);
+      
+      &:focus {
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+      }
     }
   }
 
@@ -138,44 +161,47 @@
     color: white;
     font-size: 12px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s ease;
+    @include flex-center;
+    @include transition(all, 0.2s, ease);
+    @include button-focus;
     
     &:hover {
       background: var(--text-secondary);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    &:active {
+      transform: translateY(-50%) scale(0.95);
     }
   }
 
   // Submit button
   .submit-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @include button-primary;
     min-width: 44px;
     height: 44px;
-    border: none;
     border-radius: var(--radius-lg);
-    background: var(--accent-color);
-    color: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
     flex-shrink: 0;
-
-    &:hover:not(:disabled) {
-      background: var(--accent-hover);
-      transform: translateY(-1px);
-    }
+    @include hover-lift;
 
     &:disabled {
       background: var(--bg-disabled);
       cursor: not-allowed;
       transform: none;
+      
+      &:hover {
+        background: var(--bg-disabled);
+        transform: none;
+      }
     }
 
     .submit-icon {
       font-size: var(--font-size-md);
+      @include transition(transform, 0.2s, ease);
+    }
+
+    &:hover:not(:disabled) .submit-icon {
+      transform: scale(1.1);
     }
   }
 
@@ -202,11 +228,31 @@
     .url-form {
       flex-direction: column;
       gap: var(--spacing-xs);
+      width: 100%;
+    }
+    
+    .input-container {
+      width: 100%;
     }
     
     .submit-button {
       align-self: flex-end;
       width: 80px;
+      height: 40px;
+    }
+  }
+
+  @include tablet-up {
+    max-width: 500px;
+    
+    .url-input {
+      font-size: var(--font-size-md);
+      height: 48px;
+    }
+    
+    .submit-button {
+      height: 48px;
+      min-width: 48px;
     }
   }
 }
@@ -214,57 +260,77 @@
 // Actions Section
 .header-actions {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
+  @include flex-center;
   gap: var(--spacing-sm);
 
   .actions-placeholder {
-    display: flex;
-    align-items: center;
+    @include flex-center;
     gap: var(--spacing-sm);
   }
 
   .action-button-mock {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
+    @include button-secondary;
+    width: 44px;
+    height: 44px;
+    padding: 0;
     font-size: var(--font-size-lg);
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:hover:not(:disabled) {
-      background: var(--bg-tertiary);
-      border-color: var(--border-hover);
-      transform: translateY(-1px);
-    }
+    @include hover-lift;
 
     &:disabled {
       background: var(--bg-disabled);
       cursor: not-allowed;
       opacity: 0.7;
       transform: none;
+      
+      &:hover {
+        background: var(--bg-disabled);
+        transform: none;
+      }
     }
   }
 
   @include mobile {
     order: 1;
     align-self: flex-end;
+    
+    .action-button-mock {
+      width: 40px;
+      height: 40px;
+      font-size: var(--font-size-md);
+    }
+  }
+
+  @include tablet-up {
+    .action-button-mock {
+      width: 48px;
+      height: 48px;
+      font-size: var(--font-size-xl);
+    }
   }
 }
 
-// Responsive adjustments
-@include tablet {
+// Additional responsive refinements
+@include large {
   .header-container {
-    padding: 0 var(--spacing-md);
+    max-width: 1440px;
+    padding: 0 var(--spacing-2xl);
+    min-height: 96px;
   }
   
   .header-input {
-    max-width: 350px;
+    max-width: 600px;
   }
+  
+  .header-logo .logo-text {
+    font-size: var(--font-size-3xl);
+    
+    .logo-icon {
+      font-size: 2.5rem;
+    }
+  }
+}
+
+// Accessibility
+.sr-only {
+  @include sr-only;
 }

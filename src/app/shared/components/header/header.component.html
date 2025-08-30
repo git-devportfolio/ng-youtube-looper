@@ -2,9 +2,9 @@
   <div class="header-container">
     <!-- Logo Section -->
     <div class="header-logo">
-      <h1 class="logo-text">
-        <span class="logo-icon">🎸</span>
-        YouTube Looper
+      <h1 class="logo-text" role="banner">
+        <span class="logo-icon" aria-hidden="true">🎸</span>
+        <span>YouTube Looper</span>
       </h1>
     </div>
 
@@ -19,6 +19,10 @@
             class="url-input"
             [class.valid]="showValidIcon"
             [class.invalid]="isUrlInvalid"
+            id="youtube-url-input"
+            aria-label="URL de la vidéo YouTube"
+            aria-describedby="url-help"
+            [attr.aria-invalid]="isUrlInvalid"
           >
           
           <!-- Valid icon -->
@@ -56,7 +60,7 @@
 
         <!-- Error message -->
         @if (isUrlInvalid) {
-          <div class="error-message">
+          <div class="error-message" role="alert" id="url-error">
             @if (urlControl.hasError('required')) {
               Veuillez saisir une URL YouTube
             } @else if (urlControl.hasError('invalidYouTubeUrl')) {
@@ -64,6 +68,11 @@
             }
           </div>
         }
+
+        <!-- Screen reader helper text -->
+        <div id="url-help" class="sr-only">
+          Collez l'URL d'une vidéo YouTube dans les formats : youtube.com/watch?v=..., youtu.be/..., ou youtube.com/embed/...
+        </div>
       </form>
     </div>
 
