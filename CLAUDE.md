@@ -78,6 +78,50 @@ Les conventions de développement Angular sont définies dans :
 - **Fonction inject()**: Préférer à l'injection par constructeur
 - **Reactive Forms**: Préférer aux Template-driven forms
 
+## Workflow Git et Task Master
+
+### Commits Atomiques par Sous-tâche
+**OBLIGATOIRE**: Chaque sous-tâche Task Master DOIT être committée séparément avec un commit atomique :
+
+1. **Une sous-tâche = Un commit** : Chaque sous-tâche Task Master terminée doit faire l'objet d'un commit dédié
+2. **Messages de commit descriptifs** : Utiliser le format `feat: implement task X.Y - description courte`
+3. **Ordre de commit** :
+   - Marquer la sous-tâche comme terminée avec `task-master set-status --id=X.Y --status=done`
+   - Ajouter les fichiers modifiés avec `git add`
+   - Créer le commit atomique avec un message détaillé
+   - Passer à la sous-tâche suivante
+
+4. **Format du message de commit** :
+```bash
+git commit -m "feat: implement task X.Y - description courte
+
+Description détaillée des changements:
+- Fonctionnalité 1 implémentée
+- Amélioration technique 2
+- Tests ajoutés pour validation
+
+Technical improvements:
+- Détails techniques spécifiques
+- Optimisations réalisées
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+5. **Avantages** :
+   - Historique Git clair et traceable
+   - Possibilité de revenir sur une sous-tâche spécifique
+   - Facilite les reviews de code
+   - Respect des bonnes pratiques Git
+   - Synchronisation avec le système Task Master
+
+### Bonnes Pratiques Task Master
+- Toujours utiliser `task-master set-status` pour marquer les tâches terminées
+- Faire des commits atomiques après chaque sous-tâche terminée
+- Ne jamais grouper plusieurs sous-tâches dans un même commit
+- Utiliser les messages de commit pour documenter les changements techniques
+
 ## Task Master AI Instructions
 **Utiliser Task Master AI pour découper le projet en tâches. Toutes les spécifications seront dans `.taskmaster/docs/`**
 @./.taskmaster/CLAUDE.md
