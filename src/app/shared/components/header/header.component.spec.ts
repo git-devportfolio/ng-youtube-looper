@@ -130,8 +130,12 @@ describe('HeaderComponent', () => {
     // Should not emit immediately due to debounce
     expect(component.urlChange.emit).not.toHaveBeenCalled();
     
-    // After debounce time
+    // After debounce time but before delay completion
     tick(300);
+    expect(component.urlChange.emit).not.toHaveBeenCalled();
+    
+    // After validation delay (total: 300ms debounce + 500ms delay)
+    tick(500);
     expect(component.urlChange.emit).toHaveBeenCalledWith({
       url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       isValid: true,
@@ -293,6 +297,9 @@ describe('HeaderComponent', () => {
     component.urlControl.setValue('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     tick(300);
     
+    expect(component.urlControl.disabled).toBe(true);
+    expect(component.isLoading()).toBe(true);
+    
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const urlInput = compiled.querySelector('.url-input') as HTMLInputElement;
@@ -302,6 +309,7 @@ describe('HeaderComponent', () => {
     
     tick(500);
     fixture.detectChanges();
+    expect(component.urlControl.disabled).toBe(false);
     expect(urlInput.disabled).toBe(false);
     expect(urlInput.classList.contains('loading')).toBe(false);
   }));

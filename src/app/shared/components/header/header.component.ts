@@ -43,6 +43,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
         if (trimmedUrl) {
           this.errorMessage.set(null);
           this.isLoading.set(true);
+          this.urlControl.disable();
           
           // Simulate validation delay to show loading state
           return of(trimmedUrl).pipe(
@@ -50,17 +51,20 @@ export class HeaderComponent implements OnInit, OnDestroy {
             catchError(() => {
               this.errorMessage.set('Erreur lors de la validation de l\'URL');
               this.isLoading.set(false);
+              this.urlControl.enable();
               return of(trimmedUrl);
             })
           );
         } else {
           this.isLoading.set(false);
           this.errorMessage.set(null);
+          this.urlControl.enable();
           return of(trimmedUrl);
         }
       })
     ).subscribe(url => {
       this.isLoading.set(false);
+      this.urlControl.enable();
       
       const trimmedUrl = url?.trim() || '';
       const videoId = this.validationService.validateYouTubeUrl(trimmedUrl);
@@ -106,6 +110,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   // Clear the input
   clearUrl(): void {
     this.urlControl.setValue('');
+    this.urlControl.enable();
     this.isLoading.set(false);
     this.errorMessage.set(null);
   }
