@@ -198,7 +198,63 @@
           11
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer la structure de base du HeaderComponent",
+            "description": "Générer et configurer le composant header standalone avec la structure HTML de base et les styles SCSS initiaux",
+            "dependencies": [],
+            "details": "Utiliser ng generate component header --standalone. Créer la structure HTML avec container flex, logo à gauche, zone input au centre, et zone actions à droite. Configurer les classes CSS de base pour le layout responsive. Importer CommonModule pour les directives de base.\n<info added on 2025-08-30T09:43:47.083Z>\nImplémentation terminée avec succès : structure HeaderComponent standalone générée avec imports CommonModule, layout responsive flex (logo-gauche, input-centre, actions-droite) utilisant les variables système de design, styles SCSS mobile-first avec breakpoints appropriés, et suite de tests complète (7 tests validés). Build et tests passent, composant prêt pour les sous-tâches suivantes (input URL, toggle thème).\n</info added on 2025-08-30T09:43:47.083Z>",
+            "status": "done",
+            "testStrategy": "Tests unitaires de génération du composant, validation du template HTML de base et des classes CSS appliquées"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter l'input URL YouTube avec validation",
+            "description": "Développer le champ de saisie URL avec validation en temps réel et debounce pour les URLs YouTube",
+            "dependencies": [
+              "12.1"
+            ],
+            "details": "Créer un FormControl pour l'input URL avec ReactiveFormsModule. Implémenter une fonction de validation personnalisée pour les URLs YouTube (formats youtube.com/watch, youtu.be). Ajouter un debounce de 300ms avec debounceTime et distinctUntilChanged. Gérer les états valid/invalid avec classes CSS conditionnelles.",
+            "status": "pending",
+            "testStrategy": "Tests unitaires de validation URL (valides/invalides), tests du debounce timing, validation des styles conditionnels selon l'état"
+          },
+          {
+            "id": 3,
+            "title": "Développer le layout responsive et les styles",
+            "description": "Implémenter le design responsive avec flex layout, breakpoints mobile et styles d'états focus/hover",
+            "dependencies": [
+              "12.1"
+            ],
+            "details": "Configurer le flex layout avec justify-content: space-between. Input centré avec max-width 400px et flex-grow. Breakpoints responsive : mobile (<768px) avec stack vertical, tablette/desktop horizontal. États focus avec box-shadow accent et transition smooth. Variables SCSS pour les couleurs et espacements.",
+            "status": "pending",
+            "testStrategy": "Tests responsive sur différentes tailles d'écran, validation des états focus/hover, tests d'accessibilité clavier"
+          },
+          {
+            "id": 4,
+            "title": "Intégrer le toggle de thème dans le header",
+            "description": "Ajouter le composant ThemeToggle dans la zone actions du header et gérer l'intégration avec le ThemeService",
+            "dependencies": [
+              "12.1",
+              "12.3"
+            ],
+            "details": "Importer ThemeToggleComponent dans le header. Positionner dans la zone actions à droite. Injecter ThemeService avec inject() pour accéder au thème actuel. S'assurer que les styles du header s'adaptent aux changements de thème. Gérer l'espacement entre les éléments d'action.",
+            "status": "pending",
+            "testStrategy": "Tests d'intégration avec ThemeService, validation du positionnement responsive du toggle, tests de changement de thème"
+          },
+          {
+            "id": 5,
+            "title": "Implémenter la gestion des états loading et error",
+            "description": "Développer l'affichage des états de chargement et d'erreur pour l'input URL avec indicateurs visuels",
+            "dependencies": [
+              "12.2",
+              "12.4"
+            ],
+            "details": "Créer des signals pour les états loading et error. Afficher un spinner dans l'input pendant le chargement. Gérer l'affichage des messages d'erreur sous l'input avec classes CSS d'erreur. Implémenter les animations de transition entre états. Désactiver l'input pendant le loading pour éviter les soumissions multiples.",
+            "status": "pending",
+            "testStrategy": "Tests des transitions d'états, validation de l'affichage des messages d'erreur, tests de désactivation de l'input pendant loading"
+          }
+        ]
       },
       {
         "id": 13,
@@ -438,7 +494,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-29T19:56:21.447Z",
+      "updated": "2025-08-30T09:43:59.788Z",
       "description": "Tasks for master context"
     }
   }
