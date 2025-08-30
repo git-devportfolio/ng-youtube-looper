@@ -401,4 +401,268 @@ describe('VideoPlayerComponent', () => {
       expect(window.clearTimeout).toHaveBeenCalled();
     });
   });
+
+  // Tests for task 13.3: Loading spinner and states management
+  describe('Loading Spinner and States (Task 13.3)', () => {
+    it('should show loading overlay when video is loading', () => {
+      component.loading.set(true);
+      fixture.detectChanges();
+      
+      const compiled = fixture.nativeElement as HTMLElement;
+      const loadingOverlay = compiled.querySelector('.loading-overlay');
+      const spinner = compiled.querySelector('.spinner-ring');
+      const loadingText = compiled.querySelector('.loading-text');
+      
+      expect(loadingOverlay).toBeTruthy();
+      expect(spinner).toBeTruthy();
+      expect(loadingText?.textContent).toContain('Chargement de la vidéo...');
+    });
+
+    it('should detect video loading state correctly', () => {
+      // Initially not loading
+      expect(component.isVideoLoading()).toBe(false);
+      
+      // Set component loading state
+      component.loading.set(true);
+      expect(component.isVideoLoading()).toBe(true);
+      
+      // Reset component loading
+      component.loading.set(false);
+      
+      // Mock video present but not ready (facade loading)
+      const mockVideoState = {
+        currentVideo: {
+          videoId: 'test123',
+          title: 'Test Video',
+          author: 'Test Author',
+          duration: 200
+        },
+        playerState: {
+          isReady: false, // Not ready = loading
+          isPlaying: false,
+          currentTime: 0,
+          duration: 200,
+          playbackRate: 1,
+          volume: 100,
+          error: null
+        },
+        urlInput: '',
+        isValidUrl: true,
+        canPlay: false,
+        canPause: false,
+        hasError: false
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      expect(component.isVideoLoading()).toBe(true);
+    });
+
+    it('should show error overlay when facade has error', () => {
+      const mockVideoState = {
+        currentVideo: {
+          videoId: 'test123',
+          title: 'Test Video',
+          author: 'Test Author',
+          duration: 200
+        },
+        playerState: {
+          isReady: false,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 200,
+          playbackRate: 1,
+          volume: 100,
+          error: 'Video not found'
+        },
+        urlInput: '',
+        isValidUrl: true,
+        canPlay: false,
+        canPause: false,
+        hasError: true
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      fixture.detectChanges();
+      
+      const compiled = fixture.nativeElement as HTMLElement;
+      const errorOverlay = compiled.querySelector('.error-overlay');
+      const errorText = compiled.querySelector('.error-text');
+      const retryButton = compiled.querySelector('.retry-button');
+      
+      expect(errorOverlay).toBeTruthy();
+      expect(errorText?.textContent).toBe('Video not found');
+      expect(retryButton).toBeTruthy();
+    });
+
+    it('should hide controls overlay when loading', () => {
+      // Set up video present and component in loading state
+      const mockVideoState = {
+        currentVideo: {
+          videoId: 'test123',
+          title: 'Test Video',
+          author: 'Test Author',
+          duration: 200
+        },
+        playerState: {
+          isReady: false,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 200,
+          playbackRate: 1,
+          volume: 100,
+          error: null
+        },
+        urlInput: '',
+        isValidUrl: true,
+        canPlay: false,
+        canPause: false,
+        hasError: false
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      component.loading.set(true);
+      fixture.detectChanges();
+      
+      const compiled = fixture.nativeElement as HTMLElement;
+      const controlsOverlay = compiled.querySelector('.player-overlay');
+      
+      // Controls overlay should not be present when loading
+      expect(controlsOverlay).toBeFalsy();
+    });
+
+    it('should hide controls overlay when error state', () => {
+      const mockVideoState = {
+        currentVideo: {
+          videoId: 'test123',
+          title: 'Test Video',
+          author: 'Test Author',
+          duration: 200
+        },
+        playerState: {
+          isReady: false,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 200,
+          playbackRate: 1,
+          volume: 100,
+          error: 'Video error'
+        },
+        urlInput: '',
+        isValidUrl: true,
+        canPlay: false,
+        canPause: false,
+        hasError: true
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      fixture.detectChanges();
+      
+      const compiled = fixture.nativeElement as HTMLElement;
+      const controlsOverlay = compiled.querySelector('.player-overlay');
+      
+      // Controls overlay should not be present when error
+      expect(controlsOverlay).toBeFalsy();
+    });
+
+    it('should call retryVideo when retry button is clicked', async () => {
+      const mockVideoState = {
+        currentVideo: {
+          videoId: 'test123',
+          title: 'Test Video',
+          author: 'Test Author',
+          duration: 200,
+          url: 'https://www.youtube.com/watch?v=test123'
+        },
+        playerState: {
+          isReady: false,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 200,
+          playbackRate: 1,
+          volume: 100,
+          error: 'Video error'
+        },
+        urlInput: '',
+        isValidUrl: true,
+        canPlay: false,
+        canPause: false,
+        hasError: true
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      fixture.detectChanges();
+      
+      const compiled = fixture.nativeElement as HTMLElement;
+      const retryButton = compiled.querySelector('.retry-button') as HTMLButtonElement;
+      
+      retryButton.click();
+      await fixture.whenStable();
+      
+      expect(mockFacade.loadVideo).toHaveBeenCalledWith('https://www.youtube.com/watch?v=test123');
+    });
+
+    it('should handle retry video with no current video gracefully', async () => {
+      const mockVideoState = {
+        currentVideo: null,
+        playerState: {
+          isReady: false,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 0,
+          playbackRate: 1,
+          volume: 100,
+          error: null
+        },
+        urlInput: '',
+        isValidUrl: false,
+        canPlay: false,
+        canPause: false,
+        hasError: false
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      
+      await component.retryVideo();
+      
+      expect(mockFacade.loadVideo).not.toHaveBeenCalled();
+    });
+
+    it('should manage loading state during retry', async () => {
+      const mockVideoState = {
+        currentVideo: {
+          videoId: 'test123',
+          title: 'Test Video',
+          author: 'Test Author',
+          duration: 200,
+          url: 'https://www.youtube.com/watch?v=test123'
+        },
+        playerState: {
+          isReady: false,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 200,
+          playbackRate: 1,
+          volume: 100,
+          error: 'Video error'
+        },
+        urlInput: '',
+        isValidUrl: true,
+        canPlay: false,
+        canPause: false,
+        hasError: true
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      
+      const retryPromise = component.retryVideo();
+      
+      // Should set loading to true during retry
+      expect(component.loading()).toBe(true);
+      
+      await retryPromise;
+      
+      // Should set loading to false after retry
+      expect(component.loading()).toBe(false);
+    });
+  });
 });

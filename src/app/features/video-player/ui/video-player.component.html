@@ -56,41 +56,68 @@
             allowfullscreen>
           </iframe>
           
-          <!-- Overlay container with gradient and controls -->
-          <div class="player-overlay" [class.show]="shouldShowOverlay()">
-            <div class="overlay-gradient">
-              <!-- Top overlay section for future features -->
-              <div class="overlay-top">
-                <!-- Future: Volume, settings, etc. -->
+          <!-- Loading State Overlay -->
+          @if (isVideoLoading()) {
+            <div class="loading-overlay">
+              <div class="loading-content">
+                <div class="loading-spinner-large">
+                  <div class="spinner-ring"></div>
+                </div>
+                <div class="loading-text">Chargement de la vidéo...</div>
               </div>
-              
-              <!-- Bottom overlay section with main controls -->
-              <div class="overlay-bottom">
-                <div class="overlay-controls">
-                  <app-player-controls 
-                    [canPlay]="facade.vm().canPlay"
-                    [canPause]="facade.vm().canPause"
-                    [isPlaying]="facade.vm().playerState.isPlaying"
-                    (play)="facade.play()"
-                    (pause)="facade.pause()"
-                    (stop)="facade.stop()"
-                    (seekBack)="facade.seekBy(-10)"
-                    (seekForward)="facade.seekBy(10)"
-                    class="overlay-player-controls">
-                  </app-player-controls>
+            </div>
+          }
 
-                  <app-speed-control
-                    [currentRate]="facade.vm().playerState.playbackRate"
-                    [disabled]="!facade.vm().playerState.isReady"
-                    (rateChange)="facade.setPlaybackRate($event)"
-                    (increaseSpeed)="facade.increaseSpeed()"
-                    (decreaseSpeed)="facade.decreaseSpeed()"
-                    class="overlay-speed-controls">
-                  </app-speed-control>
+          <!-- Error State Overlay -->
+          @if (facade.vm().hasError) {
+            <div class="error-overlay">
+              <div class="error-content">
+                <div class="error-icon">⚠️</div>
+                <div class="error-text">{{ facade.vm().playerState.error }}</div>
+                <button class="retry-button" (click)="retryVideo()">
+                  Réessayer
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Controls Overlay (visible on hover/touch when ready) -->
+          @if (!isVideoLoading() && !facade.vm().hasError) {
+            <div class="player-overlay" [class.show]="shouldShowOverlay()">
+              <div class="overlay-gradient">
+                <!-- Top overlay section for future features -->
+                <div class="overlay-top">
+                  <!-- Future: Volume, settings, etc. -->
+                </div>
+                
+                <!-- Bottom overlay section with main controls -->
+                <div class="overlay-bottom">
+                  <div class="overlay-controls">
+                    <app-player-controls 
+                      [canPlay]="facade.vm().canPlay"
+                      [canPause]="facade.vm().canPause"
+                      [isPlaying]="facade.vm().playerState.isPlaying"
+                      (play)="facade.play()"
+                      (pause)="facade.pause()"
+                      (stop)="facade.stop()"
+                      (seekBack)="facade.seekBy(-10)"
+                      (seekForward)="facade.seekBy(10)"
+                      class="overlay-player-controls">
+                    </app-player-controls>
+
+                    <app-speed-control
+                      [currentRate]="facade.vm().playerState.playbackRate"
+                      [disabled]="!facade.vm().playerState.isReady"
+                      (rateChange)="facade.setPlaybackRate($event)"
+                      (increaseSpeed)="facade.increaseSpeed()"
+                      (decreaseSpeed)="facade.decreaseSpeed()"
+                      class="overlay-speed-controls">
+                    </app-speed-control>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          }
         </div>
         
         <!-- Video Info -->

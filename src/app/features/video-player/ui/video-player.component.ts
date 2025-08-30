@@ -135,6 +135,34 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Determines if the video is currently loading
+   * Combines local loading state with facade loading states
+   */
+  isVideoLoading(): boolean {
+    const vm = this.facade.vm();
+    return this.loading() || (!vm.playerState.isReady && !!vm.currentVideo);
+  }
+
+  /**
+   * Retry loading the current video after an error
+   */
+  async retryVideo(): Promise<void> {
+    const currentVideo = this.facade.vm().currentVideo;
+    if (!currentVideo) {
+      return;
+    }
+
+    try {
+      this.loading.set(true);
+      await this.facade.loadVideo(currentVideo.url || '');
+    } catch (error) {
+      console.error('Erreur lors du rechargement de la vidéo:', error);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /**
    * Handles mouse enter on player wrapper (desktop hover)
    */
   onPlayerMouseEnter(): void {
