@@ -1,52 +1,118 @@
-<div class="player-controls">
-  <!-- Seek Backward -->
-  <button 
-    type="button"
-    class="control-button seek-button"
-    (click)="seekBack.emit()"
-    [disabled]="!canSeek"
-    title="Reculer de 10 secondes"
-  >
-    <span class="control-icon">⏪</span>
-    <span class="seek-label">-10s</span>
-  </button>
+<div class="player-controls" 
+     [class.compact]="compact"
+     [class.loading]="isLoading()"
+     [class.error]="hasError()">
 
-  <!-- Play/Pause Toggle -->
-  <button 
-    type="button"
-    class="control-button play-pause-button"
-    [class.circular]="circular"
-    (click)="togglePlayPause()"
-    [disabled]="!canPlay && !canPause"
-    [title]="isPlaying ? 'Mettre en pause' : 'Lire'"
-  >
-    @if (isPlaying) {
-      <span class="control-icon">⏸️</span>
-    } @else {
-      <span class="control-icon">▶️</span>
-    }
-  </button>
+  <!-- Time Display -->
+  @if (showTimeDisplay) {
+    <app-time-display
+      [currentTime]="currentTime()"
+      [duration]="duration()"
+      [isLoading]="isLoading()"
+      [hasError]="hasError()"
+      [showDuration]="duration() > 0"
+      [class.compact]="compact">
+    </app-time-display>
+  }
 
-  <!-- Stop -->
-  <button 
-    type="button"
-    class="control-button stop-button"
-    (click)="stop.emit()"
-    [disabled]="!canSeek"
-    title="Arrêter"
-  >
-    <span class="control-icon">⏹️</span>
-  </button>
+  <!-- Time Slider -->
+  @if (showSlider) {
+    <app-time-slider
+      [currentTime]="currentTime()"
+      [duration]="duration()"
+      [disabled]="controlsDisabled() || !canSeekValue"
+      [buffered]="buffered()"
+      (seekTo)="seekTo($event)"
+      (seekStart)="onSeekStart()"
+      (seekEnd)="onSeekEnd()"
+      [class.compact]="compact">
+    </app-time-slider>
+  }
 
-  <!-- Seek Forward -->
-  <button 
-    type="button"
-    class="control-button seek-button"
-    (click)="seekForward.emit()"
-    [disabled]="!canSeek"
-    title="Avancer de 10 secondes"
-  >
-    <span class="control-icon">⏩</span>
-    <span class="seek-label">+10s</span>
-  </button>
+  <!-- Main Controls -->
+  <div class="main-controls">
+    <!-- Seek Backward -->
+    <button 
+      type="button"
+      class="control-button seek-button"
+      (click)="seekBack()"
+      [disabled]="controlsDisabled() || !canSeekValue"
+      title="Reculer de 10 secondes"
+    >
+      <span class="control-icon">⏪</span>
+      <span class="seek-label">-10s</span>
+    </button>
+
+    <!-- Play/Pause Toggle -->
+    <button 
+      type="button"
+      class="control-button play-pause-button"
+      [class.circular]="circular"
+      [class.playing]="isPlayingValue"
+      (click)="togglePlayPause()"
+      [disabled]="controlsDisabled() || (!canPlayValue && !canPauseValue)"
+      [title]="isPlayingValue ? 'Mettre en pause' : 'Lire'"
+    >
+      @if (isLoading()) {
+        <span class="control-icon loading">⏳</span>
+      } @else if (hasError()) {
+        <span class="control-icon error">❌</span>
+      } @else if (isPlayingValue) {
+        <span class="control-icon">⏸️</span>
+      } @else {
+        <span class="control-icon">▶️</span>
+      }
+    </button>
+
+    <!-- Stop -->
+    <button 
+      type="button"
+      class="control-button stop-button"
+      (click)="stop()"
+      [disabled]="controlsDisabled() || !canSeekValue"
+      title="Arrêter"
+    >
+      <span class="control-icon">⏹️</span>
+    </button>
+
+    <!-- Seek Forward -->
+    <button 
+      type="button"
+      class="control-button seek-button"
+      (click)="seekForward()"
+      [disabled]="controlsDisabled() || !canSeekValue"
+      title="Avancer de 10 secondes"
+    >
+      <span class="control-icon">⏩</span>
+      <span class="seek-label">+10s</span>
+    </button>
+  </div>
+
+  <!-- Speed Controls -->
+  @if (showSpeedControls) {
+    <app-speed-control
+      [currentRate]="playbackRate()"
+      [disabled]="controlsDisabled()"
+      (rateChange)="setPlaybackRate($event)"
+      (increaseSpeed)="increaseSpeed()"
+      (decreaseSpeed)="decreaseSpeed()"
+      [class.compact]="compact">
+    </app-speed-control>
+  }
+
+  <!-- Error Message -->
+  @if (hasError()) {
+    <div class="error-message">
+      <span class="error-icon">⚠️</span>
+      <span class="error-text">Erreur de lecture vidéo</span>
+    </div>
+  }
+
+  <!-- Loading Indicator -->
+  @if (isLoading()) {
+    <div class="loading-indicator">
+      <span class="loading-icon">⏳</span>
+      <span class="loading-text">Chargement...</span>
+    </div>
+  }
 </div>

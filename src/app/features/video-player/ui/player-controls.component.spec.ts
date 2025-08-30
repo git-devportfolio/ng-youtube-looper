@@ -1,15 +1,66 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { PlayerControlsComponent } from './player-controls.component';
+import { VideoPlayerFacade } from '../data-access/video-player.facade';
 
 describe('PlayerControlsComponent', () => {
   let component: PlayerControlsComponent;
   let fixture: ComponentFixture<PlayerControlsComponent>;
+  let mockVideoPlayerFacade: jasmine.SpyObj<VideoPlayerFacade>;
+
+  // Mock player state
+  const mockPlayerState = signal<{
+    isReady: boolean;
+    isPlaying: boolean;
+    currentTime: number;
+    duration: number;
+    playbackRate: number;
+    volume: number;
+    error: string | null;
+  }>({
+    isReady: true,
+    isPlaying: false,
+    currentTime: 0,
+    duration: 300,
+    playbackRate: 1,
+    volume: 100,
+    error: null
+  });
+
+  const mockCurrentVideo = signal(null);
+  const mockCanPlay = signal(true);
+  const mockCanPause = signal(false);
+  const mockHasError = signal(false);
 
   beforeEach(async () => {
+    const spy = jasmine.createSpyObj('VideoPlayerFacade', [
+      'togglePlayPause',
+      'play',
+      'pause',
+      'stop',
+      'seekTo',
+      'seekBy',
+      'setPlaybackRate',
+      'increaseSpeed',
+      'decreaseSpeed',
+      'setVolume',
+      'mute'
+    ]);
+
+    spy.playerState = mockPlayerState.asReadonly();
+    spy.currentVideo = mockCurrentVideo.asReadonly();
+    spy.canPlay = mockCanPlay.asReadonly();
+    spy.canPause = mockCanPause.asReadonly();
+    spy.hasError = mockHasError.asReadonly();
+
     await TestBed.configureTestingModule({
-      imports: [PlayerControlsComponent]
+      imports: [PlayerControlsComponent],
+      providers: [
+        { provide: VideoPlayerFacade, useValue: spy }
+      ]
     }).compileComponents();
 
+    mockVideoPlayerFacade = TestBed.inject(VideoPlayerFacade) as jasmine.SpyObj<VideoPlayerFacade>;
     fixture = TestBed.createComponent(PlayerControlsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -19,221 +70,215 @@ describe('PlayerControlsComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should have default input values', () => {
-    expect(component.canPlay).toBe(false);
-    expect(component.canPause).toBe(false);
-    expect(component.isPlaying).toBe(false);
+  it('should have default configuration values', () => {
     expect(component.circular).toBe(false);
+    expect(component.compact).toBe(false);
+    expect(component.showTimeDisplay).toBe(true);
+    expect(component.showSpeedControls).toBe(true);
+    expect(component.showSlider).toBe(true);
   });
 
-  it('should calculate canSeek correctly', () => {
-    expect(component.canSeek).toBe(false);
-    
-    component.canPlay = true;
-    expect(component.canSeek).toBe(true);
-    
-    component.canPlay = false;
-    component.canPause = true;
-    expect(component.canSeek).toBe(true);
+  it('should compute derived states correctly', () => {
+    expect(component.isPlaying()).toBe(false);
+    expect(component.isLoading()).toBe(false);
+    expect(component.currentTime()).toBe(0);
+    expect(component.duration()).toBe(300);
+    expect(component.playbackRate()).toBe(1);
   });
 
-  it('should emit play when togglePlayPause is called and can play', () => {
-    spyOn(component.play, 'emit');
+  it('should compute control states correctly', () => {
+    // Debug the actual values
+    console.log('playerState isReady:', component.playerState().isReady);
+    console.log('hasError:', component.hasError());
+    console.log('controlsDisabled:', component.controlsDisabled());
+    console.log('canSeek:', component.canSeek());
+    console.log('duration:', component.duration());
     
-    component.canPlay = true;
-    component.isPlaying = false;
-    
+    // controlsDisabled = !isReady || hasError()
+    // hasError() should return false since mockHasError signal is set to false
+    expect(component.controlsDisabled()).toBe(false); 
+    expect(component.canSeek()).toBe(true); // isReady=true && duration=300 > 0
+    expect(component.progressPercentage()).toBe(0); // currentTime=0 / duration=300 * 100 = 0
+  });
+
+  it('should disable controls when not ready', () => {
+    mockPlayerState.set({
+      isReady: false,
+      isPlaying: false,
+      currentTime: 0,
+      duration: 0,
+      playbackRate: 1,
+      volume: 100,
+      error: null
+    });
+    fixture.detectChanges();
+
+    expect(component.controlsDisabled()).toBe(true);
+    expect(component.canSeek()).toBe(false);
+  });
+
+  it('should calculate progress percentage correctly', () => {
+    mockPlayerState.set({
+      isReady: true,
+      isPlaying: true,
+      currentTime: 150,
+      duration: 300,
+      playbackRate: 1,
+      volume: 100,
+      error: null
+    });
+    fixture.detectChanges();
+
+    expect(component.progressPercentage()).toBe(50);
+  });
+
+  it('should call togglePlayPause on facade when togglePlayPause is called', () => {
     component.togglePlayPause();
-    
-    expect(component.play.emit).toHaveBeenCalled();
+    expect(mockVideoPlayerFacade.togglePlayPause).toHaveBeenCalled();
   });
 
-  it('should emit pause when togglePlayPause is called and is playing', () => {
-    spyOn(component.pause, 'emit');
-    
-    component.canPause = true;
-    component.isPlaying = true;
-    
-    component.togglePlayPause();
-    
-    expect(component.pause.emit).toHaveBeenCalled();
+  it('should call play on facade when play is called', () => {
+    component.play();
+    expect(mockVideoPlayerFacade.play).toHaveBeenCalled();
   });
 
-  it('should not emit when togglePlayPause is called but cannot play or pause', () => {
-    spyOn(component.play, 'emit');
-    spyOn(component.pause, 'emit');
-    
-    component.canPlay = false;
-    component.canPause = false;
-    component.isPlaying = false;
-    
-    component.togglePlayPause();
-    
-    expect(component.play.emit).not.toHaveBeenCalled();
-    expect(component.pause.emit).not.toHaveBeenCalled();
+  it('should call pause on facade when pause is called', () => {
+    component.pause();
+    expect(mockVideoPlayerFacade.pause).toHaveBeenCalled();
   });
 
-  it('should display correct play/pause icon based on playing state', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    
-    // When not playing, should show play icon
-    component.isPlaying = false;
+  it('should call stop on facade when stop is called', () => {
+    component.stop();
+    expect(mockVideoPlayerFacade.stop).toHaveBeenCalled();
+  });
+
+  it('should call seekTo on facade when seekTo is called', () => {
+    component.seekTo(120);
+    expect(mockVideoPlayerFacade.seekTo).toHaveBeenCalledWith(120);
+  });
+
+  it('should call seekBy(-10) on facade when seekBack is called', () => {
+    component.seekBack();
+    expect(mockVideoPlayerFacade.seekBy).toHaveBeenCalledWith(-10);
+  });
+
+  it('should call seekBy(10) on facade when seekForward is called', () => {
+    component.seekForward();
+    expect(mockVideoPlayerFacade.seekBy).toHaveBeenCalledWith(10);
+  });
+
+  it('should call setPlaybackRate on facade when setPlaybackRate is called', () => {
+    component.setPlaybackRate(1.5);
+    expect(mockVideoPlayerFacade.setPlaybackRate).toHaveBeenCalledWith(1.5);
+  });
+
+  it('should call increaseSpeed on facade when increaseSpeed is called', () => {
+    component.increaseSpeed();
+    expect(mockVideoPlayerFacade.increaseSpeed).toHaveBeenCalled();
+  });
+
+  it('should call decreaseSpeed on facade when decreaseSpeed is called', () => {
+    component.decreaseSpeed();
+    expect(mockVideoPlayerFacade.decreaseSpeed).toHaveBeenCalled();
+  });
+
+  it('should call setVolume on facade when setVolume is called', () => {
+    component.setVolume(50);
+    expect(mockVideoPlayerFacade.setVolume).toHaveBeenCalledWith(50);
+  });
+
+  it('should call mute on facade when mute is called', () => {
+    component.mute();
+    expect(mockVideoPlayerFacade.mute).toHaveBeenCalled();
+  });
+
+  it('should handle error state correctly', () => {
+    mockHasError.set(true);
+    mockPlayerState.set({
+      isReady: true,
+      isPlaying: false,
+      currentTime: 0,
+      duration: 300,
+      playbackRate: 1,
+      volume: 100,
+      error: 'Network error'
+    });
     fixture.detectChanges();
-    
-    let playPauseButton = compiled.querySelector('.play-pause-button .control-icon');
-    expect(playPauseButton?.textContent).toBe('▶️');
-    
-    // When playing, should show pause icon
-    component.isPlaying = true;
-    fixture.detectChanges();
-    
-    playPauseButton = compiled.querySelector('.play-pause-button .control-icon');
-    expect(playPauseButton?.textContent).toBe('⏸️');
+
+    expect(component.hasError()).toBe(true);
+    expect(component.controlsDisabled()).toBe(true);
   });
 
-  it('should disable buttons when cannot perform actions', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    
-    component.canPlay = false;
-    component.canPause = false;
-    fixture.detectChanges();
-    
-    const playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
-    const seekButtons = compiled.querySelectorAll('.seek-button') as NodeListOf<HTMLButtonElement>;
-    const stopButton = compiled.querySelector('.stop-button') as HTMLButtonElement;
-    
-    expect(playPauseButton.disabled).toBe(true);
-    expect(stopButton.disabled).toBe(true);
-    
-    seekButtons.forEach(button => {
-      expect(button.disabled).toBe(true);
-    });
+  it('should provide utility getters for template', () => {
+    expect(component.canSeekValue).toBe(component.canSeek());
+    expect(component.isPlayingValue).toBe(component.isPlaying());
+    expect(component.canPlayValue).toBe(component.canPlay());
+    expect(component.canPauseValue).toBe(component.canPause());
   });
 
-  it('should enable buttons when can perform actions', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    
-    component.canPlay = true;
-    fixture.detectChanges();
-    
-    const playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
-    const seekButtons = compiled.querySelectorAll('.seek-button') as NodeListOf<HTMLButtonElement>;
-    const stopButton = compiled.querySelector('.stop-button') as HTMLButtonElement;
-    
-    expect(playPauseButton.disabled).toBe(false);
-    expect(stopButton.disabled).toBe(false);
-    
-    seekButtons.forEach(button => {
-      expect(button.disabled).toBe(false);
-    });
-  });
-
-  it('should emit events when buttons are clicked', () => {
-    spyOn(component.stop, 'emit');
-    spyOn(component.seekBack, 'emit');
-    spyOn(component.seekForward, 'emit');
-    
-    component.canPlay = true; // Enable buttons
-    fixture.detectChanges();
-    
-    const compiled = fixture.nativeElement as HTMLElement;
-    
-    const stopButton = compiled.querySelector('.stop-button') as HTMLButtonElement;
-    const seekBackButton = compiled.querySelectorAll('.seek-button')[0] as HTMLButtonElement;
-    const seekForwardButton = compiled.querySelectorAll('.seek-button')[1] as HTMLButtonElement;
-    
-    stopButton.click();
-    seekBackButton.click();
-    seekForwardButton.click();
-    
-    expect(component.stop.emit).toHaveBeenCalled();
-    expect(component.seekBack.emit).toHaveBeenCalled();
-    expect(component.seekForward.emit).toHaveBeenCalled();
-  });
-
-  // Tests for circular button functionality (Task 14.1)
-  describe('Circular Button Functionality', () => {
-    it('should apply circular class when circular input is true', () => {
-      const compiled = fixture.nativeElement as HTMLElement;
-      
-      component.circular = true;
+  describe('Template Integration', () => {
+    it('should render time display when showTimeDisplay is true', () => {
+      component.showTimeDisplay = true;
       fixture.detectChanges();
-      
-      const playPauseButton = compiled.querySelector('.play-pause-button');
-      expect(playPauseButton?.classList.contains('circular')).toBe(true);
+
+      const timeDisplay = fixture.nativeElement.querySelector('app-time-display');
+      expect(timeDisplay).toBeTruthy();
     });
 
-    it('should not apply circular class when circular input is false', () => {
-      const compiled = fixture.nativeElement as HTMLElement;
-      
-      component.circular = false;
+    it('should not render time display when showTimeDisplay is false', () => {
+      component.showTimeDisplay = false;
       fixture.detectChanges();
-      
-      const playPauseButton = compiled.querySelector('.play-pause-button');
-      expect(playPauseButton?.classList.contains('circular')).toBe(false);
+
+      const timeDisplay = fixture.nativeElement.querySelector('app-time-display');
+      expect(timeDisplay).toBeFalsy();
     });
 
-    it('should maintain proper button states when circular', () => {
-      const compiled = fixture.nativeElement as HTMLElement;
-      
-      component.circular = true;
-      component.canPlay = false;
-      component.canPause = false;
+    it('should render speed controls when showSpeedControls is true', () => {
+      component.showSpeedControls = true;
       fixture.detectChanges();
-      
-      const playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
-      expect(playPauseButton.disabled).toBe(true);
-      expect(playPauseButton.classList.contains('circular')).toBe(true);
+
+      const speedControls = fixture.nativeElement.querySelector('app-speed-control');
+      expect(speedControls).toBeTruthy();
     });
 
-    it('should emit events correctly when circular button is clicked', () => {
-      spyOn(component.play, 'emit');
-      
-      component.circular = true;
-      component.canPlay = true;
-      component.isPlaying = false;
+    it('should render slider when showSlider is true', () => {
+      component.showSlider = true;
       fixture.detectChanges();
-      
-      const compiled = fixture.nativeElement as HTMLElement;
-      const playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
-      
-      playPauseButton.click();
-      
-      expect(component.play.emit).toHaveBeenCalled();
+
+      const slider = fixture.nativeElement.querySelector('app-time-slider');
+      expect(slider).toBeTruthy();
     });
 
-    it('should have proper accessibility attributes when circular', () => {
-      component.circular = true;
-      component.canPlay = true;
-      component.isPlaying = false;
+    it('should apply loading class when loading', () => {
+      mockPlayerState.set({
+        isReady: false,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 0,
+        playbackRate: 1,
+        volume: 100,
+        error: null
+      });
       fixture.detectChanges();
-      
-      const compiled = fixture.nativeElement as HTMLElement;
-      const playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
-      
-      expect(playPauseButton.title).toBe('Lire');
-      expect(playPauseButton.type).toBe('button');
+
+      const controls = fixture.nativeElement.querySelector('.player-controls');
+      expect(controls.classList.contains('loading')).toBe(true);
     });
 
-    it('should update title attribute based on playing state when circular', () => {
-      component.circular = true;
-      component.canPlay = true;
-      component.canPause = true;
-      
-      // Test play state
-      component.isPlaying = false;
+    it('should apply error class when has error', () => {
+      mockHasError.set(true);
       fixture.detectChanges();
-      
-      const compiled = fixture.nativeElement as HTMLElement;
-      let playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
-      expect(playPauseButton.title).toBe('Lire');
-      
-      // Test pause state
-      component.isPlaying = true;
+
+      const controls = fixture.nativeElement.querySelector('.player-controls');
+      expect(controls.classList.contains('error')).toBe(true);
+    });
+
+    it('should apply compact class when compact is true', () => {
+      component.compact = true;
       fixture.detectChanges();
-      
-      playPauseButton = compiled.querySelector('.play-pause-button') as HTMLButtonElement;
-      expect(playPauseButton.title).toBe('Mettre en pause');
+
+      const controls = fixture.nativeElement.querySelector('.player-controls');
+      expect(controls.classList.contains('compact')).toBe(true);
     });
   });
 });

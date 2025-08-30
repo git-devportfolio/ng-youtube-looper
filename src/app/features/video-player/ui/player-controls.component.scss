@@ -2,11 +2,54 @@
 
 .player-controls {
   display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  
+  &.compact {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+    
+    .main-controls {
+      gap: var(--spacing-xs);
+    }
+  }
+
+  &.loading {
+    opacity: 0.8;
+    
+    .main-controls {
+      pointer-events: none;
+    }
+  }
+
+  &.error {
+    border-color: var(--error-color);
+    background: rgba(var(--error-rgb), 0.05);
+  }
+  
+  @include mobile {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+    border-radius: var(--border-radius-md);
+  }
+}
+
+.main-controls {
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--spacing-sm);
   
   @include mobile {
-    justify-content: center;
+    gap: var(--spacing-xs);
   }
 }
 
@@ -194,5 +237,123 @@
 
   .seek-button .seek-label {
     font-size: 10px;
+  }
+}
+
+// Error and Loading states
+.error-message,
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.error-message {
+  background: var(--error-color-light);
+  color: var(--error-color-dark);
+  border: 1px solid var(--error-color);
+
+  .error-icon {
+    font-size: 1.1rem;
+  }
+
+  .error-text {
+    color: var(--error-color-dark);
+  }
+}
+
+.loading-indicator {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+
+  .loading-icon {
+    font-size: 1.1rem;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-text {
+    color: var(--text-secondary);
+  }
+}
+
+// Enhanced play/pause states
+.play-pause-button {
+  &.playing {
+    .control-icon {
+      animation: pulse 2s ease-in-out infinite;
+    }
+  }
+
+  .control-icon {
+    &.loading {
+      animation: spin 1s linear infinite;
+    }
+
+    &.error {
+      color: var(--error-color);
+      animation: shake 0.5s ease-in-out;
+    }
+  }
+}
+
+// Animations
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+// Accessibility improvements
+@media (prefers-reduced-motion: reduce) {
+  .loading-icon,
+  .play-pause-button.playing .control-icon,
+  .control-icon.loading,
+  .control-icon.error {
+    animation: none;
+  }
+
+  .control-button {
+    transition: none;
+
+    &:hover:not(:disabled) {
+      transform: none;
+    }
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .player-controls {
+    border-width: 2px;
+    border-color: currentColor;
+  }
+
+  .control-button {
+    border-width: 2px;
+
+    &:disabled {
+      opacity: 0.3;
+    }
+  }
+
+  .error-message,
+  .loading-indicator {
+    border-width: 2px;
   }
 }
