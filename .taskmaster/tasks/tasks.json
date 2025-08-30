@@ -286,7 +286,7 @@
               "13.1"
             ],
             "details": "Ajouter un div overlay-controls positionné en absolu sur l'iframe YouTube. Implémenter un gradient CSS de transparent à semi-transparent noir. Gérer les transitions d'opacity (opacity: 0 par défaut, opacity: 1 au hover sur desktop et au touch sur mobile). Utiliser les variables CSS existantes et les mixins de transition. Intégrer avec les contrôles existants PlayerControlsComponent et SpeedControlComponent.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests d'interaction hover desktop et touch mobile, validation des transitions CSS, vérification du positionnement overlay"
           },
           {
@@ -549,7 +549,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-30T13:35:04.569Z",
+      "updated": "2025-08-30T13:48:50.279Z",
       "description": "Tasks for master context"
     }
   }

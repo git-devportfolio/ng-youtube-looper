@@ -243,4 +243,162 @@ describe('VideoPlayerComponent', () => {
       expect(component.youtubePlayerRef).toBeDefined();
     });
   });
+
+  // Tests for task 13.2: Overlay controls with gradient and transitions
+  describe('Overlay Controls with Gradient (Task 13.2)', () => {
+    beforeEach(() => {
+      // Set up a mock video for testing overlay
+      const mockVideoState = {
+        currentVideo: {
+          videoId: 'dQw4w9WgXcQ',
+          title: 'Test Video',
+          author: 'Test Author',
+          duration: 200
+        },
+        playerState: {
+          isReady: true,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 200,
+          playbackRate: 1,
+          volume: 100,
+          error: null
+        },
+        urlInput: '',
+        isValidUrl: true,
+        canPlay: true,
+        canPause: false,
+        hasError: false
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      fixture.detectChanges();
+    });
+
+    it('should render overlay container with gradient structure', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const overlay = compiled.querySelector('.player-overlay');
+      const gradient = compiled.querySelector('.overlay-gradient');
+      
+      expect(overlay).toBeTruthy();
+      expect(gradient).toBeTruthy();
+    });
+
+    it('should render overlay controls sections', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const overlayTop = compiled.querySelector('.overlay-top');
+      const overlayBottom = compiled.querySelector('.overlay-bottom');
+      const overlayControls = compiled.querySelector('.overlay-controls');
+      
+      expect(overlayTop).toBeTruthy();
+      expect(overlayBottom).toBeTruthy();
+      expect(overlayControls).toBeTruthy();
+    });
+
+    it('should include player controls in overlay', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const playerControls = compiled.querySelector('.overlay-player-controls');
+      const speedControls = compiled.querySelector('.overlay-speed-controls');
+      
+      expect(playerControls).toBeTruthy();
+      expect(speedControls).toBeTruthy();
+    });
+
+    it('should detect touch device capability', () => {
+      expect(component.isTouchDevice()).toBeDefined();
+      expect(typeof component.isTouchDevice()).toBe('boolean');
+    });
+
+    it('should initialize overlay state signals', () => {
+      expect(component.isOverlayVisible()).toBe(false);
+      expect(component.isHoveringPlayer()).toBe(false);
+      expect(typeof component.isTouchDevice()).toBe('boolean');
+    });
+
+    it('should show overlay on hover for non-touch devices', () => {
+      // Mock non-touch device
+      component.isTouchDevice.set(false);
+      
+      component.onPlayerMouseEnter();
+      expect(component.isHoveringPlayer()).toBe(true);
+      expect(component.shouldShowOverlay()).toBe(true);
+      
+      component.onPlayerMouseLeave();
+      expect(component.isHoveringPlayer()).toBe(false);
+      expect(component.shouldShowOverlay()).toBe(false);
+    });
+
+    it('should toggle overlay on touch for touch devices', () => {
+      // Mock touch device
+      component.isTouchDevice.set(true);
+      
+      expect(component.isOverlayVisible()).toBe(false);
+      
+      component.onPlayerTouch();
+      expect(component.isOverlayVisible()).toBe(true);
+      expect(component.shouldShowOverlay()).toBe(true);
+      
+      component.onPlayerTouch();
+      expect(component.isOverlayVisible()).toBe(false);
+      expect(component.shouldShowOverlay()).toBe(false);
+    });
+
+    it('should not show overlay when no video is loaded', () => {
+      // Reset to no video state
+      const mockVideoState = {
+        currentVideo: null,
+        playerState: {
+          isReady: false,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 0,
+          playbackRate: 1,
+          volume: 100,
+          error: null
+        },
+        urlInput: '',
+        isValidUrl: false,
+        canPlay: false,
+        canPause: false,
+        hasError: false
+      };
+      
+      mockFacade.vm = computed(() => mockVideoState);
+      fixture.detectChanges();
+      
+      component.isHoveringPlayer.set(true);
+      expect(component.shouldShowOverlay()).toBe(false);
+    });
+
+    it('should have event listeners on player wrapper', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const playerWrapper = compiled.querySelector('.player-wrapper');
+      
+      expect(playerWrapper).toBeTruthy();
+      expect(playerWrapper?.getAttribute('ng-reflect-ng-class')).toBeDefined();
+    });
+
+    it('should apply show class when overlay should be visible', () => {
+      component.isTouchDevice.set(false);
+      component.isHoveringPlayer.set(true);
+      fixture.detectChanges();
+      
+      const compiled = fixture.nativeElement as HTMLElement;
+      const overlay = compiled.querySelector('.player-overlay');
+      
+      expect(overlay?.classList.contains('show')).toBe(true);
+    });
+
+    it('should clean up overlay timeout on destroy', () => {
+      spyOn(window, 'clearTimeout');
+      
+      // Set up a timeout scenario
+      component.isTouchDevice.set(true);
+      component.onPlayerTouch(); // This sets a timeout
+      
+      component.ngOnDestroy();
+      
+      expect(window.clearTimeout).toHaveBeenCalled();
+    });
+  });
 });

@@ -23,14 +23,23 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
   // Loading state
   readonly loading = signal(false);
 
+  // Overlay interaction states
+  readonly isOverlayVisible = signal(false);
+  readonly isHoveringPlayer = signal(false);
+  readonly isTouchDevice = signal(false);
+
   // Subscription cleanup
   private playerInitialized = false;
+  private overlayHideTimeout: number | null = null;
 
   ngOnInit() {
     // Sync URL input with facade
     this.urlControl.valueChanges.subscribe(value => {
       this.facade.setUrlInput(value || '');
     });
+
+    // Detect touch device capability
+    this.detectTouchDevice();
 
     // Auto-initialize player when video changes
     // Note: For signals, we would use effect() instead of subscribe()
@@ -39,6 +48,9 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.facade.reset();
+    if (this.overlayHideTimeout) {
+      clearTimeout(this.overlayHideTimeout);
+    }
   }
 
   async loadVideo() {
@@ -95,6 +107,69 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     });
 
     return `${baseUrl}/${videoId}?${params.toString()}`;
+  }
+
+  /**
+   * Detects if the current device supports touch interactions
+   */
+  private detectTouchDevice(): void {
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    this.isTouchDevice.set(hasTouch);
+  }
+
+  /**
+   * Determines if the overlay should be visible
+   * Desktop: Show on hover, Touch: Show on tap and auto-hide
+   */
+  shouldShowOverlay(): boolean {
+    const currentVideo = this.facade.vm().currentVideo;
+    if (!currentVideo) {
+      return false;
+    }
+
+    if (this.isTouchDevice()) {
+      return this.isOverlayVisible();
+    } else {
+      return this.isHoveringPlayer();
+    }
+  }
+
+  /**
+   * Handles mouse enter on player wrapper (desktop hover)
+   */
+  onPlayerMouseEnter(): void {
+    if (!this.isTouchDevice()) {
+      this.isHoveringPlayer.set(true);
+    }
+  }
+
+  /**
+   * Handles mouse leave on player wrapper (desktop hover)
+   */
+  onPlayerMouseLeave(): void {
+    if (!this.isTouchDevice()) {
+      this.isHoveringPlayer.set(false);
+    }
+  }
+
+  /**
+   * Handles touch/click on player wrapper (mobile/tablet touch)
+   */
+  onPlayerTouch(): void {
+    if (this.isTouchDevice()) {
+      const isVisible = this.isOverlayVisible();
+      this.isOverlayVisible.set(!isVisible);
+
+      // Auto-hide overlay after 3 seconds on touch devices
+      if (!isVisible) {
+        if (this.overlayHideTimeout) {
+          clearTimeout(this.overlayHideTimeout);
+        }
+        this.overlayHideTimeout = window.setTimeout(() => {
+          this.isOverlayVisible.set(false);
+        }, 3000);
+      }
+    }
   }
 
 }

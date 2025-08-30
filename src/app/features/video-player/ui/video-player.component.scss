@@ -144,7 +144,7 @@
   border-radius: inherit;
 }
 
-// Overlay container for future controls
+// Overlay container with gradient and controls
 .player-overlay {
   position: absolute;
   top: 0;
@@ -153,8 +153,114 @@
   height: 100%;
   pointer-events: none;
   z-index: 10;
+  opacity: 0;
+  @include transition(opacity, 0.3s, ease);
   
-  // Will be enhanced in subtask 13.2
+  &.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  .overlay-gradient {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.3) 0%,
+      transparent 30%,
+      transparent 70%,
+      rgba(0, 0, 0, 0.7) 100%
+    );
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+  }
+  
+  .overlay-top {
+    padding: var(--spacing-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    min-height: 60px;
+    
+    @include mobile {
+      padding: var(--spacing-sm);
+      min-height: 50px;
+    }
+  }
+  
+  .overlay-bottom {
+    padding: var(--spacing-md);
+    
+    @include mobile {
+      padding: var(--spacing-sm);
+    }
+  }
+  
+  .overlay-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-md);
+    
+    @include mobile {
+      flex-direction: column;
+      gap: var(--spacing-sm);
+      align-items: center;
+    }
+    
+    @include tablet {
+      gap: var(--spacing-sm);
+    }
+  }
+  
+  // Enhanced controls styling for overlay context
+  ::ng-deep .overlay-player-controls {
+    .control-button {
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      
+      &:hover:not(:disabled) {
+        background: white;
+        border-color: var(--accent-color);
+        transform: translateY(-2px) scale(1.05);
+      }
+      
+      &:active {
+        transform: translateY(0) scale(0.95);
+      }
+      
+      // Enhanced visibility for overlay
+      .control-icon {
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+      }
+    }
+  }
+  
+  ::ng-deep .overlay-speed-controls {
+    .speed-display, .speed-button {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(8px);
+      color: var(--text-primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      
+      &:hover:not(:disabled) {
+        background: white;
+        border-color: var(--accent-color);
+        transform: translateY(-1px);
+      }
+    }
+    
+    .speed-display {
+      font-weight: var(--font-weight-bold);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+  }
 }
 
 .video-info {

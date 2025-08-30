@@ -39,7 +39,11 @@
     @if (facade.vm().currentVideo) {
       <div class="video-container">
         <!-- YouTube Player Container with responsive iframe -->
-        <div class="player-wrapper">
+        <div class="player-wrapper" 
+             (mouseenter)="onPlayerMouseEnter()"
+             (mouseleave)="onPlayerMouseLeave()"
+             (click)="onPlayerTouch()"
+             (touchstart)="onPlayerTouch()">
           <iframe
             #youtubePlayer
             id="youtube-player"
@@ -52,9 +56,40 @@
             allowfullscreen>
           </iframe>
           
-          <!-- Overlay container for future controls -->
-          <div class="player-overlay">
-            <!-- Overlay content will be added in subtask 13.2 -->
+          <!-- Overlay container with gradient and controls -->
+          <div class="player-overlay" [class.show]="shouldShowOverlay()">
+            <div class="overlay-gradient">
+              <!-- Top overlay section for future features -->
+              <div class="overlay-top">
+                <!-- Future: Volume, settings, etc. -->
+              </div>
+              
+              <!-- Bottom overlay section with main controls -->
+              <div class="overlay-bottom">
+                <div class="overlay-controls">
+                  <app-player-controls 
+                    [canPlay]="facade.vm().canPlay"
+                    [canPause]="facade.vm().canPause"
+                    [isPlaying]="facade.vm().playerState.isPlaying"
+                    (play)="facade.play()"
+                    (pause)="facade.pause()"
+                    (stop)="facade.stop()"
+                    (seekBack)="facade.seekBy(-10)"
+                    (seekForward)="facade.seekBy(10)"
+                    class="overlay-player-controls">
+                  </app-player-controls>
+
+                  <app-speed-control
+                    [currentRate]="facade.vm().playerState.playbackRate"
+                    [disabled]="!facade.vm().playerState.isReady"
+                    (rateChange)="facade.setPlaybackRate($event)"
+                    (increaseSpeed)="facade.increaseSpeed()"
+                    (decreaseSpeed)="facade.decreaseSpeed()"
+                    class="overlay-speed-controls">
+                  </app-speed-control>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -86,27 +121,7 @@
         </div>
       </div>
 
-      <!-- Controls Section -->
-      <div class="controls-section">
-        <app-player-controls 
-          [canPlay]="facade.vm().canPlay"
-          [canPause]="facade.vm().canPause"
-          [isPlaying]="facade.vm().playerState.isPlaying"
-          (play)="facade.play()"
-          (pause)="facade.pause()"
-          (stop)="facade.stop()"
-          (seekBack)="facade.seekBy(-10)"
-          (seekForward)="facade.seekBy(10)"
-        ></app-player-controls>
-
-        <app-speed-control
-          [currentRate]="facade.vm().playerState.playbackRate"
-          [disabled]="!facade.vm().playerState.isReady"
-          (rateChange)="facade.setPlaybackRate($event)"
-          (increaseSpeed)="facade.increaseSpeed()"
-          (decreaseSpeed)="facade.decreaseSpeed()"
-        ></app-speed-control>
-      </div>
+      <!-- Controls are now integrated in the overlay above -->
 
     } @else {
       <div class="empty-player">
