@@ -1,8 +1,8 @@
-import { Component, inject, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, Output, EventEmitter, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, Subject, delay, of } from 'rxjs';
+import { takeUntil, switchMap, catchError } from 'rxjs/operators';
 import { ValidationService } from '../../../core/services/validation.service';
 import { ThemeToggleComponent } from '../theme-toggle/theme-toggle.component';
 
@@ -22,6 +22,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.youTubeUrlValidator.bind(this)
   ]);
 
+  // State signals
+  readonly isLoading = signal(false);
+  readonly errorMessage = signal<string | null>(null);
+
   // Output events
   @Output() urlSubmit = new EventEmitter<string>();
   @Output() urlChange = new EventEmitter<{url: string, isValid: boolean, videoId: string | null}>();
@@ -31,11 +35,43 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.urlControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
-      takeUntil(this.destroy$)
+      takeUntil(this.destroy$),
+      switchMap(url => {
+        const trimmedUrl = url?.trim() || '';
+        
+        // Clear previous error and set loading if URL is not empty
+        if (trimmedUrl) {
+          this.errorMessage.set(null);
+          this.isLoading.set(true);
+          
+          // Simulate validation delay to show loading state
+          return of(trimmedUrl).pipe(
+            delay(500), // Simulate network delay
+            catchError(() => {
+              this.errorMessage.set('Erreur lors de la validation de l\'URL');
+              this.isLoading.set(false);
+              return of(trimmedUrl);
+            })
+          );
+        } else {
+          this.isLoading.set(false);
+          this.errorMessage.set(null);
+          return of(trimmedUrl);
+        }
+      })
     ).subscribe(url => {
+      this.isLoading.set(false);
+      
       const trimmedUrl = url?.trim() || '';
       const videoId = this.validationService.validateYouTubeUrl(trimmedUrl);
       const isValid = !!videoId;
+      
+      // Set error message if URL is invalid and not empty
+      if (trimmedUrl && !isValid) {
+        this.errorMessage.set('URL YouTube invalide. Veuillez vérifier le format.');
+      } else {
+        this.errorMessage.set(null);
+      }
       
       this.urlChange.emit({
         url: trimmedUrl,
@@ -62,7 +98,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   // Handle URL submission
   onUrlSubmit(): void {
-    if (this.urlControl.valid && this.urlControl.value?.trim()) {
+    if (this.urlControl.valid && this.urlControl.value?.trim() && !this.isLoading()) {
       this.urlSubmit.emit(this.urlControl.value.trim());
     }
   }
@@ -70,6 +106,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   // Clear the input
   clearUrl(): void {
     this.urlControl.setValue('');
+    this.isLoading.set(false);
+    this.errorMessage.set(null);
   }
 
   // Getters for template

@@ -127,6 +127,23 @@
         box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
       }
     }
+    
+    &.loading {
+      border-color: var(--accent-color);
+      background: var(--bg-secondary);
+      cursor: progress;
+      opacity: 0.8;
+      
+      &:focus {
+        box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+      }
+    }
+    
+    &:disabled {
+      background: var(--bg-disabled);
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
   }
 
   // Input icons
@@ -144,6 +161,19 @@
     
     &.invalid-icon {
       color: var(--error-color);
+    }
+    
+    &.loading-spinner {
+      right: 35px;
+      
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--border-color);
+        border-top: 2px solid var(--accent-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
     }
   }
 
@@ -203,6 +233,24 @@
     &:hover:not(:disabled) .submit-icon {
       transform: scale(1.1);
     }
+    
+    &.loading {
+      background: var(--accent-color);
+      cursor: progress;
+    }
+    
+    .submit-spinner {
+      @include flex-center;
+      
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+    }
   }
 
   // Error message
@@ -219,6 +267,8 @@
     font-size: var(--font-size-xs);
     border-left: 3px solid var(--error-color);
     z-index: 10;
+    @include transition(all, 0.3s, ease);
+    animation: slideDown 0.3s ease-out;
   }
 
   @include mobile {
@@ -353,4 +403,21 @@
 // Accessibility
 .sr-only {
   @include sr-only;
+}
+
+// Animations
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes slideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

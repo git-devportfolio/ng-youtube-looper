@@ -18,25 +18,30 @@
             placeholder="Collez l'URL de la vidéo YouTube ici..."
             class="url-input"
             [class.valid]="showValidIcon"
-            [class.invalid]="isUrlInvalid"
+            [class.invalid]="isUrlInvalid || errorMessage()"
+            [class.loading]="isLoading()"
+            [disabled]="isLoading()"
             id="youtube-url-input"
             aria-label="URL de la vidéo YouTube"
-            aria-describedby="url-help"
-            [attr.aria-invalid]="isUrlInvalid"
+            aria-describedby="url-help url-error"
+            [attr.aria-invalid]="isUrlInvalid || !!errorMessage()"
           >
           
-          <!-- Valid icon -->
-          @if (showValidIcon) {
+          <!-- Loading spinner -->
+          @if (isLoading()) {
+            <div class="input-icon loading-spinner" title="Validation en cours...">
+              <div class="spinner"></div>
+            </div>
+          } @else if (showValidIcon && !errorMessage()) {
+            <!-- Valid icon -->
             <span class="input-icon valid-icon" title="URL valide">✓</span>
-          }
-          
-          <!-- Invalid icon -->
-          @if (isUrlInvalid) {
+          } @else if ((isUrlInvalid || errorMessage()) && urlControl.value) {
+            <!-- Invalid icon -->
             <span class="input-icon invalid-icon" title="URL invalide">⚠️</span>
           }
           
           <!-- Clear button -->
-          @if (urlControl.value) {
+          @if (urlControl.value && !isLoading()) {
             <button 
               type="button"
               (click)="clearUrl()"
@@ -51,17 +56,26 @@
         <!-- Submit button -->
         <button 
           type="submit"
-          [disabled]="!isUrlValid"
+          [disabled]="!isUrlValid || isLoading()"
           class="submit-button"
+          [class.loading]="isLoading()"
           title="Charger la vidéo"
         >
-          <span class="submit-icon">▶</span>
+          @if (isLoading()) {
+            <div class="submit-spinner">
+              <div class="spinner"></div>
+            </div>
+          } @else {
+            <span class="submit-icon">▶</span>
+          }
         </button>
 
         <!-- Error message -->
-        @if (isUrlInvalid) {
+        @if (errorMessage() || isUrlInvalid) {
           <div class="error-message" role="alert" id="url-error">
-            @if (urlControl.hasError('required')) {
+            @if (errorMessage()) {
+              {{ errorMessage() }}
+            } @else if (urlControl.hasError('required')) {
               Veuillez saisir une URL YouTube
             } @else if (urlControl.hasError('invalidYouTubeUrl')) {
               URL YouTube invalide. Formats acceptés : youtube.com/watch?v=... ou youtu.be/...

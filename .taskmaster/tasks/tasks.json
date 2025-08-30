@@ -197,7 +197,7 @@
         "dependencies": [
           11
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -239,7 +239,7 @@
               "12.3"
             ],
             "details": "Importer ThemeToggleComponent dans le header. Positionner dans la zone actions à droite. Injecter ThemeService avec inject() pour accéder au thème actuel. S'assurer que les styles du header s'adaptent aux changements de thème. Gérer l'espacement entre les éléments d'action.",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": "Tests d'intégration avec ThemeService, validation du positionnement responsive du toggle, tests de changement de thème"
           },
           {
@@ -251,7 +251,7 @@
               "12.4"
             ],
             "details": "Créer des signals pour les états loading et error. Afficher un spinner dans l'input pendant le chargement. Gérer l'affichage des messages d'erreur sous l'input avec classes CSS d'erreur. Implémenter les animations de transition entre états. Désactiver l'input pendant le loading pour éviter les soumissions multiples.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests des transitions d'états, validation de l'affichage des messages d'erreur, tests de désactivation de l'input pendant loading"
           }
         ]
@@ -494,7 +494,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-30T11:58:51.908Z",
+      "updated": "2025-08-30T13:18:42.197Z",
       "description": "Tasks for master context"
     }
   }

@@ -271,4 +271,163 @@ describe('HeaderComponent', () => {
     expect(compiled.querySelector('.actions-container')).toBeTruthy();
     expect(compiled.querySelector('app-theme-toggle')).toBeTruthy();
   });
+
+  // Loading state tests
+  it('should initialize with loading state false', () => {
+    expect(component.isLoading()).toBe(false);
+  });
+
+  it('should show loading state during URL validation', fakeAsync(() => {
+    component.urlControl.setValue('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    
+    // After debounce but before delay completion
+    tick(300);
+    expect(component.isLoading()).toBe(true);
+    
+    // After validation delay
+    tick(500);
+    expect(component.isLoading()).toBe(false);
+  }));
+
+  it('should disable input during loading state', fakeAsync(() => {
+    component.urlControl.setValue('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    tick(300);
+    
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const urlInput = compiled.querySelector('.url-input') as HTMLInputElement;
+    
+    expect(urlInput.disabled).toBe(true);
+    expect(urlInput.classList.contains('loading')).toBe(true);
+    
+    tick(500);
+    fixture.detectChanges();
+    expect(urlInput.disabled).toBe(false);
+    expect(urlInput.classList.contains('loading')).toBe(false);
+  }));
+
+  it('should show loading spinner during validation', fakeAsync(() => {
+    component.urlControl.setValue('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    tick(300);
+    fixture.detectChanges();
+    
+    const compiled = fixture.nativeElement as HTMLElement;
+    const loadingSpinner = compiled.querySelector('.loading-spinner');
+    const spinner = compiled.querySelector('.spinner');
+    
+    expect(loadingSpinner).toBeTruthy();
+    expect(spinner).toBeTruthy();
+    
+    tick(500);
+    fixture.detectChanges();
+    expect(compiled.querySelector('.loading-spinner')).toBeFalsy();
+  }));
+
+  it('should disable submit button during loading', fakeAsync(() => {
+    component.urlControl.setValue('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    tick(300);
+    fixture.detectChanges();
+    
+    const compiled = fixture.nativeElement as HTMLElement;
+    const submitButton = compiled.querySelector('.submit-button') as HTMLButtonElement;
+    
+    expect(submitButton.disabled).toBe(true);
+    expect(submitButton.classList.contains('loading')).toBe(true);
+    
+    tick(500);
+    fixture.detectChanges();
+    expect(submitButton.disabled).toBe(false);
+    expect(submitButton.classList.contains('loading')).toBe(false);
+  }));
+
+  it('should not submit during loading state', fakeAsync(() => {
+    spyOn(component.urlSubmit, 'emit');
+    
+    component.urlControl.setValue('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    tick(300); // Trigger loading state
+    
+    component.onUrlSubmit();
+    expect(component.urlSubmit.emit).not.toHaveBeenCalled();
+    
+    tick(500); // Complete loading
+    component.onUrlSubmit();
+    expect(component.urlSubmit.emit).toHaveBeenCalledWith('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  }));
+
+  // Error state tests
+  it('should initialize with no error message', () => {
+    expect(component.errorMessage()).toBeNull();
+  });
+
+  it('should display custom error message for invalid URLs', fakeAsync(() => {
+    component.urlControl.setValue('invalid-url');
+    tick(800); // debounce + delay
+    fixture.detectChanges();
+    
+    expect(component.errorMessage()).toBe('URL YouTube invalide. Veuillez vérifier le format.');
+    
+    const compiled = fixture.nativeElement as HTMLElement;
+    const errorMessage = compiled.querySelector('.error-message');
+    expect(errorMessage?.textContent?.trim()).toBe('URL YouTube invalide. Veuillez vérifier le format.');
+  }));
+
+  it('should clear error message when clearing input', fakeAsync(() => {
+    component.urlControl.setValue('invalid-url');
+    tick(800);
+    expect(component.errorMessage()).toBeTruthy();
+    
+    component.clearUrl();
+    expect(component.errorMessage()).toBeNull();
+  }));
+
+  it('should clear error message when entering valid URL', fakeAsync(() => {
+    component.urlControl.setValue('invalid-url');
+    tick(800);
+    expect(component.errorMessage()).toBeTruthy();
+    
+    component.urlControl.setValue('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    tick(800);
+    expect(component.errorMessage()).toBeNull();
+  }));
+
+  it('should apply invalid class when error message is present', fakeAsync(() => {
+    component.urlControl.setValue('invalid-url');
+    tick(800);
+    fixture.detectChanges();
+    
+    const compiled = fixture.nativeElement as HTMLElement;
+    const urlInput = compiled.querySelector('.url-input') as HTMLInputElement;
+    expect(urlInput.classList.contains('invalid')).toBe(true);
+  }));
+
+  it('should hide clear button during loading state', fakeAsync(() => {
+    component.urlControl.setValue('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    fixture.detectChanges();
+    
+    // Initially clear button should be visible
+    let compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.clear-button')).toBeTruthy();
+    
+    // During loading, clear button should be hidden
+    tick(300);
+    fixture.detectChanges();
+    compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.clear-button')).toBeFalsy();
+    
+    // After loading, clear button should be visible again
+    tick(500);
+    fixture.detectChanges();
+    compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.clear-button')).toBeTruthy();
+  }));
+
+  it('should clear loading and error states when clearing input', () => {
+    component.isLoading.set(true);
+    component.errorMessage.set('Some error');
+    
+    component.clearUrl();
+    
+    expect(component.isLoading()).toBe(false);
+    expect(component.errorMessage()).toBeNull();
+  });
 });
