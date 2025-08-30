@@ -533,4 +533,198 @@ describe('TimelineComponent', () => {
       expect(component.timelineClick.emit).toHaveBeenCalledWith(25);
     });
   });
+
+  describe('Touch Events for Mobile Navigation (Task 15.3)', () => {
+    let mockTrack: HTMLElement;
+
+    beforeEach(() => {
+      mockTrack = document.createElement('div');
+      spyOn(mockTrack, 'getBoundingClientRect').and.returnValue({
+        left: 0,
+        width: 200,
+        top: 0,
+        right: 200,
+        bottom: 40,
+        height: 40,
+        x: 0,
+        y: 0,
+        toJSON: () => ({})
+      } as DOMRect);
+
+      spyOn(component.seekTo, 'emit');
+      spyOn(component.timelineClick, 'emit');
+      spyOn(component.seekStart, 'emit');
+      spyOn(component.seekEnd, 'emit');
+    });
+
+    it('should handle touch start correctly', () => {
+      component.isLoading = false;
+      component.disabled = false;
+      component.duration = 100;
+
+      const touchEvent = {
+        currentTarget: mockTrack,
+        preventDefault: jasmine.createSpy('preventDefault')
+      } as any;
+
+      component.onTouchStart(touchEvent);
+
+      expect(touchEvent.preventDefault).toHaveBeenCalled();
+      expect(component.seekStart.emit).toHaveBeenCalled();
+    });
+
+    it('should handle brief touch end as navigation tap', () => {
+      component.isLoading = false;
+      component.disabled = false;
+      component.duration = 100;
+
+      // Simulate touch start
+      const touchStartEvent = {
+        currentTarget: mockTrack,
+        preventDefault: jasmine.createSpy('preventDefault')
+      } as any;
+      
+      component.onTouchStart(touchStartEvent);
+
+      // Immediately create touch end (brief tap)
+      const mockTouch = {
+        clientX: 100 // 50% of width 200
+      };
+
+      const touchEndEvent = {
+        currentTarget: mockTrack,
+        changedTouches: [mockTouch],
+        preventDefault: jasmine.createSpy('preventDefault')
+      } as any;
+
+      component.onTouchEnd(touchEndEvent);
+
+      expect(touchEndEvent.preventDefault).toHaveBeenCalled();
+      expect(component.seekTo.emit).toHaveBeenCalledWith(50); // 50% of 100 duration
+      expect(component.timelineClick.emit).toHaveBeenCalledWith(50);
+    });
+
+    it('should ignore long touch events (> 300ms)', (done) => {
+      component.isLoading = false;
+      component.disabled = false;
+      component.duration = 100;
+
+      // Start touch
+      const touchStartEvent = {
+        currentTarget: mockTrack,
+        preventDefault: jasmine.createSpy('preventDefault')
+      } as any;
+      
+      component.onTouchStart(touchStartEvent);
+
+      // Wait longer than 300ms then end touch
+      setTimeout(() => {
+        const mockTouch = {
+          clientX: 100
+        };
+
+        const touchEndEvent = {
+          currentTarget: mockTrack,
+          changedTouches: [mockTouch],
+          preventDefault: jasmine.createSpy('preventDefault')
+        } as any;
+
+        component.onTouchEnd(touchEndEvent);
+
+        expect(touchEndEvent.preventDefault).toHaveBeenCalled();
+        expect(component.seekTo.emit).not.toHaveBeenCalled();
+        expect(component.timelineClick.emit).not.toHaveBeenCalled();
+        done();
+      }, 350);
+    });
+
+    it('should prevent double events from touch devices on click', () => {
+      component.isLoading = false;
+      component.disabled = false;
+      component.duration = 100;
+
+      // Simulate active touch
+      const touchStartEvent = {
+        currentTarget: mockTrack,
+        preventDefault: jasmine.createSpy('preventDefault')
+      } as any;
+      
+      component.onTouchStart(touchStartEvent);
+
+      // Now try click event - should be ignored
+      const clickEvent = new MouseEvent('click', {
+        clientX: 100,
+        bubbles: true
+      });
+      Object.defineProperty(clickEvent, 'currentTarget', {
+        value: mockTrack,
+        enumerable: true
+      });
+
+      component.onTrackClick(clickEvent);
+
+      expect(component.seekTo.emit).not.toHaveBeenCalled();
+      expect(component.timelineClick.emit).not.toHaveBeenCalled();
+    });
+
+    it('should not handle touch when not ready', () => {
+      component.isLoading = true;
+      component.duration = 100;
+
+      const touchStartEvent = {
+        preventDefault: jasmine.createSpy('preventDefault')
+      } as any;
+
+      component.onTouchStart(touchStartEvent);
+
+      expect(touchStartEvent.preventDefault).not.toHaveBeenCalled();
+      expect(component.seekStart.emit).not.toHaveBeenCalled();
+    });
+
+    it('should handle touch end without start gracefully', () => {
+      component.isLoading = false;
+      component.disabled = false;
+      component.duration = 100;
+
+      const touchEndEvent = {
+        currentTarget: mockTrack,
+        changedTouches: [{ clientX: 100 }],
+        preventDefault: jasmine.createSpy('preventDefault')
+      } as any;
+
+      // Call touch end without touch start
+      component.onTouchEnd(touchEndEvent);
+
+      expect(touchEndEvent.preventDefault).not.toHaveBeenCalled();
+      expect(component.seekTo.emit).not.toHaveBeenCalled();
+    });
+
+    it('should emit seekEnd after touch interaction', (done) => {
+      component.isLoading = false;
+      component.disabled = false;
+      component.duration = 100;
+
+      // Start and end touch quickly
+      const touchStartEvent = {
+        currentTarget: mockTrack,
+        preventDefault: jasmine.createSpy('preventDefault')
+      } as any;
+      
+      component.onTouchStart(touchStartEvent);
+
+      const touchEndEvent = {
+        currentTarget: mockTrack,
+        changedTouches: [{ clientX: 100 }],
+        preventDefault: jasmine.createSpy('preventDefault')
+      } as any;
+      
+      component.onTouchEnd(touchEndEvent);
+
+      // Check seekEnd is called after timeout
+      setTimeout(() => {
+        expect(component.seekEnd.emit).toHaveBeenCalled();
+        done();
+      }, 250);
+    });
+  });
 });

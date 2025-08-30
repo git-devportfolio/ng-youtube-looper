@@ -6,6 +6,8 @@
   <!-- Timeline Track -->
   <div class="timeline-track"
        (click)="onTrackClick($event)"
+       (touchstart)="onTouchStart($event)"
+       (touchend)="onTouchEnd($event)"
        [style.cursor]="isReady ? 'pointer' : 'default'">
     
     <!-- Background Track -->

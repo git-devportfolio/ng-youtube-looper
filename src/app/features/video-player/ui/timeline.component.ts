@@ -24,6 +24,9 @@ export class TimelineComponent {
 
   // Internal state for seeking animation
   private isSeeking = false;
+  
+  // Touch interaction state
+  private touchStartTime: number | null = null;
 
   /**
    * Calculate the current time position as percentage
@@ -57,26 +60,6 @@ export class TimelineComponent {
     return classes.join(' ');
   }
 
-  /**
-   * Handle click on timeline track for navigation
-   */
-  onTrackClick(event: MouseEvent): void {
-    if (!this.isReady) return;
-    
-    this.startSeeking();
-    
-    const track = event.currentTarget as HTMLElement;
-    const rect = track.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const percentage = Math.min(Math.max(clickX / rect.width, 0), 1);
-    const targetTime = percentage * this.duration;
-    
-    this.seekTo.emit(targetTime);
-    this.timelineClick.emit(targetTime);
-    
-    // End seeking state after a short delay
-    setTimeout(() => this.endSeeking(), 200);
-  }
 
   /**
    * Start seeking state for visual feedback
@@ -107,6 +90,69 @@ export class TimelineComponent {
   getPositionForTime(time: number): number {
     if (this.duration === 0) return 0;
     return Math.min((time / this.duration) * 100, 100);
+  }
+
+  /**
+   * Handle touch start for mobile navigation
+   */
+  onTouchStart(event: TouchEvent): void {
+    if (!this.isReady) return;
+    
+    event.preventDefault();
+    this.touchStartTime = Date.now();
+    this.startSeeking();
+  }
+
+  /**
+   * Handle touch end for mobile navigation
+   */
+  onTouchEnd(event: TouchEvent): void {
+    if (!this.isReady || this.touchStartTime === null) return;
+    
+    event.preventDefault();
+    
+    // Only process as tap if touch was brief (< 300ms)
+    const touchDuration = Date.now() - this.touchStartTime;
+    if (touchDuration < 300) {
+      const touch = event.changedTouches[0];
+      const track = event.currentTarget as HTMLElement;
+      const rect = track.getBoundingClientRect();
+      const touchX = touch.clientX - rect.left;
+      const percentage = Math.min(Math.max(touchX / rect.width, 0), 1);
+      const targetTime = percentage * this.duration;
+      
+      this.seekTo.emit(targetTime);
+      this.timelineClick.emit(targetTime);
+    }
+    
+    this.touchStartTime = null;
+    
+    // End seeking state after a short delay
+    setTimeout(() => this.endSeeking(), 200);
+  }
+
+  /**
+   * Enhanced click handler with touch prevention
+   */
+  onTrackClick(event: MouseEvent): void {
+    if (!this.isReady) return;
+    
+    // Prevent double events from touch devices
+    if (this.touchStartTime !== null) return;
+    
+    this.startSeeking();
+    
+    const track = event.currentTarget as HTMLElement;
+    const rect = track.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percentage = Math.min(Math.max(clickX / rect.width, 0), 1);
+    const targetTime = percentage * this.duration;
+    
+    this.seekTo.emit(targetTime);
+    this.timelineClick.emit(targetTime);
+    
+    // End seeking state after a short delay
+    setTimeout(() => this.endSeeking(), 200);
   }
 
   /**
