@@ -1,0 +1,112 @@
+<div class="video-player-container">
+  
+  <!-- URL Input Section -->
+  <div class="url-input-section">
+    <h2>Charger une vidéo YouTube</h2>
+    <div class="input-group">
+      <input 
+        type="url"
+        [formControl]="urlControl"
+        placeholder="Collez l'URL de la vidéo YouTube ici..."
+        class="url-input"
+        [class.valid]="facade.isValidUrl()"
+        [class.invalid]="urlControl.value && !facade.isValidUrl()"
+      >
+      <button 
+        type="button"
+        (click)="loadVideo()"
+        [disabled]="!facade.isValidUrl() || loading()"
+        class="load-button"
+      >
+        @if (loading()) {
+          <span class="loading-spinner"></span>
+          Chargement...
+        } @else {
+          Charger
+        }
+      </button>
+    </div>
+    
+    @if (urlControl.value && !facade.isValidUrl()) {
+      <div class="error-message">
+        URL YouTube invalide. Formats supportés : youtube.com/watch?v=..., youtu.be/..., youtube.com/embed/...
+      </div>
+    }
+  </div>
+
+  <!-- Video Player Section -->
+  <div class="player-section">
+    @if (facade.vm().currentVideo) {
+      <div class="video-container">
+        <!-- YouTube Player Container -->
+        <div #youtubePlayer id="youtube-player" class="youtube-player"></div>
+        
+        <!-- Video Info -->
+        <div class="video-info">
+          <h3>{{ facade.vm().currentVideo.title }}</h3>
+          <p class="video-meta">
+            Durée: {{ facade.formatTime(facade.vm().currentVideo.duration) }} | 
+            Auteur: {{ facade.vm().currentVideo.author }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div 
+            class="progress-fill" 
+            [style.width.%]="facade.getProgressPercentage()"
+          ></div>
+          <div 
+            class="progress-handle"
+            [style.left.%]="facade.getProgressPercentage()"
+          ></div>
+        </div>
+        <div class="time-display">
+          {{ facade.formatTime(facade.vm().playerState.currentTime) }} / 
+          {{ facade.formatTime(facade.vm().playerState.duration) }}
+        </div>
+      </div>
+
+      <!-- Controls Section -->
+      <div class="controls-section">
+        <app-player-controls 
+          [canPlay]="facade.vm().canPlay"
+          [canPause]="facade.vm().canPause"
+          [isPlaying]="facade.vm().playerState.isPlaying"
+          (play)="facade.play()"
+          (pause)="facade.pause()"
+          (stop)="facade.stop()"
+          (seekBack)="facade.seekBy(-10)"
+          (seekForward)="facade.seekBy(10)"
+        ></app-player-controls>
+
+        <app-speed-control
+          [currentRate]="facade.vm().playerState.playbackRate"
+          [disabled]="!facade.vm().playerState.isReady"
+          (rateChange)="facade.setPlaybackRate($event)"
+          (increaseSpeed)="facade.increaseSpeed()"
+          (decreaseSpeed)="facade.decreaseSpeed()"
+        ></app-speed-control>
+      </div>
+
+    } @else {
+      <div class="empty-player">
+        <div class="empty-state">
+          <div class="empty-icon">📺</div>
+          <h3>Aucune vidéo chargée</h3>
+          <p>Collez l'URL d'une vidéo YouTube ci-dessus pour commencer</p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Error Display -->
+  @if (facade.vm().hasError) {
+    <div class="error-banner">
+      <span class="error-icon">⚠️</span>
+      {{ facade.vm().playerState.error }}
+    </div>
+  }
+</div>

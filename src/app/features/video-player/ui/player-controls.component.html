@@ -1,0 +1,51 @@
+<div class="player-controls">
+  <!-- Seek Backward -->
+  <button 
+    type="button"
+    class="control-button seek-button"
+    (click)="seekBack.emit()"
+    [disabled]="!canSeek"
+    title="Reculer de 10 secondes"
+  >
+    <span class="control-icon">⏪</span>
+    <span class="seek-label">-10s</span>
+  </button>
+
+  <!-- Play/Pause Toggle -->
+  <button 
+    type="button"
+    class="control-button play-pause-button"
+    (click)="togglePlayPause()"
+    [disabled]="!canPlay && !canPause"
+    [title]="isPlaying ? 'Mettre en pause' : 'Lire'"
+  >
+    @if (isPlaying) {
+      <span class="control-icon">⏸️</span>
+    } @else {
+      <span class="control-icon">▶️</span>
+    }
+  </button>
+
+  <!-- Stop -->
+  <button 
+    type="button"
+    class="control-button stop-button"
+    (click)="stop.emit()"
+    [disabled]="!canSeek"
+    title="Arrêter"
+  >
+    <span class="control-icon">⏹️</span>
+  </button>
+
+  <!-- Seek Forward -->
+  <button 
+    type="button"
+    class="control-button seek-button"
+    (click)="seekForward.emit()"
+    [disabled]="!canSeek"
+    title="Avancer de 10 secondes"
+  >
+    <span class="control-icon">⏩</span>
+    <span class="seek-label">+10s</span>
+  </button>
+</div>
