@@ -1,0 +1,52 @@
+<div class="time-slider-container">
+  <!-- Buffered progress track -->
+  <div class="slider-track">
+    <div 
+      class="buffered-progress"
+      [style.width.%]="bufferedPercentage"
+    ></div>
+    
+    <!-- Progress fill -->
+    <div 
+      class="progress-fill"
+      [style.width.%]="progressPercentage"
+    ></div>
+    
+    <!-- Interactive range input -->
+    <input 
+      type="range"
+      class="time-slider"
+      [class.dragging]="isDragging"
+      [value]="progressPercentage"
+      [disabled]="disabled"
+      min="0"
+      max="100"
+      step="0.1"
+      (input)="onSeek($event)"
+      (mousedown)="onSeekStart()"
+      (mouseup)="onSeekEnd()"
+      (touchstart)="onSeekStart()"
+      (touchend)="onSeekEnd()"
+      (click)="onSliderClick($event)"
+      aria-label="Progression de la vidéo"
+      [attr.aria-valuenow]="progressPercentage"
+      [attr.aria-valuemin]="0"
+      [attr.aria-valuemax]="100"
+      [attr.aria-valuetext]="currentTime + ' secondes sur ' + duration + ' secondes'"
+    >
+    
+    <!-- Visual thumb indicator -->
+    <div 
+      class="slider-thumb"
+      [style.left.%]="progressPercentage"
+      [class.visible]="!disabled && duration > 0"
+    ></div>
+  </div>
+  
+  <!-- Loading state overlay -->
+  @if (disabled && duration === 0) {
+    <div class="slider-loading">
+      <div class="loading-shimmer"></div>
+    </div>
+  }
+</div>
