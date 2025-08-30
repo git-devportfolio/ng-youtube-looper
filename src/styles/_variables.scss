@@ -15,6 +15,12 @@ $breakpoints: (
   --accent-hover: #5855eb;
   --accent-rgb: 99, 102, 241;
   
+  // États de validation
+  --success-color: #10b981;
+  --success-color-light: rgba(16, 185, 129, 0.1);
+  --error-color: #ef4444;
+  --error-color-light: rgba(239, 68, 68, 0.1);
+  
   // Backgrounds
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;

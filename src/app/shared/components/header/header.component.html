@@ -10,17 +10,61 @@
 
     <!-- URL Input Section -->
     <div class="header-input">
-      <div class="input-placeholder">
-        <!-- URL input will be implemented in subtask 12.2 -->
-        <div class="input-mock">
+      <form (ngSubmit)="onUrlSubmit()" class="url-form">
+        <div class="input-container">
           <input 
-            type="url" 
+            type="url"
+            [formControl]="urlControl"
             placeholder="Collez l'URL de la vidéo YouTube ici..."
-            class="url-input-mock"
-            disabled
+            class="url-input"
+            [class.valid]="showValidIcon"
+            [class.invalid]="isUrlInvalid"
           >
+          
+          <!-- Valid icon -->
+          @if (showValidIcon) {
+            <span class="input-icon valid-icon" title="URL valide">✓</span>
+          }
+          
+          <!-- Invalid icon -->
+          @if (isUrlInvalid) {
+            <span class="input-icon invalid-icon" title="URL invalide">⚠️</span>
+          }
+          
+          <!-- Clear button -->
+          @if (urlControl.value) {
+            <button 
+              type="button"
+              (click)="clearUrl()"
+              class="clear-button"
+              title="Effacer l'URL"
+            >
+              ✕
+            </button>
+          }
         </div>
-      </div>
+
+        <!-- Submit button -->
+        <button 
+          type="submit"
+          [disabled]="!isUrlValid"
+          class="submit-button"
+          title="Charger la vidéo"
+        >
+          <span class="submit-icon">▶</span>
+        </button>
+
+        <!-- Error message -->
+        @if (isUrlInvalid) {
+          <div class="error-message">
+            @if (urlControl.hasError('required')) {
+              Veuillez saisir une URL YouTube
+            } @else if (urlControl.hasError('invalidYouTubeUrl')) {
+              URL YouTube invalide. Formats acceptés : youtube.com/watch?v=... ou youtu.be/...
+            }
+          </div>
+        }
+      </form>
     </div>
 
     <!-- Actions Section -->

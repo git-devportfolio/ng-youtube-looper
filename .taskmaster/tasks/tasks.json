@@ -215,8 +215,8 @@
             "dependencies": [
               "12.1"
             ],
-            "details": "Créer un FormControl pour l'input URL avec ReactiveFormsModule. Implémenter une fonction de validation personnalisée pour les URLs YouTube (formats youtube.com/watch, youtu.be). Ajouter un debounce de 300ms avec debounceTime et distinctUntilChanged. Gérer les états valid/invalid avec classes CSS conditionnelles.",
-            "status": "pending",
+            "details": "Créer un FormControl pour l'input URL avec ReactiveFormsModule. Implémenter une fonction de validation personnalisée pour les URLs YouTube (formats youtube.com/watch, youtu.be). Ajouter un debounce de 300ms avec debounceTime et distinctUntilChanged. Gérer les états valid/invalid avec classes CSS conditionnelles.\n<info added on 2025-08-30T11:34:20.775Z>\n**IMPLÉMENTATION COMPLÈTE**\n\nFonctionnalité URL YouTube entièrement implémentée avec FormControl réactif et ValidationService intégré. Validation regex pour formats youtube.com/watch et youtu.be avec debounce 300ms et distinctUntilChanged. Interface utilisateur avec feedback visuel (icônes valid/invalid, messages d'erreur), bouton clear et fonctionnalité submit. Styles SCSS complets avec états de validation et nouvelles variables design system (couleurs success/error). Suite de tests complète (18 tests) couvrant validation URL, événements debounced, soumission formulaire, états visuels et classes CSS, émission d'événements (urlChange, urlSubmit). Build compile avec succès, tous les tests passent. Prêt pour intégration layout responsive et thématisation.\n</info added on 2025-08-30T11:34:20.775Z>",
+            "status": "done",
             "testStrategy": "Tests unitaires de validation URL (valides/invalides), tests du debounce timing, validation des styles conditionnels selon l'état"
           },
           {
@@ -494,7 +494,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-30T09:43:59.788Z",
+      "updated": "2025-08-30T11:34:33.730Z",
       "description": "Tasks for master context"
     }
   }
