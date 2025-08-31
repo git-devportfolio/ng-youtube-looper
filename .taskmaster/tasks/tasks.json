@@ -267,7 +267,7 @@
           11,
           12
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -308,7 +308,7 @@
               "13.1"
             ],
             "details": "Modifier le VideoPlayerComponent pour écouter les événements de l'iframe YouTube (onReady, onStateChange, onError). Synchroniser avec les signals existants du VideoPlayerFacade (currentTime, duration, isPlaying, playbackRate, error). Implémenter un polling pour currentTime pendant la lecture. Gérer la communication entre iframe et parent via postMessage API. Utiliser les méthodes existantes du YouTubeService pour la cohérence.",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": "Tests de synchronisation temps réel, validation des événements YouTube, tests de communication iframe-parent, vérification du polling currentTime"
           },
           {
@@ -320,7 +320,7 @@
               "13.3"
             ],
             "details": "Compléter video-player.component.scss avec les styles pour iframe responsive (aspect-ratio: 16/9), overlay-controls avec gradient et transitions, loading spinner positioning. Utiliser les mixins existants (@include mobile, @include tablet, @include desktop) pour la responsivité. Intégrer les variables CSS du thème pour cohérence. Optimiser les performances CSS et gérer les z-index appropriés. Adapter les tailles de contrôles selon les breakpoints (3rem desktop, 3.5rem mobile).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests responsive sur tous devices, validation aspect-ratio, tests de performance CSS, vérification cohérence thématique"
           }
         ]
@@ -335,8 +335,65 @@
         "dependencies": [
           13
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer le bouton play/pause circulaire avec états disabled",
+            "description": "Implémenter le bouton play/pause principal avec design circulaire (3rem/3.5rem mobile), icônes dynamiques et gestion des états disabled selon le PlayerViewModel",
+            "dependencies": [],
+            "details": "Créer un bouton circulaire utilisant les variables CSS existantes (--accent-color) avec icônes play/pause. Intégrer avec PlayerControlsComponent existant en ajoutant la propriété circular. Gérer les états disabled basés sur canPlay/canPause du facade. Animations de transition et hover effects. Tailles responsive 3rem desktop, 3.5rem mobile.",
+            "status": "done",
+            "testStrategy": "Tests unitaires des états du bouton (enabled/disabled/loading), tests des émissions d'événements click, tests responsive des tailles, validation accessibilité clavier"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter le slider temporel custom avec thumb styling webkit",
+            "description": "Développer un slider de progression temporelle personnalisé avec styling webkit pour le thumb et synchronisation avec l'API YouTube",
+            "dependencies": [
+              "14.1"
+            ],
+            "details": "Créer un input range personnalisé avec ::-webkit-slider-thumb styling. Intégrer avec VideoPlayerFacade pour currentTime/duration. Gérer les événements de drag pour seekTo. Styling cohérent avec le design system (variables CSS). États disabled pendant le loading. Feedback visuel du buffering.",
+            "status": "done",
+            "testStrategy": "Tests de synchronisation temps réel avec YouTube API, tests des interactions drag/drop, validation du styling webkit cross-browser, tests des états loading/error"
+          },
+          {
+            "id": 3,
+            "title": "Développer l'affichage du temps en police monospace",
+            "description": "Créer l'affichage du temps actuel/durée avec formatage et police monospace (Monaco/Consolas)",
+            "dependencies": [
+              "14.2"
+            ],
+            "details": "Utiliser la méthode formatTime du VideoPlayerFacade pour afficher temps actuel et durée totale. Appliquer font-family-mono des variables CSS. Format MM:SS ou HH:MM:SS selon la durée. États loading/error avec placeholder text. Mise à jour en temps réel via les signals.",
+            "status": "done",
+            "testStrategy": "Tests du formatage temps (MM:SS, HH:MM:SS), validation police monospace, tests de mise à jour temps réel, tests des états loading/placeholder"
+          },
+          {
+            "id": 4,
+            "title": "Intégrer les contrôles de vitesse avec presets prédéfinis",
+            "description": "Intégrer le composant SpeedControlComponent existant avec les presets de vitesse requis (0.25x à 2x)",
+            "dependencies": [
+              "14.3"
+            ],
+            "details": "Utiliser SpeedControlComponent existant en ajustant les presets pour inclure 0.25x et exclure 0.5x selon les specs. Connecter avec VideoPlayerFacade.setPlaybackRate. Affichage compact pour mobile. États disabled synchronisés. Feedback visuel de la vitesse active.",
+            "status": "done",
+            "testStrategy": "Tests des presets de vitesse (0.25x, 0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x), tests d'intégration avec YouTube API, validation des états disabled, tests responsive mobile"
+          },
+          {
+            "id": 5,
+            "title": "Orchestrer la synchronisation temps réel et gestion des états d'erreur",
+            "description": "Mettre en place la synchronisation temps réel de tous les contrôles avec l'API YouTube et la gestion globale des états loading/erreur",
+            "dependencies": [
+              "14.1",
+              "14.2",
+              "14.3",
+              "14.4"
+            ],
+            "details": "Utiliser les signals du VideoPlayerFacade pour synchroniser en temps réel tous les contrôles. Gérer les états loading pendant l'initialisation du player. Afficher les états d'erreur avec messages appropriés. Désactiver les contrôles selon les capacités du player. Animations de feedback utilisateur.",
+            "status": "done",
+            "testStrategy": "Tests d'intégration de synchronisation complète, tests des états d'erreur YouTube API, validation des désactivations contextuelles, tests de performance des updates temps réel"
+          }
+        ]
       },
       {
         "id": 15,
@@ -348,8 +405,62 @@
         "dependencies": [
           14
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer la structure base du TimelineComponent",
+            "description": "Créer le composant timeline avec template HTML de base, SCSS et interface TypeScript. Implémenter la structure de 4rem de hauteur avec track horizontal selon les designs.",
+            "dependencies": [],
+            "details": "Créer timeline.component.ts/html/scss avec classe .timeline-container de 4rem hauteur. Template avec track horizontal (.timeline-track), zone pour l'indicateur temps courant, et conteneur pour les segments de boucle. Interface inputs pour currentTime et duration, outputs pour les événements de navigation. Structure responsive mobile-first.",
+            "status": "done",
+            "testStrategy": "Tests de rendu du composant, validation des propriétés inputs/outputs, tests des classes CSS et structure HTML"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter l'indicateur de temps courant (current-time-indicator)",
+            "description": "Créer l'indicateur visuel de la position temporelle courante avec cercle et ligne verticale, incluant les calculs de positionnement basés sur la durée.",
+            "dependencies": [
+              "15.1"
+            ],
+            "details": "Développer un indicateur avec cercle (.current-time-indicator) positionné dynamiquement via style.left basé sur currentTime/duration. Animation smooth lors des changements. Gestion du positionnement en pourcentage pour adaptation responsive. Styling avec cercle blanc/accent + ligne verticale subtile.",
+            "status": "done",
+            "testStrategy": "Tests des calculs de pourcentage de position, tests de mise à jour dynamique de l'indicateur, validation du styling et responsive"
+          },
+          {
+            "id": 3,
+            "title": "Développer la gestion des clics pour navigation temporelle",
+            "description": "Implémenter la détection des clics sur la timeline pour permettre la navigation temporelle, avec calculs de position précis et support tactile mobile.",
+            "dependencies": [
+              "15.2"
+            ],
+            "details": "Méthode onTimelineClick() avec getBoundingClientRect() pour calculer la position relative du clic. Conversion en temps via (clickX / width) * duration. Emission d'événement seekTo. Support des événements touch pour mobile avec preventDefault. Gestion des états disabled et loading.",
+            "status": "done",
+            "testStrategy": "Tests des calculs de position de clic, tests des événements touch mobile, validation de la précision temporelle, tests de gestion des cas limites"
+          },
+          {
+            "id": 4,
+            "title": "Créer le système de segments de boucle visuels draggables",
+            "description": "Développer l'affichage et l'interaction des segments de boucles avec drag & drop, resize handles et collision detection. Intégration avec LoopManagerFacade.",
+            "dependencies": [
+              "15.3"
+            ],
+            "details": "Utiliser @for pour itérer timelineVm.loops. Chaque segment avec position/width calculés en pourcentage. Drag & drop avec @HostListener mousedown/mousemove/mouseup. Resize handles gauche/droite. Collision detection entre segments. States visuels : normal/hover/active/editing. Intégration signals LoopManagerFacade.",
+            "status": "done",
+            "testStrategy": "Tests drag & drop desktop et touch, validation collision detection, tests de resize handles, vérification des calculs de positionnement, tests d'intégration avec LoopManagerFacade"
+          },
+          {
+            "id": 5,
+            "title": "Implémenter les animations et micro-interactions de la timeline",
+            "description": "Ajouter les animations, hover states, et feedback utilisateur pour une expérience fluide. Support complet mobile avec gestes optimisés et respect des préférences d'accessibilité.",
+            "dependencies": [
+              "15.4"
+            ],
+            "details": "Transitions CSS 200-300ms ease-out pour tous les éléments interactifs. Hover states avec box-shadow et translateY. Animation drag feedback avec scale et opacity. Gestes swipe mobile optimisés. States focus-visible pour accessibilité. Respect prefers-reduced-motion. Loading states avec shimmer. Animation smooth des changements de segments.",
+            "status": "done",
+            "testStrategy": "Tests animations 60fps sur tous devices, validation prefers-reduced-motion, tests de performance, vérification accessibilité et focus states, tests responsive mobile complets"
+          }
+        ]
       },
       {
         "id": 16,
@@ -436,7 +547,63 @@
         "priority": "medium",
         "dependencies": [],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer la structure de base du SecureStorageService",
+            "description": "Implémenter la classe de service avec les méthodes fondamentales de validation et sérialisation",
+            "dependencies": [],
+            "details": "Créer le service injectable SecureStorageService avec les méthodes privées : validateStorageAvailable(), calculateStorageSize(), validateSizeLimit(data, maxSize = 5MB), serializeData(data), deserializeData(jsonString), et sanitizeData(data). Implémenter la gestion d'erreurs avec try-catch et logging approprié.",
+            "status": "done",
+            "testStrategy": "Tests unitaires pour chaque méthode privée, tests de validation de taille avec données factices, tests de sérialisation/désérialisation avec objets complexes"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter la gestion des sessions de lecture",
+            "description": "Développer les méthodes de sauvegarde et chargement des sessions de boucles vidéo",
+            "dependencies": [
+              "22.1"
+            ],
+            "details": "Créer les méthodes publiques saveSessions(sessions: VideoSession[]), loadSessions(): VideoSession[], et clearSessions(). Utiliser la clé 'ng-youtube-looper-sessions' dans localStorage. Implémenter la validation des données de session et la récupération gracieuse si les données sont corrompues.",
+            "status": "pending",
+            "testStrategy": "Tests de sauvegarde/chargement avec sessions multiples, tests de données corrompues, tests de récupération après erreur localStorage"
+          },
+          {
+            "id": 3,
+            "title": "Implémenter la gestion des paramètres utilisateur",
+            "description": "Développer les méthodes de persistance des préférences et configurations",
+            "dependencies": [
+              "22.1"
+            ],
+            "details": "Créer les méthodes saveSettings(settings: AppSettings), loadSettings(): AppSettings, et resetSettings(). Utiliser la clé 'ng-youtube-looper-settings' dans localStorage. Définir les paramètres par défaut et implémenter le fallback vers les valeurs par défaut en cas d'absence ou corruption.",
+            "status": "pending",
+            "testStrategy": "Tests de sauvegarde/chargement des paramètres, tests de valeurs par défaut, tests de reset des paramètres, validation des types de données"
+          },
+          {
+            "id": 4,
+            "title": "Implémenter la gestion de l'historique de lecture",
+            "description": "Développer le système d'historique avec limitation de taille et nettoyage automatique",
+            "dependencies": [
+              "22.1"
+            ],
+            "details": "Créer addToHistory(videoData: HistoryEntry), getHistory(): HistoryEntry[], clearHistory(), et removeFromHistory(videoId: string). Limiter l'historique à 100 entrées maximum avec suppression automatique des plus anciennes. Utiliser la clé 'ng-youtube-looper-history' et implémenter la déduplication des entrées.",
+            "status": "pending",
+            "testStrategy": "Tests d'ajout avec limite de taille, tests de déduplication, tests de suppression automatique, tests de nettoyage complet de l'historique"
+          },
+          {
+            "id": 5,
+            "title": "Intégrer la gestion d'erreurs globale et les types TypeScript",
+            "description": "Finaliser le service avec interfaces TypeScript complètes et gestion d'erreurs robuste",
+            "dependencies": [
+              "22.2",
+              "22.3",
+              "22.4"
+            ],
+            "details": "Créer les interfaces VideoSession, AppSettings, et HistoryEntry avec validation TypeScript stricte. Implémenter StorageError personnalisée pour les erreurs spécifiques (quota dépassé, accès refusé, données corrompues). Ajouter les méthodes getStorageInfo() et isStorageHealthy() pour le monitoring.",
+            "status": "pending",
+            "testStrategy": "Tests d'intégration complète du service, tests de gestion d'erreurs avec localStorage plein, tests de santé du storage, validation des types TypeScript"
+          }
+        ]
       },
       {
         "id": 23,
@@ -549,7 +716,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-30T14:07:53.399Z",
+      "updated": "2025-08-31T10:06:28.543Z",
       "description": "Tasks for master context"
     }
   }
