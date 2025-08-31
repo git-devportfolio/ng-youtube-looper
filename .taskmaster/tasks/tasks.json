@@ -546,7 +546,7 @@
         "testStrategy": "Tests unitaires pour chaque méthode de stockage, tests de validation de taille, tests de sérialisation/désérialisation, et tests de gestion d'erreurs localStorage plein ou inaccessible.",
         "priority": "medium",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -565,7 +565,7 @@
               "22.1"
             ],
             "details": "Créer les méthodes publiques saveSessions(sessions: VideoSession[]), loadSessions(): VideoSession[], et clearSessions(). Utiliser la clé 'ng-youtube-looper-sessions' dans localStorage. Implémenter la validation des données de session et la récupération gracieuse si les données sont corrompues.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests de sauvegarde/chargement avec sessions multiples, tests de données corrompues, tests de récupération après erreur localStorage"
           },
           {
@@ -576,7 +576,7 @@
               "22.1"
             ],
             "details": "Créer les méthodes saveSettings(settings: AppSettings), loadSettings(): AppSettings, et resetSettings(). Utiliser la clé 'ng-youtube-looper-settings' dans localStorage. Définir les paramètres par défaut et implémenter le fallback vers les valeurs par défaut en cas d'absence ou corruption.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests de sauvegarde/chargement des paramètres, tests de valeurs par défaut, tests de reset des paramètres, validation des types de données"
           },
           {
@@ -587,7 +587,7 @@
               "22.1"
             ],
             "details": "Créer addToHistory(videoData: HistoryEntry), getHistory(): HistoryEntry[], clearHistory(), et removeFromHistory(videoId: string). Limiter l'historique à 100 entrées maximum avec suppression automatique des plus anciennes. Utiliser la clé 'ng-youtube-looper-history' et implémenter la déduplication des entrées.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests d'ajout avec limite de taille, tests de déduplication, tests de suppression automatique, tests de nettoyage complet de l'historique"
           },
           {
@@ -600,7 +600,7 @@
               "22.4"
             ],
             "details": "Créer les interfaces VideoSession, AppSettings, et HistoryEntry avec validation TypeScript stricte. Implémenter StorageError personnalisée pour les erreurs spécifiques (quota dépassé, accès refusé, données corrompues). Ajouter les méthodes getStorageInfo() et isStorageHealthy() pour le monitoring.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests d'intégration complète du service, tests de gestion d'erreurs avec localStorage plein, tests de santé du storage, validation des types TypeScript"
           }
         ]
@@ -613,8 +613,65 @@
         "testStrategy": "Tests unitaires pour chaque fonction utilitaire, tests de validation des plages temporelles, tests de formatage/parsing du temps, et tests de cas limites avec des valeurs invalides.",
         "priority": "medium",
         "dependencies": [],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer la structure de base du LoopService",
+            "description": "Créer le fichier LoopService avec les imports nécessaires, l'interface Loop et la structure de base du service injectable",
+            "dependencies": [],
+            "details": "Créer src/app/core/services/loop.service.ts avec les imports Angular, l'interface Loop alignée avec les types existants (SessionLoop et LoopSegment), et la structure de classe Injectable. Suivre les conventions du projet en utilisant inject() au lieu du constructeur et providedIn: 'root'.",
+            "status": "done",
+            "testStrategy": "Tests unitaires pour l'initialisation du service, vérification de l'injection de dépendances, et validation de la structure de l'interface Loop"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter les méthodes de création et validation des boucles",
+            "description": "Développer createLoop(), validateLoop() et isValidTimeRange() pour la création et validation des segments de boucles",
+            "dependencies": [
+              "23.1"
+            ],
+            "details": "Implémenter createLoop() pour générer des objets Loop avec ID unique, validateLoop() pour vérifier la validité d'un segment, et isValidTimeRange() pour valider les plages temporelles. Intégrer ValidationService existant pour la logique de validation et gérer les cas limites comme les chevauchements de boucles.",
+            "status": "done",
+            "testStrategy": "Tests unitaires pour createLoop() avec différents paramètres, tests de validateLoop() avec boucles valides/invalides, tests de isValidTimeRange() avec plages limites, et tests de détection de chevauchements"
+          },
+          {
+            "id": 3,
+            "title": "Implémenter les utilitaires de temps et calculs",
+            "description": "Développer calculateLoopDuration(), formatTime() et parseTime() pour la gestion des temps et durées",
+            "dependencies": [
+              "23.1"
+            ],
+            "details": "Implémenter calculateLoopDuration() pour calculer la durée d'un segment de boucle, formatTime() pour formater le temps en MM:SS, et parseTime() pour parser les chaînes de temps vers des secondes. Réutiliser la logique existante de ValidationService.formatTime() et ValidationService.parseTime() tout en ajoutant la logique spécifique aux boucles.",
+            "status": "done",
+            "testStrategy": "Tests unitaires pour calculateLoopDuration() avec différents segments, tests de formatTime() avec valeurs limites (0, négatifs, grands nombres), tests de parseTime() avec formats valides/invalides, et tests de précision des calculs"
+          },
+          {
+            "id": 4,
+            "title": "Implémenter la gestion des cas limites et collisions",
+            "description": "Développer la logique de détection et gestion des boucles qui se chevauchent ou dépassent la durée vidéo",
+            "dependencies": [
+              "23.2",
+              "23.3"
+            ],
+            "details": "Créer des méthodes pour détecter les collisions entre boucles existantes, valider que les boucles ne dépassent pas la durée maximale de la vidéo, et gérer les cas d'erreur comme les temps négatifs ou invalides. Implémenter une logique de résolution automatique des conflits si possible.",
+            "status": "done",
+            "testStrategy": "Tests de détection de chevauchements entre boucles multiples, tests avec durées vidéo variables, tests de cas limites avec temps négatifs/NaN/undefined, et tests de résolution automatique de conflits"
+          },
+          {
+            "id": 5,
+            "title": "Créer les tests complets et l'intégration avec les services existants",
+            "description": "Finaliser les tests unitaires du LoopService et assurer l'intégration avec ValidationService et les types existants",
+            "dependencies": [
+              "23.2",
+              "23.3",
+              "23.4"
+            ],
+            "details": "Créer le fichier loop.service.spec.ts avec une couverture complète des tests, mocker ValidationService pour les tests d'intégration, et vérifier la compatibilité avec les interfaces SessionLoop et LoopSegment existantes. Ajouter les exports nécessaires dans les index.ts pour respecter l'architecture en barrel exports.",
+            "status": "done",
+            "testStrategy": "Suite complète de tests avec coverage minimum 90%, tests d'intégration avec ValidationService, tests de performance pour grandes collections de boucles, et validation de l'architecture avec mocks appropriés"
+          }
+        ]
       },
       {
         "id": 24,
@@ -716,7 +773,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-31T10:06:28.543Z",
+      "updated": "2025-08-31T15:31:19.478Z",
       "description": "Tasks for master context"
     }
   }

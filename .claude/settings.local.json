@@ -4,7 +4,12 @@
       "Bash(task-master show:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(task-master set-status:*)"
+      "Bash(task-master set-status:*)",
+      "Bash(npm test:*)",
+      "Bash(task-master:*)",
+      "Bash(npm run build:*)",
+      "Bash(ng build:*)",
+      "Bash(ng test:*)"
     ],
     "deny": [],
     "ask": []
