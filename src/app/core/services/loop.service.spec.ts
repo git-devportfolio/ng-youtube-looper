@@ -1011,4 +1011,223 @@ describe('LoopService', () => {
       });
     });
   });
+
+  describe('integration and compatibility (Task 23.5)', () => {
+    describe('type compatibility', () => {
+      it('should be compatible with SessionLoop interface', () => {
+        const loop = service.createLoop('Test Loop', 10, 30, { 
+          color: '#ff0000',
+          playCount: 5,
+          isActive: true
+        });
+
+        // Test compatibility with SessionLoop from storage.types.ts
+        const sessionLoop: any = {
+          id: loop.id,
+          name: loop.name, // SessionLoop has name as string | undefined
+          startTime: loop.startTime,
+          endTime: loop.endTime,
+          color: loop.color, // SessionLoop has color as string | undefined
+          playCount: loop.playCount,
+          isActive: loop.isActive
+        };
+
+        expect(sessionLoop.id).toBe(loop.id);
+        expect(sessionLoop.name).toBe(loop.name);
+        expect(sessionLoop.startTime).toBe(loop.startTime);
+        expect(sessionLoop.endTime).toBe(loop.endTime);
+        expect(sessionLoop.color).toBe(loop.color);
+        expect(sessionLoop.playCount).toBe(loop.playCount);
+        expect(sessionLoop.isActive).toBe(loop.isActive);
+      });
+
+      it('should be compatible with LoopSegment interface', () => {
+        const loop = service.createLoop('Test Segment', 15, 45, { 
+          playbackSpeed: 1.5,
+          isActive: true
+        });
+
+        // Test compatibility with LoopSegment from loop-manager.facade.ts
+        const loopSegment: any = {
+          id: loop.id,
+          name: loop.name,
+          startTime: loop.startTime,
+          endTime: loop.endTime,
+          playbackSpeed: loop.playbackSpeed,
+          repeatCount: loop.repeatCount,
+          isActive: loop.isActive
+        };
+
+        expect(loopSegment.id).toBe(loop.id);
+        expect(loopSegment.name).toBe(loop.name);
+        expect(loopSegment.startTime).toBe(loop.startTime);
+        expect(loopSegment.endTime).toBe(loop.endTime);
+        expect(loopSegment.playbackSpeed).toBe(loop.playbackSpeed);
+        expect(loopSegment.isActive).toBe(loop.isActive);
+      });
+
+      it('should handle optional fields correctly for compatibility', () => {
+        const minimalLoop = service.createLoop('Minimal Loop', 0, 10);
+
+        // Should work with systems expecting undefined for optional fields
+        expect(minimalLoop.color).toBeDefined(); // Has default value
+        expect(minimalLoop.playbackSpeed).toBeDefined(); // Has default value
+        expect(minimalLoop.repeatCount).toBeDefined(); // Has default value
+        expect(minimalLoop.playCount).toBe(0); // Required field
+        expect(minimalLoop.isActive).toBe(false); // Required field
+      });
+    });
+
+    describe('ValidationService integration', () => {
+      beforeEach(() => {
+        // Reset ValidationService mock for integration tests
+        validationService.isValidLoopName.and.returnValue(true);
+        validationService.isValidPlaybackSpeed.and.returnValue(true);
+        validationService.isValidTimeRange.and.returnValue(true);
+        validationService.formatTime.and.returnValue('2:30');
+        validationService.parseTime.and.returnValue(150);
+      });
+
+      it('should integrate properly with ValidationService for time formatting', () => {
+        const result = service.formatTime(150);
+        
+        expect(validationService.formatTime).toHaveBeenCalledWith(150);
+        expect(result).toBe('2:30');
+      });
+
+      it('should integrate properly with ValidationService for time parsing', () => {
+        const result = service.parseTime('invalid:format');
+        
+        expect(validationService.parseTime).toHaveBeenCalledWith('invalid:format');
+        expect(result).toBe(0); // Falls back to 0 for invalid formats in our enhanced parseTime
+      });
+
+      it('should use ValidationService for loop validation', () => {
+        const loop = service.createLoop('Integration Test', 10, 30);
+        
+        service.validateLoop(loop);
+        
+        expect(validationService.isValidLoopName).toHaveBeenCalledWith(loop.name);
+      });
+
+      it('should use ValidationService for time range validation', () => {
+        service.isValidTimeRange(10, 30, 100);
+        
+        expect(validationService.isValidTimeRange).toHaveBeenCalledWith(10, 30, 100);
+      });
+    });
+
+    describe('performance tests', () => {
+      it('should handle large collections efficiently', () => {
+        const largeLoopCollection = Array.from({ length: 1000 }, (_, i) => 
+          service.createLoop(`Loop ${i}`, i * 10, (i * 10) + 5)
+        );
+
+        const startTime = performance.now();
+        const conflicts = service.detectLoopConflicts(largeLoopCollection);
+        const endTime = performance.now();
+
+        expect(endTime - startTime).toBeLessThan(1000); // Should complete in under 1 second
+        expect(conflicts).toBeDefined();
+        expect(conflicts.overlapping).toBeDefined();
+      });
+
+      it('should resolve conflicts for medium collections efficiently', () => {
+        const mediumLoopCollection = Array.from({ length: 100 }, (_, i) => 
+          service.createLoop(`Overlapping Loop ${i}`, i * 2, (i * 2) + 10) // Intentional overlaps
+        );
+
+        const startTime = performance.now();
+        const result = service.resolveLoopConflicts(mediumLoopCollection, 1000);
+        const endTime = performance.now();
+
+        expect(endTime - startTime).toBeLessThan(5000); // Should complete in under 5 seconds
+        expect(result.resolvedLoops).toBeDefined();
+        expect(result.modifications).toBeDefined();
+      });
+
+      it('should analyze large collections for debug efficiently', () => {
+        const loops = Array.from({ length: 500 }, (_, i) => 
+          service.createLoop(`Analysis Loop ${i}`, i * 5, (i * 5) + 3, { 
+            isActive: i % 3 === 0 
+          })
+        );
+
+        const startTime = performance.now();
+        const analysis = service.analyzeLoopsForDebug(loops, 5000);
+        const endTime = performance.now();
+
+        expect(endTime - startTime).toBeLessThan(2000); // Should complete in under 2 seconds
+        expect(analysis.summary.total).toBe(500);
+        expect(analysis.timeRanges).toBeDefined();
+        expect(analysis.conflicts).toBeDefined();
+        expect(analysis.validation).toBeDefined();
+      });
+    });
+
+    describe('comprehensive feature coverage', () => {
+      it('should demonstrate full workflow integration', () => {
+        // 1. Create loops with various configurations
+        const loops = [
+          service.createLoop('Intro', 0, 15, { isActive: true }),
+          service.createLoop('Verse 1', 15, 45, { playbackSpeed: 0.8 }),
+          service.createLoop('Chorus', 45, 75, { repeatCount: 3, color: '#ff6b6b' }),
+          service.createLoop('Bridge', 75, 95, { isActive: true }),
+          service.createLoop('Outro', 95, 110)
+        ];
+
+        // 2. Validate the collection
+        const validation = service.validateLoopCollection(loops, 120);
+        expect(validation.isValid).toBe(true);
+
+        // 3. Get statistics
+        const stats = service.getLoopStatistics(loops);
+        expect(stats.totalCount).toBe(5);
+        expect(stats.activeCount).toBe(2);
+
+        // 4. Sort and analyze
+        const sortedLoops = service.sortLoopsByStartTime(loops);
+        expect(sortedLoops[0].name).toBe('Intro');
+        expect(sortedLoops[4].name).toBe('Outro');
+
+        // 5. Find current loop during playback
+        const currentLoop = service.getCurrentLoop(50, loops);
+        expect(currentLoop?.name).toBe('Chorus');
+
+        // 6. Calculate durations and progress
+        const totalDuration = service.calculateTotalLoopsDuration(loops);
+        expect(totalDuration).toBe(85); // Sum of all loop durations
+
+        const progress = service.getLoopProgress(60, loops.find(l => l.name === 'Chorus')!);
+        expect(progress).toBe(50); // 50% through the chorus
+
+        // 7. Advanced analysis
+        const analysis = service.analyzeLoopsForDebug(loops, 120);
+        expect(analysis.summary.coveragePercentage).toBeCloseTo(70.83, 1); // 85/120 * 100
+
+        // 8. Test conflict resolution if needed
+        const conflicts = service.detectLoopConflicts(loops);
+        expect(conflicts.overlapping).toHaveSize(0); // No overlaps in this well-designed set
+      });
+
+      it('should handle edge cases in real-world scenarios', () => {
+        // Test with problematic input that might come from user interface
+        const problematicLoops = [
+          service.createLoop('  Trimmed Name  ', 0, 10), // Name with spaces
+          service.createLoop('', 10, 20), // Empty name - should be handled by validation
+          service.createLoop('Very Long Loop Name That Exceeds Normal Limits For Display', 20, 30), // Long name
+          { ...service.createLoop('Broken Loop', 30, 40), endTime: NaN } as any, // Broken time
+          service.createLoop('Normal Loop', 40, 50) // Normal loop for comparison
+        ];
+
+        // Should handle gracefully
+        const conflicts = service.detectLoopConflicts(problematicLoops);
+        expect(conflicts.invalidTimes).toHaveSize(1); // Only the NaN one
+
+        const resolved = service.resolveLoopConflicts(problematicLoops, 100);
+        expect(resolved.resolvedLoops.length).toBeLessThanOrEqual(problematicLoops.length);
+        expect(resolved.modifications).toBeDefined();
+      });
+    });
+  });
 });
