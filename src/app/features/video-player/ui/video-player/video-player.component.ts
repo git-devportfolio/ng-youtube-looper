@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, OnDestroy, ViewChild, ElementRef, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { VideoPlayerFacade } from '../../data-access/video-player.facade';
 import { PlayerControlsComponent } from '../player-controls';
 import { SpeedControlComponent } from '../speed-control';
@@ -13,6 +14,7 @@ import { SpeedControlComponent } from '../speed-control';
 })
 export class VideoPlayerComponent implements OnInit, OnDestroy {
   readonly facade = inject(VideoPlayerFacade);
+  private readonly sanitizer = inject(DomSanitizer);
   
   @ViewChild('youtubePlayer', { static: false }) 
   youtubePlayerRef?: ElementRef<HTMLIFrameElement>;
@@ -33,6 +35,18 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
   private overlayHideTimeout: number | null = null;
   private currentTimePolling: number | null = null;
 
+  constructor() {
+    // Effect to start/stop currentTime polling based on playback state
+    effect(() => {
+      const isPlaying = this.facade.vm().isPlaying;
+      if (isPlaying) {
+        this.startCurrentTimePolling();
+      } else {
+        this.stopCurrentTimePolling();
+      }
+    });
+  }
+
   ngOnInit() {
     // Sync URL input with facade
     this.urlControl.valueChanges.subscribe(value => {
@@ -44,16 +58,6 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
 
     // Set up iframe event listeners for YouTube API synchronization
     this.setupIFrameEventListeners();
-
-    // Effect to start/stop currentTime polling based on playback state
-    effect(() => {
-      const isPlaying = this.facade.vm().playerState.isPlaying;
-      if (isPlaying) {
-        this.startCurrentTimePolling();
-      } else {
-        this.stopCurrentTimePolling();
-      }
-    });
   }
 
   ngOnDestroy() {
@@ -96,10 +100,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
   /**
    * Generates the YouTube embed URL with appropriate parameters for programmatic control
    */
-  getYouTubeEmbedUrl(): string {
+  getYouTubeEmbedUrl(): SafeResourceUrl {
     const currentVideo = this.facade.vm().currentVideo;
     if (!currentVideo || !currentVideo.videoId) {
-      return '';
+      return this.sanitizer.bypassSecurityTrustResourceUrl('');
     }
 
     const baseUrl = 'https://www.youtube.com/embed';
@@ -116,6 +120,34 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
       iv_load_policy: '3',     // Hide video annotations
       fs: '1',                 // Allow fullscreen
       playsinline: '1'         // Play inline on mobile
+    });
+
+    const url = `${baseUrl}/${videoId}?${params.toString()}`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  /**
+   * For testing purposes - returns the raw URL string without SafeResourceUrl wrapping
+   */
+  getYouTubeEmbedUrlString(): string {
+    const currentVideo = this.facade.vm().currentVideo;
+    if (!currentVideo || !currentVideo.videoId) {
+      return '';
+    }
+
+    const baseUrl = 'https://www.youtube.com/embed';
+    const videoId = currentVideo.videoId;
+    
+    const params = new URLSearchParams({
+      autoplay: '0',
+      controls: '0',
+      enablejsapi: '1',
+      origin: window.location.origin,
+      rel: '0',
+      modestbranding: '1',
+      iv_load_policy: '3',
+      fs: '1',
+      playsinline: '1'
     });
 
     return `${baseUrl}/${videoId}?${params.toString()}`;
@@ -184,7 +216,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
    */
   isVideoLoading(): boolean {
     const vm = this.facade.vm();
-    return this.loading() || (!vm.playerState.isReady && !!vm.currentVideo);
+    return this.loading() || (!vm.isPlayerReady && !!vm.currentVideo);
   }
 
   /**
