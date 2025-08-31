@@ -8,7 +8,13 @@
        (click)="onTrackClick($event)"
        (touchstart)="onTouchStart($event)"
        (touchend)="onTouchEnd($event)"
-       [style.cursor]="isReady ? 'pointer' : 'default'">
+       [style.cursor]="isReady ? 'pointer' : 'default'"
+       tabindex="0"
+       role="slider"
+       [attr.aria-valuemin]="0"
+       [attr.aria-valuemax]="duration"
+       [attr.aria-valuenow]="currentTime"
+       [attr.aria-label]="'Timeline scrubber - Current time: ' + formatDuration(currentTime) + ' of ' + formatDuration(duration)">
     
     <!-- Background Track -->
     <div class="track-background"></div>
@@ -27,24 +33,30 @@
     
     <!-- Loop Segments Container -->
     <div class="loop-segments-container">
-      @for (loop of loops; track loop.id) {
+      @for (loop of loops; track loop.id; let i = $index) {
         <div [class]="getLoopClasses(loop)"
              [attr.data-loop-id]="loop.id"
              [style.left.%]="getLoopPosition(loop).left"
              [style.width.%]="getLoopPosition(loop).width"
+             [style.--loop-index]="i"
              (click)="onLoopClick($event, loop)"
-             [attr.aria-label]="'Loop from ' + formatDuration(loop.startTime) + ' to ' + formatDuration(loop.endTime)">
+             tabindex="0"
+             role="button"
+             [attr.aria-pressed]="selectedLoopId === loop.id"
+             [attr.aria-label]="'Loop segment' + (loop.name ? ' ' + loop.name : '') + ' from ' + formatDuration(loop.startTime) + ' to ' + formatDuration(loop.endTime)">
           
           <!-- Left resize handle -->
           <div class="resize-handle left"
                (mousedown)="onLoopMouseDown($event, loop, 'resize-left')"
-               [attr.aria-label]="'Resize loop start'">
+               tabindex="0"
+               role="button"
+               [attr.aria-label]="'Resize loop start - Current start time: ' + formatDuration(loop.startTime)">
           </div>
           
           <!-- Loop segment body -->
           <div class="loop-body"
                (mousedown)="onLoopMouseDown($event, loop, 'move')"
-               [attr.aria-label]="'Move loop segment'">
+               [attr.aria-hidden]="true">
             <span class="loop-label" *ngIf="loop.name">{{ loop.name }}</span>
             <div class="loop-times">
               <span class="start-time">{{ formatDuration(loop.startTime) }}</span>
@@ -55,7 +67,9 @@
           <!-- Right resize handle -->
           <div class="resize-handle right"
                (mousedown)="onLoopMouseDown($event, loop, 'resize-right')"
-               [attr.aria-label]="'Resize loop end'">
+               tabindex="0"
+               role="button"
+               [attr.aria-label]="'Resize loop end - Current end time: ' + formatDuration(loop.endTime)">
           </div>
         </div>
       }

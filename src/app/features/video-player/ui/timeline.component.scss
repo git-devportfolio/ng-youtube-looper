@@ -491,11 +491,188 @@
   }
 }
 
-// Reduced motion support
+// Enhanced focus states for accessibility
+.timeline-track:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-sm);
+}
+
+.loop-segment:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  z-index: 20;
+}
+
+.resize-handle:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+// Enhanced hover micro-interactions
+.loop-segment {
+  transform-origin: center;
+  
+  &:hover:not(.dragging) {
+    transform: translateY(-50%) translateZ(0) scale(1.02);
+    filter: brightness(1.05);
+    
+    .loop-label {
+      color: var(--text-primary);
+      text-shadow: 0 0 4px rgba(var(--accent-rgb), 0.3);
+    }
+    
+    .loop-times {
+      color: var(--text-primary);
+    }
+  }
+  
+  &:active:not(.dragging) {
+    transform: translateY(-50%) translateZ(0) scale(0.98);
+  }
+}
+
+// Smooth segment transitions
+.loop-segment,
+.loop-segment::before,
+.loop-segment::after {
+  transition: 
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.3s ease,
+    filter 0.2s ease;
+}
+
+// Enhanced resize handle feedback
+.resize-handle {
+  &:hover {
+    transform: scaleX(1.2);
+    box-shadow: var(--shadow-sm);
+  }
+  
+  &:active {
+    transform: scaleX(1.4);
+    background: var(--accent-color-darker, var(--accent-color));
+  }
+}
+
+// Timeline track hover enhancement
+.timeline-track:hover:not(:has(.loop-segment.dragging)) {
+  .track-background {
+    transform: translateY(-50%) scaleY(1.2);
+    transition: transform 0.2s ease;
+  }
+}
+
+// Current time indicator enhanced animations
+.current-time-indicator {
+  &:hover .indicator-circle {
+    animation: gentle-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 
+      var(--shadow-sm),
+      0 0 0 1px rgba(var(--accent-rgb), 0.2);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 
+      var(--shadow-md),
+      0 0 0 2px rgba(var(--accent-rgb), 0.3);
+  }
+}
+
+// Loading animation improvements
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    rgba(var(--accent-rgb), 0.1) 50%,
+    var(--bg-secondary) 75%
+  );
+  animation: enhanced-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes enhanced-shimmer {
+  0% {
+    background-position: -200% 0;
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    background-position: 200% 0;
+    opacity: 0.6;
+  }
+}
+
+// Mobile touch feedback
+@include mobile {
+  .loop-segment {
+    &:active {
+      transform: translateY(-50%) scale(0.95);
+      filter: brightness(0.9);
+    }
+  }
+  
+  .resize-handle {
+    &:active {
+      transform: scale(1.1);
+      opacity: 1;
+    }
+  }
+  
+  .timeline-track {
+    &:active {
+      .track-background {
+        background: rgba(var(--accent-rgb), 0.1);
+      }
+    }
+  }
+}
+
+// Staggered animation for multiple loops
+.loop-segment {
+  animation-delay: calc(var(--loop-index, 0) * 0.1s);
+  
+  &:nth-child(1) { --loop-index: 0; }
+  &:nth-child(2) { --loop-index: 1; }
+  &:nth-child(3) { --loop-index: 2; }
+  &:nth-child(4) { --loop-index: 3; }
+  &:nth-child(5) { --loop-index: 4; }
+}
+
+// Performance optimizations
+.timeline-container {
+  will-change: auto;
+  contain: layout style paint;
+}
+
+.loop-segment.dragging {
+  will-change: transform;
+  contain: strict;
+}
+
+.current-time-indicator {
+  will-change: left;
+  contain: strict;
+}
+
+// Reduced motion support (enhanced)
 @media (prefers-reduced-motion: reduce) {
   .current-time-indicator,
   .current-time-indicator .indicator-circle,
-  .current-time-indicator.paused .indicator-circle {
+  .current-time-indicator.paused .indicator-circle,
+  .loop-segment,
+  .resize-handle,
+  .timeline-track,
+  .loading-shimmer {
     animation: none !important;
     transition: none !important;
   }
@@ -506,5 +683,17 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transform: none !important;
+  }
+  
+  // Maintain essential functionality without animation
+  .loop-segment:hover {
+    background: rgba(var(--accent-rgb), 0.4);
+    border-color: var(--accent-color);
+  }
+  
+  .resize-handle:hover {
+    background: var(--accent-color-darker, var(--accent-color));
+    opacity: 1;
   }
 }

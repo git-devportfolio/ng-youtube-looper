@@ -61,7 +61,14 @@ export class TimelineComponent {
   };
   
   // Selected loop for editing
-  private selectedLoopId: number | null = null;
+  private _selectedLoopId: number | null = null;
+  
+  /**
+   * Get selected loop ID for template binding
+   */
+  get selectedLoopId(): number | null {
+    return this._selectedLoopId;
+  }
 
   /**
    * Calculate the current time position as percentage
@@ -211,7 +218,7 @@ export class TimelineComponent {
   getLoopClasses(loop: Loop): string {
     const classes: string[] = ['loop-segment'];
     
-    if (this.selectedLoopId === loop.id) {
+    if (this._selectedLoopId === loop.id) {
       classes.push('selected');
     }
     
@@ -240,7 +247,7 @@ export class TimelineComponent {
       initialEndTime: loop.endTime
     };
     
-    this.selectedLoopId = loop.id;
+    this._selectedLoopId = loop.id;
     this.loopSelect.emit(loop.id);
   }
 
@@ -253,11 +260,11 @@ export class TimelineComponent {
     event.preventDefault();
     event.stopPropagation();
     
-    if (this.selectedLoopId === loop.id) {
-      this.selectedLoopId = null;
+    if (this._selectedLoopId === loop.id) {
+      this._selectedLoopId = null;
       this.loopDeselect.emit();
     } else {
-      this.selectedLoopId = loop.id;
+      this._selectedLoopId = loop.id;
       this.loopSelect.emit(loop.id);
     }
   }
