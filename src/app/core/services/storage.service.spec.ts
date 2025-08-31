@@ -1,10 +1,24 @@
 import { TestBed } from '@angular/core/testing';
 import { SecureStorageService } from './storage.service';
-import { VideoSession, SessionLoop, AppSettings, DEFAULT_APP_SETTINGS } from './storage.types';
+import { VideoSession, SessionLoop, AppSettings, DEFAULT_APP_SETTINGS, HistoryEntry } from './storage.types';
 
 describe('SecureStorageService', () => {
   let service: SecureStorageService;
   let originalLocalStorage: Storage;
+
+  // Mock data
+  const mockHistoryEntry: HistoryEntry = {
+    id: 'history-1',
+    videoId: 'test-video-1',
+    videoTitle: 'Test Video Title',
+    videoUrl: 'https://youtube.com/watch?v=test-video-1',
+    thumbnailUrl: 'https://img.youtube.com/vi/test-video-1/0.jpg',
+    lastWatched: new Date('2024-01-01T10:00:00Z'),
+    watchDuration: 300, // 5 minutes
+    loopCount: 5,
+    playbackSpeed: 1.5,
+    tags: ['guitar', 'lesson']
+  };
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
@@ -1003,6 +1017,371 @@ describe('SecureStorageService', () => {
         const result = service.saveSettings(hugeSettings);
         // Should either save successfully (after sanitization) or fail due to size limits
         expect(typeof result).toBe('boolean');
+      });
+    });
+  });
+
+  // === READING HISTORY MANAGEMENT TESTS (Task 22.4) ===
+
+  describe('Reading History Management (Task 22.4)', () => {
+    describe('addToHistory and getHistory', () => {
+      it('should add and retrieve history entry successfully', () => {
+        const added = service.addToHistory(mockHistoryEntry);
+        expect(added).toBe(true);
+
+        const history = service.getHistory();
+        expect(history).toHaveSize(1);
+        expect(history[0].videoId).toBe(mockHistoryEntry.videoId);
+        expect(history[0].videoTitle).toBe(mockHistoryEntry.videoTitle);
+        expect(history[0].watchDuration).toBe(mockHistoryEntry.watchDuration);
+      });
+
+      it('should return empty array when no history exists', () => {
+        const history = service.getHistory();
+        expect(history).toEqual([]);
+      });
+
+      it('should deduplicate entries for same video', () => {
+        // Add first entry
+        service.addToHistory(mockHistoryEntry);
+        
+        // Add second entry for same video with different data
+        const updatedEntry = {
+          ...mockHistoryEntry,
+          watchDuration: 600,
+          lastWatched: new Date('2024-01-02T10:00:00Z')
+        };
+        service.addToHistory(updatedEntry);
+
+        const history = service.getHistory();
+        expect(history).toHaveSize(1); // Should only have one entry
+        expect(history[0].watchDuration).toBe(600); // Should have updated data
+      });
+
+      it('should limit history to maximum entries', () => {
+        // Add more than the maximum number of entries
+        for (let i = 0; i < 105; i++) {
+          const entry = {
+            ...mockHistoryEntry,
+            id: `history-${i}`,
+            videoId: `video-${i}`,
+            lastWatched: new Date(`2024-01-01T${(i % 24).toString().padStart(2, '0')}:00:00Z`)
+          };
+          service.addToHistory(entry);
+        }
+
+        const history = service.getHistory();
+        expect(history.length).toBe(100); // Should be limited to MAX_HISTORY_ENTRIES
+      });
+
+      it('should sort history by most recent first', () => {
+        const entry1 = {
+          ...mockHistoryEntry,
+          id: 'history-1',
+          videoId: 'video-1',
+          lastWatched: new Date('2024-01-01T10:00:00Z')
+        };
+        const entry2 = {
+          ...mockHistoryEntry,
+          id: 'history-2',
+          videoId: 'video-2',
+          lastWatched: new Date('2024-01-02T10:00:00Z')
+        };
+
+        service.addToHistory(entry1);
+        service.addToHistory(entry2);
+
+        const history = service.getHistory();
+        expect(history).toHaveSize(2);
+        expect(history[0].videoId).toBe('video-2'); // Most recent first
+        expect(history[1].videoId).toBe('video-1');
+      });
+    });
+
+    describe('clearHistory', () => {
+      it('should clear all history entries', () => {
+        service.addToHistory(mockHistoryEntry);
+        
+        const cleared = service.clearHistory();
+        expect(cleared).toBe(true);
+
+        const history = service.getHistory();
+        expect(history).toEqual([]);
+      });
+
+      it('should log success message on clear', () => {
+        spyOn(console, 'log');
+        service.clearHistory();
+        expect(console.log).toHaveBeenCalledWith('Successfully cleared reading history');
+      });
+    });
+
+    describe('removeFromHistory', () => {
+      it('should remove specific video from history', () => {
+        const entry1 = { ...mockHistoryEntry, videoId: 'video-1' };
+        const entry2 = { ...mockHistoryEntry, id: 'history-2', videoId: 'video-2' };
+
+        service.addToHistory(entry1);
+        service.addToHistory(entry2);
+
+        const removed = service.removeFromHistory('video-1');
+        expect(removed).toBe(true);
+
+        const history = service.getHistory();
+        expect(history).toHaveSize(1);
+        expect(history[0].videoId).toBe('video-2');
+      });
+
+      it('should return false when video not found', () => {
+        const removed = service.removeFromHistory('non-existent-video');
+        expect(removed).toBe(false);
+      });
+
+      it('should validate videoId parameter', () => {
+        spyOn(console, 'error');
+        
+        const result1 = service.removeFromHistory('');
+        expect(result1).toBe(false);
+        
+        const result2 = service.removeFromHistory(null as any);
+        expect(result2).toBe(false);
+        
+        expect(console.error).toHaveBeenCalledWith('Invalid videoId provided for history removal');
+      });
+    });
+
+    describe('getHistoryByDateRange', () => {
+      it('should filter history by date range', () => {
+        const entry1 = {
+          ...mockHistoryEntry,
+          videoId: 'video-1',
+          lastWatched: new Date('2024-01-01T10:00:00Z')
+        };
+        const entry2 = {
+          ...mockHistoryEntry,
+          id: 'history-2',
+          videoId: 'video-2',
+          lastWatched: new Date('2024-01-15T10:00:00Z')
+        };
+        const entry3 = {
+          ...mockHistoryEntry,
+          id: 'history-3',
+          videoId: 'video-3',
+          lastWatched: new Date('2024-02-01T10:00:00Z')
+        };
+
+        service.addToHistory(entry1);
+        service.addToHistory(entry2);
+        service.addToHistory(entry3);
+
+        const startDate = new Date('2024-01-01T00:00:00Z');
+        const endDate = new Date('2024-01-31T23:59:59Z');
+        
+        const filteredHistory = service.getHistoryByDateRange(startDate, endDate);
+        expect(filteredHistory).toHaveSize(2);
+        expect(filteredHistory.map(e => e.videoId)).toContain('video-1');
+        expect(filteredHistory.map(e => e.videoId)).toContain('video-2');
+      });
+    });
+
+    describe('getRecentHistory', () => {
+      it('should return limited number of recent entries', () => {
+        // Add 15 entries
+        for (let i = 0; i < 15; i++) {
+          const entry = {
+            ...mockHistoryEntry,
+            id: `history-${i}`,
+            videoId: `video-${i}`,
+            lastWatched: new Date(`2024-01-${(i + 1).toString().padStart(2, '0')}T10:00:00Z`)
+          };
+          service.addToHistory(entry);
+        }
+
+        const recent = service.getRecentHistory(5);
+        expect(recent).toHaveSize(5);
+        // Should be sorted by most recent first
+        expect(recent[0].videoId).toBe('video-14');
+      });
+
+      it('should default to 10 entries when no limit specified', () => {
+        for (let i = 0; i < 15; i++) {
+          const entry = {
+            ...mockHistoryEntry,
+            id: `history-${i}`,
+            videoId: `video-${i}`
+          };
+          service.addToHistory(entry);
+        }
+
+        const recent = service.getRecentHistory();
+        expect(recent).toHaveSize(10);
+      });
+    });
+
+    describe('searchHistory', () => {
+      it('should search by video title', () => {
+        const entry1 = {
+          ...mockHistoryEntry,
+          videoId: 'video-1',
+          videoTitle: 'Guitar Lesson Basic'
+        };
+        const entry2 = {
+          ...mockHistoryEntry,
+          id: 'history-2',
+          videoId: 'video-2',
+          videoTitle: 'Piano Tutorial Advanced'
+        };
+
+        service.addToHistory(entry1);
+        service.addToHistory(entry2);
+
+        const results = service.searchHistory('guitar');
+        expect(results).toHaveSize(1);
+        expect(results[0].videoId).toBe('video-1');
+      });
+
+      it('should search by tags', () => {
+        const entry1 = {
+          ...mockHistoryEntry,
+          videoId: 'video-1',
+          tags: ['guitar', 'beginner']
+        };
+        const entry2 = {
+          ...mockHistoryEntry,
+          id: 'history-2',
+          videoId: 'video-2',
+          tags: ['piano', 'advanced']
+        };
+
+        service.addToHistory(entry1);
+        service.addToHistory(entry2);
+
+        const results = service.searchHistory('advanced');
+        expect(results).toHaveSize(1);
+        expect(results[0].videoId).toBe('video-2');
+      });
+
+      it('should handle empty or invalid search queries', () => {
+        service.addToHistory(mockHistoryEntry);
+
+        const results1 = service.searchHistory('');
+        expect(results1).toEqual([]);
+
+        const results2 = service.searchHistory(null as any);
+        expect(results2).toEqual([]);
+      });
+    });
+
+    describe('History validation and sanitization', () => {
+      it('should validate required fields', () => {
+        const invalidEntry = {
+          id: '',
+          videoId: 'test-video',
+          videoUrl: 'https://example.com'
+        } as any;
+
+        spyOn(console, 'error');
+        const result = service.addToHistory(invalidEntry);
+        
+        expect(result).toBe(false);
+        expect(console.error).toHaveBeenCalledWith('Invalid history entry data provided');
+      });
+
+      it('should sanitize and clamp numeric values', () => {
+        const invalidEntry = {
+          ...mockHistoryEntry,
+          watchDuration: -100,
+          loopCount: -5,
+          playbackSpeed: 0.1 // Too low
+        };
+
+        service.addToHistory(invalidEntry);
+        const history = service.getHistory();
+        
+        expect(history[0].watchDuration).toBe(0); // Should be clamped to 0
+        expect(history[0].loopCount).toBe(0);
+        expect(history[0].playbackSpeed).toBe(0.25); // Should be clamped to minimum
+      });
+
+      it('should limit and filter tags', () => {
+        const entryWithManyTags = {
+          ...mockHistoryEntry,
+          tags: [
+            'tag1', 'tag2', 'tag3', 'tag4', 'tag5',
+            'tag6', 'tag7', 'tag8', 'tag9', 'tag10',
+            'tag11', 'tag12', '', '  ', null, 123
+          ] as any[]
+        };
+
+        service.addToHistory(entryWithManyTags);
+        const history = service.getHistory();
+        
+        expect(history[0].tags?.length).toBe(10); // Should be limited to 10 tags
+        expect(history[0].tags).toEqual([
+          'tag1', 'tag2', 'tag3', 'tag4', 'tag5',
+          'tag6', 'tag7', 'tag8', 'tag9', 'tag10'
+        ]);
+      });
+
+      it('should convert date strings to Date objects', () => {
+        const entryWithStringDate = {
+          ...mockHistoryEntry,
+          lastWatched: '2024-01-01T10:00:00Z'
+        } as any;
+
+        service.addToHistory(entryWithStringDate);
+        const history = service.getHistory();
+        
+        expect(history[0].lastWatched).toBeInstanceOf(Date);
+      });
+
+      it('should trim string fields', () => {
+        const entryWithUntrimmedStrings = {
+          ...mockHistoryEntry,
+          videoTitle: '  Untrimmed Title  ',
+          videoUrl: '  https://example.com  ',
+          tags: ['  tag1  ', '  tag2  ']
+        };
+
+        service.addToHistory(entryWithUntrimmedStrings);
+        const history = service.getHistory();
+        
+        expect(history[0].videoTitle).toBe('Untrimmed Title');
+        expect(history[0].videoUrl).toBe('https://example.com');
+        expect(history[0].tags).toEqual(['tag1', 'tag2']);
+      });
+    });
+
+    describe('Error handling', () => {
+      it('should handle localStorage errors gracefully', () => {
+        const mockLocalStorage = {
+          setItem: jasmine.createSpy().and.throwError('Storage error'),
+          getItem: jasmine.createSpy().and.returnValue(null),
+          removeItem: jasmine.createSpy().and.throwError('Storage error'),
+          clear: jasmine.createSpy(),
+          length: 0,
+          key: jasmine.createSpy()
+        };
+
+        spyOn(console, 'error');
+        Object.defineProperty(window, 'localStorage', {
+          value: mockLocalStorage,
+          writable: true
+        });
+
+        const added = service.addToHistory(mockHistoryEntry);
+        expect(added).toBe(false);
+        expect(console.error).toHaveBeenCalled();
+      });
+
+      it('should handle corrupted history data gracefully', () => {
+        localStorage.setItem('ng-youtube-looper-history', 'invalid-json');
+        
+        spyOn(console, 'error');
+        const history = service.getHistory();
+        
+        expect(history).toEqual([]);
+        expect(console.error).toHaveBeenCalled();
       });
     });
   });

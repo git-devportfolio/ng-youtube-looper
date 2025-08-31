@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { VideoSession, AppSettings, DEFAULT_APP_SETTINGS } from './storage.types';
+import { VideoSession, AppSettings, DEFAULT_APP_SETTINGS, HistoryEntry } from './storage.types';
 
 @Injectable({
   providedIn: 'root'
@@ -7,11 +7,12 @@ import { VideoSession, AppSettings, DEFAULT_APP_SETTINGS } from './storage.types
 export class SecureStorageService {
   private readonly MAX_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB
   private readonly MAX_SINGLE_ITEM_SIZE = 1024 * 1024; // 1MB per item
+  private readonly MAX_HISTORY_ENTRIES = 100; // Maximum history entries
   
   // Storage keys
   private readonly SESSIONS_STORAGE_KEY = 'ng-youtube-looper-sessions';
   private readonly SETTINGS_STORAGE_KEY = 'ng-youtube-looper-settings';
-  // private readonly HISTORY_STORAGE_KEY = 'ng-youtube-looper-history'; // For future tasks
+  private readonly HISTORY_STORAGE_KEY = 'ng-youtube-looper-history';
 
   /**
    * Validate if localStorage is available and functional
@@ -519,6 +520,167 @@ export class SecureStorageService {
     }
   }
 
+  // === READING HISTORY MANAGEMENT ===
+
+  /**
+   * Add an entry to the reading history
+   */
+  addToHistory(videoData: HistoryEntry): boolean {
+    try {
+      if (!this.isValidHistoryEntry(videoData)) {
+        console.error('Invalid history entry data provided');
+        return false;
+      }
+
+      const history = this.getHistory();
+      const sanitizedEntry = this.sanitizeHistoryEntry(videoData);
+      
+      // Remove existing entry for the same video to avoid duplicates
+      const filteredHistory = history.filter(entry => entry.videoId !== sanitizedEntry.videoId);
+      
+      // Add new entry at the beginning
+      filteredHistory.unshift(sanitizedEntry);
+      
+      // Keep only the most recent entries within limit
+      const limitedHistory = filteredHistory.slice(0, this.MAX_HISTORY_ENTRIES);
+      
+      const success = this.saveData(this.HISTORY_STORAGE_KEY, limitedHistory);
+      
+      if (success) {
+        console.log(`Successfully added video ${sanitizedEntry.videoId} to history`);
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Failed to add to history:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get the complete reading history
+   */
+  getHistory(): HistoryEntry[] {
+    try {
+      const history = this.loadData<HistoryEntry[]>(this.HISTORY_STORAGE_KEY, []);
+      
+      if (!Array.isArray(history)) {
+        console.warn('Loaded history data is not an array, returning empty array');
+        return [];
+      }
+
+      // Validate and sanitize loaded history entries
+      const validHistory = this.validateAndSanitizeHistory(history);
+      
+      console.log(`Successfully loaded ${validHistory.length} history entries`);
+      return validHistory;
+    } catch (error) {
+      console.error('Failed to load history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Clear all reading history
+   */
+  clearHistory(): boolean {
+    try {
+      const success = this.removeData(this.HISTORY_STORAGE_KEY);
+      
+      if (success) {
+        console.log('Successfully cleared reading history');
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Failed to clear history:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Remove a specific video from history
+   */
+  removeFromHistory(videoId: string): boolean {
+    try {
+      if (!videoId || typeof videoId !== 'string') {
+        console.error('Invalid videoId provided for history removal');
+        return false;
+      }
+
+      const history = this.getHistory();
+      const filteredHistory = history.filter(entry => entry.videoId !== videoId);
+      
+      if (filteredHistory.length === history.length) {
+        console.warn(`Video ${videoId} not found in history`);
+        return false;
+      }
+
+      const success = this.saveData(this.HISTORY_STORAGE_KEY, filteredHistory);
+      
+      if (success) {
+        console.log(`Successfully removed video ${videoId} from history`);
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Failed to remove from history:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get history entries for a specific time period
+   */
+  getHistoryByDateRange(startDate: Date, endDate: Date): HistoryEntry[] {
+    try {
+      const history = this.getHistory();
+      return history.filter(entry => {
+        const watchedDate = new Date(entry.lastWatched);
+        return watchedDate >= startDate && watchedDate <= endDate;
+      });
+    } catch (error) {
+      console.error('Failed to get history by date range:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get recently watched videos (last N entries)
+   */
+  getRecentHistory(limit: number = 10): HistoryEntry[] {
+    try {
+      const history = this.getHistory();
+      return history.slice(0, Math.min(limit, history.length));
+    } catch (error) {
+      console.error('Failed to get recent history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Search history by video title or tags
+   */
+  searchHistory(query: string): HistoryEntry[] {
+    try {
+      if (!query || typeof query !== 'string') {
+        return [];
+      }
+
+      const history = this.getHistory();
+      const searchTerm = query.toLowerCase().trim();
+      
+      return history.filter(entry => {
+        const titleMatch = entry.videoTitle?.toLowerCase().includes(searchTerm);
+        const tagMatch = entry.tags?.some(tag => tag.toLowerCase().includes(searchTerm));
+        return titleMatch || tagMatch;
+      });
+    } catch (error) {
+      console.error('Failed to search history:', error);
+      return [];
+    }
+  }
+
   // === PRIVATE VALIDATION METHODS ===
 
   /**
@@ -651,5 +813,59 @@ export class SecureStorageService {
     if (typeof color !== 'string') return false;
     const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
     return hexRegex.test(color);
+  }
+
+  /**
+   * Validate and sanitize an array of history entries
+   */
+  private validateAndSanitizeHistory(history: HistoryEntry[]): HistoryEntry[] {
+    return history
+      .filter(entry => this.isValidHistoryEntry(entry))
+      .map(entry => this.sanitizeHistoryEntry(entry))
+      .sort((a, b) => new Date(b.lastWatched).getTime() - new Date(a.lastWatched).getTime()); // Sort by most recent first
+  }
+
+  /**
+   * Check if a history entry object is valid
+   */
+  private isValidHistoryEntry(entry: any): entry is HistoryEntry {
+    return entry &&
+           typeof entry === 'object' &&
+           typeof entry.id === 'string' &&
+           entry.id.length > 0 &&
+           typeof entry.videoId === 'string' &&
+           entry.videoId.length > 0 &&
+           typeof entry.videoUrl === 'string' &&
+           entry.videoUrl.length > 0 &&
+           (entry.lastWatched instanceof Date || typeof entry.lastWatched === 'string') &&
+           typeof entry.watchDuration === 'number' &&
+           entry.watchDuration >= 0 &&
+           typeof entry.loopCount === 'number' &&
+           entry.loopCount >= 0 &&
+           typeof entry.playbackSpeed === 'number' &&
+           entry.playbackSpeed > 0 &&
+           (entry.tags === undefined || Array.isArray(entry.tags));
+  }
+
+  /**
+   * Sanitize a history entry object
+   */
+  private sanitizeHistoryEntry(entry: HistoryEntry): HistoryEntry {
+    return {
+      id: String(entry.id).trim(),
+      videoId: String(entry.videoId).trim(),
+      videoTitle: entry.videoTitle ? String(entry.videoTitle).trim() : undefined,
+      videoUrl: String(entry.videoUrl).trim(),
+      thumbnailUrl: entry.thumbnailUrl ? String(entry.thumbnailUrl).trim() : undefined,
+      lastWatched: new Date(entry.lastWatched),
+      watchDuration: Math.max(0, Number(entry.watchDuration) || 0),
+      loopCount: Math.max(0, Number(entry.loopCount) || 0),
+      playbackSpeed: Math.max(0.25, Math.min(3.0, Number(entry.playbackSpeed) || 1.0)),
+      tags: Array.isArray(entry.tags) ? 
+        entry.tags.filter(tag => typeof tag === 'string' && tag.trim().length > 0)
+                 .map(tag => String(tag).trim())
+                 .slice(0, 10) : // Limit to 10 tags max
+        undefined
+    };
   }
 }
