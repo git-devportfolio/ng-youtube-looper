@@ -1,9 +1,9 @@
 import { Component, inject, OnInit, OnDestroy, ViewChild, ElementRef, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
-import { VideoPlayerFacade } from '../data-access/video-player.facade';
-import { PlayerControlsComponent } from './player-controls.component';
-import { SpeedControlComponent } from './speed-control.component';
+import { VideoPlayerFacade } from '../../data-access/video-player.facade';
+import { PlayerControlsComponent } from '../player-controls';
+import { SpeedControlComponent } from '../speed-control';
 
 @Component({
   selector: 'app-video-player',

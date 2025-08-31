@@ -1,9 +1,9 @@
 import { Component, Input, inject, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { VideoPlayerFacade } from '../data-access/video-player.facade';
-import { TimeDisplayComponent } from './time-display.component';
-import { TimeSliderComponent } from './time-slider.component';
-import { SpeedControlComponent } from './speed-control.component';
+import { VideoPlayerFacade } from '../../data-access/video-player.facade';
+import { TimeDisplayComponent } from '../time-display';
+import { TimeSliderComponent } from '../time-slider';
+import { SpeedControlComponent } from '../speed-control';
 
 @Component({
   selector: 'app-player-controls',

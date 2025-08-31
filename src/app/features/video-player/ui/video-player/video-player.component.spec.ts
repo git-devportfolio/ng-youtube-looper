@@ -2,9 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { signal, computed } from '@angular/core';
 import { VideoPlayerComponent } from './video-player.component';
-import { VideoPlayerFacade } from '../data-access/video-player.facade';
-import { PlayerControlsComponent } from './player-controls.component';
-import { SpeedControlComponent } from './speed-control.component';
+import { VideoPlayerFacade } from '../../data-access/video-player.facade';
+import { PlayerControlsComponent } from '../player-controls';
+import { SpeedControlComponent } from '../speed-control';
 
 describe('VideoPlayerComponent', () => {
   let component: VideoPlayerComponent;

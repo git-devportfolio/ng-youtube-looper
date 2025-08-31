@@ -1,0 +1,1 @@
+export { TimelineComponent, Loop } from './timeline.component';

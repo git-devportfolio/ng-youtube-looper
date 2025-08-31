@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { PlayerControlsComponent } from './player-controls.component';
-import { VideoPlayerFacade } from '../data-access/video-player.facade';
+import { VideoPlayerFacade } from '../../data-access/video-player.facade';
 
 describe('PlayerControlsComponent', () => {
   let component: PlayerControlsComponent;

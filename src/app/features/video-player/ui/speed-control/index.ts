@@ -1,0 +1,1 @@
+export { SpeedControlComponent } from './speed-control.component';

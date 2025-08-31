@@ -1,0 +1,1 @@
+export { TimeSliderComponent } from './time-slider.component';
