@@ -35,6 +35,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `ng generate component <name>` - Generate new component with SCSS styling
 - `ng generate --help` - View all available schematics
 
+#### Création de Composants avec Structure Organisée
+Lors de la création d'un nouveau composant, suivre ces étapes :
+
+1. **Créer le dossier du composant :**
+```bash
+mkdir -p src/app/features/feature-name/ui/component-name
+```
+
+2. **Générer le composant dans ce dossier :**
+```bash
+ng generate component features/feature-name/ui/component-name --skip-tests=false
+```
+
+3. **Créer le fichier index.ts :**
+```bash
+# Dans component-name/index.ts
+echo "export { ComponentNameComponent } from './component-name.component';" > src/app/features/feature-name/ui/component-name/index.ts
+```
+
+4. **Mettre à jour le fichier index.ts parent :**
+```typescript
+// Dans ui/index.ts - ajouter la ligne
+export * from './component-name';
+```
+
+#### Bonnes Pratiques de Nommage
+- **Dossiers :** kebab-case (`video-player`, `player-controls`)  
+- **Composants :** PascalCase (`VideoPlayerComponent`)
+- **Fichiers :** kebab-case (`video-player.component.ts`)
+- **Index.ts :** Toujours présent dans chaque dossier de composant
+
 ## Project Architecture
 
 ### Structure
@@ -77,6 +108,123 @@ Les conventions de développement Angular sont définies dans :
 - **Control Flow**: Utiliser `@if`, `@for`, `@switch` au lieu des directives structurelles
 - **Fonction inject()**: Préférer à l'injection par constructeur
 - **Reactive Forms**: Préférer aux Template-driven forms
+- **Structure modulaire**: Un composant = un dossier avec tous ses fichiers
+- **Index.ts obligatoire**: Utiliser les barrel exports pour exposer l'API publique
+- **Imports propres**: Préférer les barrel exports aux chemins de fichiers complets
+
+### Organisation des Composants et Structure des Dossiers
+
+#### Principe de Base
+**OBLIGATOIRE**: Chaque composant doit être organisé dans son propre répertoire contenant tous ses fichiers (.ts, .html, .scss, .spec.ts) et un fichier index.ts pour les exports.
+
+#### Structure Recommandée
+```
+src/app/features/feature-name/ui/
+├── component-name/
+│   ├── index.ts                           # Barrel export
+│   ├── component-name.component.ts        # Logique du composant
+│   ├── component-name.component.html      # Template
+│   ├── component-name.component.scss      # Styles
+│   └── component-name.component.spec.ts   # Tests
+└── index.ts                               # Export de tous les composants UI
+```
+
+#### Pattern Index.ts (Barrel Exports)
+Les fichiers `index.ts` servent de points d'entrée centralisés pour chaque module :
+
+**Fichier index.ts d'un composant :**
+```typescript
+// component-name/index.ts
+export { ComponentNameComponent } from './component-name.component';
+export { ComponentNameInterface } from './component-name.component'; // si applicable
+```
+
+**Fichier index.ts principal du dossier ui :**
+```typescript
+// ui/index.ts
+export * from './component-1';
+export * from './component-2';
+export * from './component-3';
+```
+
+#### Avantages de cette Organisation
+
+1. **Imports Propres**
+```typescript
+// ❌ Avant - imports "sales"
+import { ComponentA } from './components/component-a/component-a.component';
+import { ComponentB } from './components/component-b/component-b.component';
+
+// ✅ Après - imports propres avec barrel exports  
+import { ComponentA, ComponentB } from './components';
+// ou
+import { ComponentA } from './components/component-a';
+```
+
+2. **Encapsulation et API Publique**
+- Contrôle de ce qui est exposé publiquement
+- Masquage des détails d'implémentation interne
+- Interface claire entre modules
+
+3. **Facilité de Refactoring**
+```typescript
+// Si on renomme component-a.component.ts -> component-a-widget.component.ts
+// Seul l'index.ts change, les imports externes restent identiques
+
+// component-a/index.ts
+export { ComponentA } from './component-a-widget.component'; // ✅ Seul changement nécessaire
+```
+
+4. **Maintenance et Évolutivité**
+- Structure claire et prévisible
+- Ajout facile de nouveaux composants
+- Séparation claire des responsabilités
+- Navigation plus simple dans le code
+
+#### Exemples Pratiques
+
+**Structure complexe avec sous-modules :**
+```
+src/app/features/video-player/ui/
+├── index.ts                    # Export principal
+├── video-player/
+│   ├── index.ts
+│   ├── video-player.component.ts
+│   ├── video-player.component.html
+│   ├── video-player.component.scss
+│   └── video-player.component.spec.ts
+├── timeline/
+│   ├── index.ts               
+│   ├── timeline.component.ts   # Export TimelineComponent + Loop interface
+│   ├── timeline.component.html
+│   ├── timeline.component.scss
+│   └── timeline.component.spec.ts
+└── player-controls/
+    ├── index.ts
+    ├── player-controls.component.ts
+    ├── player-controls.component.html  
+    ├── player-controls.component.scss
+    └── player-controls.component.spec.ts
+```
+
+**Utilisation depuis l'extérieur :**
+```typescript
+// Import depuis le niveau principal
+import { VideoPlayerComponent, TimelineComponent } from '../ui';
+
+// Import spécifique d'un composant
+import { TimelineComponent, Loop } from '../ui/timeline';
+
+// Import depuis un autre composant du même niveau
+import { PlayerControlsComponent } from '../player-controls';
+```
+
+#### Règles d'Import SCSS
+Avec la structure en sous-répertoires, les imports SCSS doivent être ajustés :
+```scss
+// Dans component-name/component-name.component.scss
+@import '../../../../../styles/mixins'; // Ajuster le nombre de ../ selon la profondeur
+```
 
 ## Workflow Git et Task Master
 
