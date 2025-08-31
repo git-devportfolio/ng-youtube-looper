@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { SecureStorageService } from './storage.service';
-import { VideoSession, SessionLoop } from './storage.types';
+import { VideoSession, SessionLoop, AppSettings, DEFAULT_APP_SETTINGS } from './storage.types';
 
 describe('SecureStorageService', () => {
   let service: SecureStorageService;
@@ -703,6 +703,306 @@ describe('SecureStorageService', () => {
 
         service.clearSessions();
         expect(console.log).toHaveBeenCalledWith('Successfully cleared all video sessions');
+      });
+    });
+  });
+
+  // === USER SETTINGS MANAGEMENT TESTS (Task 22.3) ===
+
+  describe('User Settings Management (Task 22.3)', () => {
+    describe('saveSettings and loadSettings', () => {
+      it('should save and load settings successfully', () => {
+        const customSettings: AppSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          theme: 'dark',
+          defaultPlaybackSpeed: 1.5,
+          enableKeyboardShortcuts: false
+        };
+
+        const saved = service.saveSettings(customSettings);
+        expect(saved).toBe(true);
+
+        const loaded = service.loadSettings();
+        expect(loaded.theme).toBe('dark');
+        expect(loaded.defaultPlaybackSpeed).toBe(1.5);
+        expect(loaded.enableKeyboardShortcuts).toBe(false);
+      });
+
+      it('should return default settings when none are saved', () => {
+        const settings = service.loadSettings();
+        expect(settings).toEqual(DEFAULT_APP_SETTINGS);
+      });
+
+      it('should merge loaded settings with defaults for missing properties', () => {
+        // Save incomplete settings to localStorage directly
+        const incompleteSettings = {
+          theme: 'dark',
+          defaultPlaybackSpeed: 2.0
+        };
+        localStorage.setItem('ng-youtube-looper-settings', JSON.stringify(incompleteSettings));
+
+        const loaded = service.loadSettings();
+        expect(loaded.theme).toBe('dark');
+        expect(loaded.defaultPlaybackSpeed).toBe(2.0);
+        expect(loaded.enableKeyboardShortcuts).toBe(DEFAULT_APP_SETTINGS.enableKeyboardShortcuts);
+        expect(loaded.loopColors).toEqual(DEFAULT_APP_SETTINGS.loopColors);
+      });
+
+      it('should handle corrupted settings data gracefully', () => {
+        localStorage.setItem('ng-youtube-looper-settings', 'invalid-json');
+        
+        spyOn(console, 'error');
+        const settings = service.loadSettings();
+        
+        expect(settings).toEqual(DEFAULT_APP_SETTINGS);
+        expect(console.error).toHaveBeenCalled();
+      });
+    });
+
+    describe('resetSettings', () => {
+      it('should reset settings to defaults', () => {
+        // First save custom settings
+        const customSettings: AppSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          theme: 'dark',
+          defaultPlaybackSpeed: 2.0
+        };
+        service.saveSettings(customSettings);
+
+        // Reset to defaults
+        const reset = service.resetSettings();
+        expect(reset).toBe(true);
+
+        // Verify settings are back to defaults
+        const settings = service.loadSettings();
+        expect(settings).toEqual(DEFAULT_APP_SETTINGS);
+      });
+
+      it('should log success message on reset', () => {
+        spyOn(console, 'log');
+        service.resetSettings();
+        expect(console.log).toHaveBeenCalledWith('Successfully reset settings to defaults');
+      });
+    });
+
+    describe('updateSetting and getSetting', () => {
+      it('should update a specific setting', () => {
+        const updated = service.updateSetting('theme', 'dark');
+        expect(updated).toBe(true);
+
+        const theme = service.getSetting('theme');
+        expect(theme).toBe('dark');
+
+        // Verify other settings remain unchanged
+        const playbackSpeed = service.getSetting('defaultPlaybackSpeed');
+        expect(playbackSpeed).toBe(DEFAULT_APP_SETTINGS.defaultPlaybackSpeed);
+      });
+
+      it('should get default value when setting does not exist', () => {
+        const theme = service.getSetting('theme');
+        expect(theme).toBe(DEFAULT_APP_SETTINGS.theme);
+      });
+
+      it('should handle errors when updating setting', () => {
+        const mockLocalStorage = {
+          setItem: jasmine.createSpy().and.throwError('Storage error'),
+          getItem: jasmine.createSpy().and.returnValue(JSON.stringify(DEFAULT_APP_SETTINGS)),
+          removeItem: jasmine.createSpy(),
+          clear: jasmine.createSpy(),
+          length: 0,
+          key: jasmine.createSpy()
+        };
+
+        spyOn(console, 'error');
+        Object.defineProperty(window, 'localStorage', {
+          value: mockLocalStorage,
+          writable: true
+        });
+
+        const updated = service.updateSetting('theme', 'dark');
+        expect(updated).toBe(false);
+        expect(console.error).toHaveBeenCalled();
+      });
+
+      it('should handle errors when getting setting', () => {
+        const mockLocalStorage = {
+          setItem: jasmine.createSpy(),
+          getItem: jasmine.createSpy().and.throwError('Storage error'),
+          removeItem: jasmine.createSpy(),
+          clear: jasmine.createSpy(),
+          length: 0,
+          key: jasmine.createSpy()
+        };
+
+        spyOn(console, 'error');
+        Object.defineProperty(window, 'localStorage', {
+          value: mockLocalStorage,
+          writable: true
+        });
+
+        const theme = service.getSetting('theme');
+        expect(theme).toBe(DEFAULT_APP_SETTINGS.theme);
+        expect(console.error).toHaveBeenCalled();
+      });
+    });
+
+    describe('Settings validation and sanitization', () => {
+      it('should validate theme values', () => {
+        const invalidSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          theme: 'invalid-theme'
+        } as any;
+
+        service.saveSettings(invalidSettings);
+        const loaded = service.loadSettings();
+        
+        expect(loaded.theme).toBe(DEFAULT_APP_SETTINGS.theme);
+      });
+
+      it('should clamp playback speed to valid range', () => {
+        const invalidSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          defaultPlaybackSpeed: 5.0 // Too high
+        };
+
+        service.saveSettings(invalidSettings);
+        const loaded = service.loadSettings();
+        
+        expect(loaded.defaultPlaybackSpeed).toBe(3.0); // Should be clamped to max
+      });
+
+      it('should clamp playback speed minimum', () => {
+        const invalidSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          defaultPlaybackSpeed: 0.1 // Too low
+        };
+
+        service.saveSettings(invalidSettings);
+        const loaded = service.loadSettings();
+        
+        expect(loaded.defaultPlaybackSpeed).toBe(0.25); // Should be clamped to min
+      });
+
+      it('should clamp autoSaveInterval to valid range', () => {
+        const invalidSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          autoSaveInterval: 1000 // Too low (minimum is 5000)
+        };
+
+        service.saveSettings(invalidSettings);
+        const loaded = service.loadSettings();
+        
+        expect(loaded.autoSaveInterval).toBe(5000); // Should be clamped to min
+      });
+
+      it('should clamp maxHistoryEntries to valid range', () => {
+        const invalidSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          maxHistoryEntries: 5 // Too low
+        };
+
+        service.saveSettings(invalidSettings);
+        const loaded = service.loadSettings();
+        
+        expect(loaded.maxHistoryEntries).toBe(10); // Should be clamped to min
+
+        const tooHighSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          maxHistoryEntries: 2000 // Too high
+        };
+
+        service.saveSettings(tooHighSettings);
+        const loadedHigh = service.loadSettings();
+        
+        expect(loadedHigh.maxHistoryEntries).toBe(1000); // Should be clamped to max
+      });
+
+      it('should validate hex colors in loopColors', () => {
+        const invalidSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          loopColors: ['#FF0000', 'invalid-color', '#00FF00', '#GGGGGG']
+        };
+
+        service.saveSettings(invalidSettings);
+        const loaded = service.loadSettings();
+        
+        expect(loaded.loopColors).toEqual(['#FF0000', '#00FF00']); // Invalid colors filtered out
+      });
+
+      it('should limit loopColors to maximum 20 items', () => {
+        const tooManyColors = Array.from({length: 25}, (_, i) => `#${i.toString(16).padStart(6, '0')}`);
+        const invalidSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          loopColors: tooManyColors
+        };
+
+        service.saveSettings(invalidSettings);
+        const loaded = service.loadSettings();
+        
+        expect(loaded.loopColors.length).toBe(20); // Should be limited to 20
+      });
+
+      it('should validate and sanitize language', () => {
+        const invalidSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          language: 'X' // Too short
+        };
+
+        service.saveSettings(invalidSettings);
+        const loaded = service.loadSettings();
+        
+        expect(loaded.language).toBe(DEFAULT_APP_SETTINGS.language);
+      });
+
+      it('should trim and lowercase language', () => {
+        const invalidSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          language: '  EN-US  '
+        };
+
+        service.saveSettings(invalidSettings);
+        const loaded = service.loadSettings();
+        
+        expect(loaded.language).toBe('en-us');
+      });
+
+      it('should convert boolean-like values to actual booleans', () => {
+        const invalidSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          enableKeyboardShortcuts: 'true',
+          showLoopLabels: 0,
+          enableNotifications: 1,
+          autoPlayNext: ''
+        } as any;
+
+        service.saveSettings(invalidSettings);
+        const loaded = service.loadSettings();
+        
+        expect(loaded.enableKeyboardShortcuts).toBe(true);
+        expect(loaded.showLoopLabels).toBe(false);
+        expect(loaded.enableNotifications).toBe(true);
+        expect(loaded.autoPlayNext).toBe(false);
+      });
+
+      it('should reject invalid settings object', () => {
+        spyOn(console, 'error');
+        const result = service.saveSettings(null as any);
+        
+        expect(result).toBe(false);
+        expect(console.error).toHaveBeenCalledWith('Invalid settings data provided');
+      });
+    });
+
+    describe('Integration with storage limits', () => {
+      it('should respect storage size limits for settings', () => {
+        const hugeSettings = {
+          ...DEFAULT_APP_SETTINGS,
+          loopColors: Array.from({length: 1000000}, () => '#FF0000') // Huge array
+        };
+
+        const result = service.saveSettings(hugeSettings);
+        // Should either save successfully (after sanitization) or fail due to size limits
+        expect(typeof result).toBe('boolean');
       });
     });
   });

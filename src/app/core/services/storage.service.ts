@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { VideoSession } from './storage.types';
+import { VideoSession, AppSettings, DEFAULT_APP_SETTINGS } from './storage.types';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +10,7 @@ export class SecureStorageService {
   
   // Storage keys
   private readonly SESSIONS_STORAGE_KEY = 'ng-youtube-looper-sessions';
-  // private readonly SETTINGS_STORAGE_KEY = 'ng-youtube-looper-settings'; // For future tasks
+  private readonly SETTINGS_STORAGE_KEY = 'ng-youtube-looper-settings';
   // private readonly HISTORY_STORAGE_KEY = 'ng-youtube-looper-history'; // For future tasks
 
   /**
@@ -427,6 +427,98 @@ export class SecureStorageService {
     }
   }
 
+  // === USER SETTINGS MANAGEMENT ===
+
+  /**
+   * Save application settings to localStorage
+   */
+  saveSettings(settings: AppSettings): boolean {
+    try {
+      if (!this.isValidSettings(settings)) {
+        console.error('Invalid settings data provided');
+        return false;
+      }
+
+      // Sanitize and validate settings
+      const sanitizedSettings = this.sanitizeSettings(settings);
+      
+      const success = this.saveData(this.SETTINGS_STORAGE_KEY, sanitizedSettings);
+      
+      if (success) {
+        console.log('Successfully saved application settings');
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Load application settings from localStorage
+   */
+  loadSettings(): AppSettings {
+    try {
+      const settings = this.loadData<AppSettings>(this.SETTINGS_STORAGE_KEY, DEFAULT_APP_SETTINGS);
+      
+      // Validate loaded settings and merge with defaults for any missing properties
+      const validatedSettings = this.mergeWithDefaults(settings);
+      
+      console.log('Successfully loaded application settings');
+      return validatedSettings;
+    } catch (error) {
+      console.error('Failed to load settings, returning defaults:', error);
+      return { ...DEFAULT_APP_SETTINGS };
+    }
+  }
+
+  /**
+   * Reset application settings to defaults
+   */
+  resetSettings(): boolean {
+    try {
+      const success = this.saveSettings(DEFAULT_APP_SETTINGS);
+      
+      if (success) {
+        console.log('Successfully reset settings to defaults');
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Failed to reset settings:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Update specific setting value
+   */
+  updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]): boolean {
+    try {
+      const currentSettings = this.loadSettings();
+      const updatedSettings = { ...currentSettings, [key]: value };
+      
+      return this.saveSettings(updatedSettings);
+    } catch (error) {
+      console.error('Failed to update setting:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get specific setting value
+   */
+  getSetting<K extends keyof AppSettings>(key: K): AppSettings[K] {
+    try {
+      const settings = this.loadSettings();
+      return settings[key];
+    } catch (error) {
+      console.error('Failed to get setting, returning default:', error);
+      return DEFAULT_APP_SETTINGS[key];
+    }
+  }
+
   // === PRIVATE VALIDATION METHODS ===
 
   /**
@@ -495,5 +587,69 @@ export class SecureStorageService {
            typeof loop.playCount === 'number' &&
            loop.playCount >= 0 &&
            typeof loop.isActive === 'boolean';
+  }
+
+  /**
+   * Check if settings object is valid
+   */
+  private isValidSettings(settings: any): settings is AppSettings {
+    return settings &&
+           typeof settings === 'object' &&
+           ['light', 'dark', 'auto'].includes(settings.theme) &&
+           typeof settings.defaultPlaybackSpeed === 'number' &&
+           settings.defaultPlaybackSpeed >= 0.25 &&
+           settings.defaultPlaybackSpeed <= 3.0 &&
+           typeof settings.autoSaveInterval === 'number' &&
+           settings.autoSaveInterval >= 5000 && // Minimum 5 seconds
+           typeof settings.maxHistoryEntries === 'number' &&
+           settings.maxHistoryEntries >= 10 &&
+           settings.maxHistoryEntries <= 1000 &&
+           typeof settings.enableKeyboardShortcuts === 'boolean' &&
+           typeof settings.showLoopLabels === 'boolean' &&
+           Array.isArray(settings.loopColors) &&
+           settings.loopColors.every((color: any) => typeof color === 'string' && this.isValidHexColor(color)) &&
+           typeof settings.language === 'string' &&
+           settings.language.length >= 2 &&
+           typeof settings.enableNotifications === 'boolean' &&
+           typeof settings.autoPlayNext === 'boolean';
+  }
+
+  /**
+   * Sanitize and validate settings object
+   */
+  private sanitizeSettings(settings: AppSettings): AppSettings {
+    return {
+      theme: ['light', 'dark', 'auto'].includes(settings.theme) ? settings.theme : DEFAULT_APP_SETTINGS.theme,
+      defaultPlaybackSpeed: Math.max(0.25, Math.min(3.0, Number(settings.defaultPlaybackSpeed) || DEFAULT_APP_SETTINGS.defaultPlaybackSpeed)),
+      autoSaveInterval: Math.max(5000, Math.min(300000, Number(settings.autoSaveInterval) || DEFAULT_APP_SETTINGS.autoSaveInterval)), // 5s to 5min
+      maxHistoryEntries: Math.max(10, Math.min(1000, Number(settings.maxHistoryEntries) || DEFAULT_APP_SETTINGS.maxHistoryEntries)),
+      enableKeyboardShortcuts: Boolean(settings.enableKeyboardShortcuts),
+      showLoopLabels: Boolean(settings.showLoopLabels),
+      loopColors: Array.isArray(settings.loopColors) ? 
+        settings.loopColors.filter(color => this.isValidHexColor(color)).slice(0, 20) : // Max 20 colors
+        DEFAULT_APP_SETTINGS.loopColors,
+      language: (typeof settings.language === 'string' && settings.language.length >= 2) ? 
+        String(settings.language).toLowerCase().trim() : 
+        DEFAULT_APP_SETTINGS.language,
+      enableNotifications: Boolean(settings.enableNotifications),
+      autoPlayNext: Boolean(settings.autoPlayNext)
+    };
+  }
+
+  /**
+   * Merge loaded settings with defaults for missing properties
+   */
+  private mergeWithDefaults(settings: Partial<AppSettings>): AppSettings {
+    const merged = { ...DEFAULT_APP_SETTINGS, ...settings };
+    return this.sanitizeSettings(merged);
+  }
+
+  /**
+   * Validate if a string is a valid hex color
+   */
+  private isValidHexColor(color: string): boolean {
+    if (typeof color !== 'string') return false;
+    const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    return hexRegex.test(color);
   }
 }
