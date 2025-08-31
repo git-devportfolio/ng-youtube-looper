@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { VideoSession, AppSettings, DEFAULT_APP_SETTINGS, HistoryEntry } from './storage.types';
+import { VideoSession, AppSettings, DEFAULT_APP_SETTINGS, HistoryEntry, StorageError } from './storage.types';
 
 @Injectable({
   providedIn: 'root'
@@ -23,9 +23,34 @@ export class SecureStorageService {
       localStorage.setItem(testKey, 'test');
       localStorage.removeItem(testKey);
       return true;
-    } catch {
+    } catch (error) {
+      this.handleStorageError('STORAGE_UNAVAILABLE', 'localStorage is not available or accessible', error as Error);
       return false;
     }
+  }
+
+  /**
+   * Create and handle a typed storage error
+   */
+  private handleStorageError(
+    code: 'QUOTA_EXCEEDED' | 'ACCESS_DENIED' | 'CORRUPTED_DATA' | 'SERIALIZATION_ERROR' | 'STORAGE_UNAVAILABLE',
+    message: string,
+    originalError?: Error
+  ): StorageError {
+    const storageError = new StorageError(message, code, originalError);
+    console.error(storageError.toString());
+    return storageError;
+  }
+
+  /**
+   * Check if error is storage quota exceeded
+   */
+  private isQuotaExceededError(error: Error): boolean {
+    return error.name === 'QuotaExceededError' ||
+           error.message.includes('quota') ||
+           error.message.includes('storage') ||
+           (error as any).code === 22 ||
+           (error as any).code === 1014;
   }
 
   /**
@@ -102,18 +127,20 @@ export class SecureStorageService {
     try {
       // Basic JSON validation before parsing
       if (!jsonString || typeof jsonString !== 'string') {
-        throw new Error('Invalid JSON string');
+        throw new StorageError('Invalid JSON string provided', 'CORRUPTED_DATA');
       }
       
       // Check for potential malicious content
       if (jsonString.includes('<script') || jsonString.includes('javascript:')) {
-        throw new Error('Potentially malicious content detected');
+        throw new StorageError('Potentially malicious content detected in stored data', 'CORRUPTED_DATA');
       }
       
       return JSON.parse(jsonString);
     } catch (error) {
-      console.error('Deserialization error:', error);
-      throw new Error('Failed to deserialize data');
+      if (error instanceof StorageError) {
+        throw error;
+      }
+      throw new StorageError('Failed to deserialize stored data', 'SERIALIZATION_ERROR', error as Error);
     }
   }
 
@@ -154,13 +181,13 @@ export class SecureStorageService {
   saveData<T>(key: string, data: T): boolean {
     try {
       if (!this.validateStorageAvailable()) {
-        console.error('localStorage is not available');
         return false;
       }
 
       const sanitizedData = this.sanitizeData(data);
       
       if (!this.validateSizeLimit(sanitizedData)) {
+        this.handleStorageError('QUOTA_EXCEEDED', 'Data exceeds storage size limits');
         return false;
       }
 
@@ -169,7 +196,12 @@ export class SecureStorageService {
       
       return true;
     } catch (error) {
-      console.error('Storage save error:', error);
+      const err = error as Error;
+      if (this.isQuotaExceededError(err)) {
+        this.handleStorageError('QUOTA_EXCEEDED', 'Storage quota exceeded', err);
+      } else {
+        this.handleStorageError('ACCESS_DENIED', 'Failed to save data to localStorage', err);
+      }
       return false;
     }
   }
@@ -180,7 +212,6 @@ export class SecureStorageService {
   loadData<T>(key: string, defaultValue: T): T {
     try {
       if (!this.validateStorageAvailable()) {
-        console.warn('localStorage is not available, returning default value');
         return defaultValue;
       }
 
@@ -192,7 +223,8 @@ export class SecureStorageService {
       const parsed = this.deserializeData<T>(item);
       return this.sanitizeData(parsed);
     } catch (error) {
-      console.error('Storage load error:', error);
+      const err = error as Error;
+      this.handleStorageError('CORRUPTED_DATA', 'Failed to load data from localStorage', err);
       return defaultValue;
     }
   }
@@ -263,9 +295,217 @@ export class SecureStorageService {
       return info.available && 
              info.utilizationPercentage < 90 && 
              info.remainingSize > 50000; // At least 50KB remaining
-    } catch {
+    } catch (error) {
+      this.handleStorageError('STORAGE_UNAVAILABLE', 'Unable to determine storage health', error as Error);
       return false;
     }
+  }
+
+  /**
+   * Perform comprehensive storage diagnostics
+   */
+  performStorageDiagnostics(): {
+    isHealthy: boolean;
+    info: {
+      available: boolean;
+      currentSize: number;
+      maxSize: number;
+      utilizationPercentage: number;
+      remainingSize: number;
+    };
+    errors: StorageError[];
+    recommendations: string[];
+  } {
+    const errors: StorageError[] = [];
+    const recommendations: string[] = [];
+    
+    // Check basic availability
+    const info = this.getStorageInfo();
+    
+    if (!info.available) {
+      errors.push(new StorageError('localStorage is not available', 'STORAGE_UNAVAILABLE'));
+      recommendations.push('Enable localStorage in browser settings');
+    }
+
+    // Check storage utilization
+    if (info.utilizationPercentage > 90) {
+      errors.push(new StorageError('Storage usage is critically high', 'QUOTA_EXCEEDED'));
+      recommendations.push('Clear old data or increase storage limits');
+    } else if (info.utilizationPercentage > 75) {
+      recommendations.push('Consider cleaning up old history entries');
+    }
+
+    // Check remaining space
+    if (info.remainingSize < 50000) { // Less than 50KB
+      errors.push(new StorageError('Very little storage space remaining', 'QUOTA_EXCEEDED'));
+      recommendations.push('Free up storage space immediately');
+    } else if (info.remainingSize < 500000) { // Less than 500KB
+      recommendations.push('Monitor storage usage closely');
+    }
+
+    // Test read/write functionality
+    try {
+      const testKey = '__diagnostics_test__';
+      const testData = { timestamp: Date.now(), test: true };
+      this.saveData(testKey, testData);
+      const loaded = this.loadData<{ timestamp: number; test: boolean } | null>(testKey, null);
+      this.removeData(testKey);
+      
+      if (!loaded || loaded.timestamp !== testData.timestamp) {
+        errors.push(new StorageError('Storage read/write functionality is impaired', 'CORRUPTED_DATA'));
+        recommendations.push('Clear browser cache and restart browser');
+      }
+    } catch (error) {
+      errors.push(new StorageError('Storage functionality test failed', 'ACCESS_DENIED', error as Error));
+      recommendations.push('Check browser permissions and privacy settings');
+    }
+
+    const isHealthy = errors.length === 0 && info.available && info.utilizationPercentage < 90;
+
+    return {
+      isHealthy,
+      info,
+      errors,
+      recommendations
+    };
+  }
+
+  /**
+   * Attempt to recover storage by cleaning up corrupted data
+   */
+  attemptStorageRecovery(): {
+    success: boolean;
+    clearedKeys: string[];
+    errors: StorageError[];
+  } {
+    const clearedKeys: string[] = [];
+    const errors: StorageError[] = [];
+
+    try {
+      // Try to identify and remove corrupted data
+      const keysToCheck = [
+        this.SESSIONS_STORAGE_KEY,
+        this.SETTINGS_STORAGE_KEY,
+        this.HISTORY_STORAGE_KEY
+      ];
+
+      for (const key of keysToCheck) {
+        try {
+          const item = localStorage.getItem(key);
+          if (item) {
+            // Try to parse the data
+            JSON.parse(item);
+            // If successful, validate structure
+            this.deserializeData(item);
+          }
+        } catch (error) {
+          // If parsing fails, remove the corrupted data
+          try {
+            localStorage.removeItem(key);
+            clearedKeys.push(key);
+          } catch (removeError) {
+            errors.push(new StorageError(`Failed to remove corrupted data for key: ${key}`, 'ACCESS_DENIED', removeError as Error));
+          }
+        }
+      }
+
+      return {
+        success: errors.length === 0,
+        clearedKeys,
+        errors
+      };
+    } catch (error) {
+      errors.push(new StorageError('Storage recovery process failed', 'STORAGE_UNAVAILABLE', error as Error));
+      return {
+        success: false,
+        clearedKeys,
+        errors
+      };
+    }
+  }
+
+  /**
+   * Get detailed storage metrics for monitoring
+   */
+  getDetailedStorageMetrics(): {
+    totalSize: number;
+    byCategory: {
+      sessions: { size: number; count: number };
+      settings: { size: number };
+      history: { size: number; count: number };
+      other: { size: number; keys: string[] };
+    };
+    utilizationByCategory: {
+      sessions: number;
+      settings: number;
+      history: number;
+      other: number;
+    };
+  } {
+    const metrics = {
+      totalSize: 0,
+      byCategory: {
+        sessions: { size: 0, count: 0 },
+        settings: { size: 0 },
+        history: { size: 0, count: 0 },
+        other: { size: 0, keys: [] as string[] }
+      },
+      utilizationByCategory: {
+        sessions: 0,
+        settings: 0,
+        history: 0,
+        other: 0
+      }
+    };
+
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+
+        const item = localStorage.getItem(key);
+        if (!item) continue;
+
+        const size = key.length + item.length + 4; // Approximate overhead
+        metrics.totalSize += size;
+
+        if (key === this.SESSIONS_STORAGE_KEY) {
+          metrics.byCategory.sessions.size = size;
+          try {
+            const sessions = JSON.parse(item);
+            metrics.byCategory.sessions.count = Array.isArray(sessions) ? sessions.length : 0;
+          } catch {
+            // Ignore parsing errors for metrics
+          }
+        } else if (key === this.SETTINGS_STORAGE_KEY) {
+          metrics.byCategory.settings.size = size;
+        } else if (key === this.HISTORY_STORAGE_KEY) {
+          metrics.byCategory.history.size = size;
+          try {
+            const history = JSON.parse(item);
+            metrics.byCategory.history.count = Array.isArray(history) ? history.length : 0;
+          } catch {
+            // Ignore parsing errors for metrics
+          }
+        } else {
+          metrics.byCategory.other.size += size;
+          metrics.byCategory.other.keys.push(key);
+        }
+      }
+
+      // Calculate utilization percentages
+      if (metrics.totalSize > 0) {
+        metrics.utilizationByCategory.sessions = (metrics.byCategory.sessions.size / metrics.totalSize) * 100;
+        metrics.utilizationByCategory.settings = (metrics.byCategory.settings.size / metrics.totalSize) * 100;
+        metrics.utilizationByCategory.history = (metrics.byCategory.history.size / metrics.totalSize) * 100;
+        metrics.utilizationByCategory.other = (metrics.byCategory.other.size / metrics.totalSize) * 100;
+      }
+
+    } catch (error) {
+      this.handleStorageError('STORAGE_UNAVAILABLE', 'Failed to calculate storage metrics', error as Error);
+    }
+
+    return metrics;
   }
 
   // === VIDEO SESSIONS MANAGEMENT ===

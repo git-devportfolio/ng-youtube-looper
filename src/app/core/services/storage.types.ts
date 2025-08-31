@@ -50,9 +50,49 @@ export interface HistoryEntry {
   tags: string[] | undefined;
 }
 
-export interface StorageError extends Error {
+export interface StorageErrorInterface extends Error {
   code: 'QUOTA_EXCEEDED' | 'ACCESS_DENIED' | 'CORRUPTED_DATA' | 'SERIALIZATION_ERROR' | 'STORAGE_UNAVAILABLE';
   originalError?: Error;
+}
+
+export class StorageError extends Error implements StorageErrorInterface {
+  public code: 'QUOTA_EXCEEDED' | 'ACCESS_DENIED' | 'CORRUPTED_DATA' | 'SERIALIZATION_ERROR' | 'STORAGE_UNAVAILABLE';
+  public originalError?: Error;
+
+  constructor(
+    message: string,
+    code: 'QUOTA_EXCEEDED' | 'ACCESS_DENIED' | 'CORRUPTED_DATA' | 'SERIALIZATION_ERROR' | 'STORAGE_UNAVAILABLE',
+    originalError?: Error
+  ) {
+    super(message);
+    this.name = 'StorageError';
+    this.code = code;
+    if (originalError) {
+      this.originalError = originalError;
+    }
+    
+    // Maintain proper prototype chain for instanceof checks
+    Object.setPrototypeOf(this, StorageError.prototype);
+  }
+
+  override toString(): string {
+    const originalMessage = this.originalError ? ` (Original: ${this.originalError.message})` : '';
+    return `StorageError [${this.code}]: ${this.message}${originalMessage}`;
+  }
+
+  toJSON() {
+    return {
+      name: this.name,
+      code: this.code,
+      message: this.message,
+      stack: this.stack,
+      originalError: this.originalError ? {
+        name: this.originalError.name,
+        message: this.originalError.message,
+        stack: this.originalError.stack
+      } : undefined
+    };
+  }
 }
 
 export interface StorageInfo {
