@@ -1,14 +1,68 @@
-import { Injectable, computed, signal, inject } from '@angular/core';
+import { Injectable, computed, signal, inject, effect } from '@angular/core';
 import { ValidationService } from '@core/services/validation.service';
+import { LoopService, Loop } from '@core/services/loop.service';
 
-export interface LoopSegment {
-  id: string;
-  name: string;
-  startTime: number;
-  endTime: number;
-  playbackSpeed: number;
+// Harmonized interface compatible with LoopService
+export interface LoopSegment extends Loop {
+  // LoopSegment inherits all properties from Loop
+  // This ensures compatibility between facades
+}
+
+// State interface for the LoopManagerFacade
+export interface LoopManagerState {
+  loops: LoopSegment[];
+  activeLoop: LoopSegment | null;
+  isLooping: boolean;
+  repeatCount: number;
+  editingLoop: LoopSegment | null;
+  hasLoops: boolean;
+  canStartLoop: boolean;
+  canNavigateNext: boolean;
+  canNavigatePrevious: boolean;
+}
+
+// Main ViewModel for loop management UI
+export interface LoopManagerViewModel {
+  loops: LoopSegment[];
+  activeLoop: LoopSegment | null;
+  isLooping: boolean;
+  repeatCount: number;
+  hasLoops: boolean;
+  canStartLoop: boolean;
+  canNavigateNext: boolean;
+  canNavigatePrevious: boolean;
+  totalLoops: number;
+  activeLoopIndex: number;
+  loopProgress?: number;
+}
+
+// Specialized ViewModel for timeline components
+export interface TimelineViewModel {
+  loops: LoopSegment[];
+  editingLoop: LoopSegment | null;
+  activeLoopId: string | null;
+  selectedLoopId?: string | null;
+  canCreateLoop: boolean;
+  overlappingLoops?: LoopSegment[];
+}
+
+// Command results for better error handling
+export interface LoopCommandResult {
+  success: boolean;
+  error?: string;
+  loop?: LoopSegment;
+}
+
+// Loop navigation direction
+export type LoopNavigationDirection = 'next' | 'previous' | 'first' | 'last';
+
+// Loop creation options
+export interface LoopCreationOptions {
+  name?: string;
+  playbackSpeed?: number;
+  color?: string;
+  autoStart?: boolean;
   repeatCount?: number;
-  isActive: boolean;
 }
 
 @Injectable({
@@ -16,111 +70,334 @@ export interface LoopSegment {
 })
 export class LoopManagerFacade {
   private readonly validationService = inject(ValidationService);
+  private readonly loopService = inject(LoopService);
 
-  // État privé
+  // Private signals for internal state management
   private readonly _loops = signal<LoopSegment[]>([]);
   private readonly _activeLoop = signal<LoopSegment | null>(null);
   private readonly _isLooping = signal(false);
   private readonly _repeatCount = signal(0);
   private readonly _editingLoop = signal<LoopSegment | null>(null);
+  private readonly _selectedLoopId = signal<string | null>(null);
+  private readonly _error = signal<string | null>(null);
 
-  // Signals publics
+  // Public readonly signals
   readonly loops = this._loops.asReadonly();
   readonly activeLoop = this._activeLoop.asReadonly();
   readonly isLooping = this._isLooping.asReadonly();
   readonly repeatCount = this._repeatCount.asReadonly();
+  readonly editingLoop = this._editingLoop.asReadonly();
+  readonly error = this._error.asReadonly();
 
-  // ViewModels computed
-  readonly vm = computed(() => ({
-    loops: this._loops(),
-    activeLoop: this._activeLoop(),
-    isLooping: this._isLooping(),
-    repeatCount: this._repeatCount(),
-    hasLoops: this._loops().length > 0,
-    canStartLoop: this._activeLoop() !== null && !this._isLooping()
-  }));
-
-  readonly timelineVm = computed(() => ({
-    loops: this._loops(),
-    editingLoop: this._editingLoop(),
-    activeLoopId: this._activeLoop()?.id || null
-  }));
-
-  // Commandes
-  createLoop(start: number, end: number, name: string = 'Nouvelle boucle', speed: number = 1): void {
-    if (!this.validationService.isValidTimeRange(start, end, 300)) { // 300s max for demo
-      console.warn('Plage temporelle invalide');
-      return;
-    }
-
-    if (!this.validationService.isValidLoopName(name)) {
-      console.warn('Nom de boucle invalide');
-      return;
-    }
-
-    const newLoop: LoopSegment = {
-      id: this.generateId(),
-      name: name.trim(),
-      startTime: start,
-      endTime: end,
-      playbackSpeed: this.validationService.isValidPlaybackSpeed(speed) ? speed : 1,
-      isActive: false
+  // Enhanced computed ViewModels
+  readonly vm = computed<LoopManagerViewModel>(() => {
+    const loops = this._loops();
+    const activeLoop = this._activeLoop();
+    const activeIndex = activeLoop ? loops.findIndex(l => l.id === activeLoop.id) : -1;
+    
+    return {
+      loops,
+      activeLoop,
+      isLooping: this._isLooping(),
+      repeatCount: this._repeatCount(),
+      hasLoops: loops.length > 0,
+      canStartLoop: activeLoop !== null && !this._isLooping(),
+      canNavigateNext: activeIndex !== -1 && activeIndex < loops.length - 1,
+      canNavigatePrevious: activeIndex > 0,
+      totalLoops: loops.length,
+      activeLoopIndex: activeIndex,
+      loopProgress: this.calculateCurrentLoopProgress()
     };
+  });
 
-    this._loops.update(loops => [...loops, newLoop]);
-  }
-
-  updateLoop(loopId: string, updates: Partial<LoopSegment>): void {
-    this._loops.update(loops => 
-      loops.map(loop => 
-        loop.id === loopId ? { ...loop, ...updates } : loop
-      )
-    );
-  }
-
-  deleteLoop(loopId: string): void {
-    this._loops.update(loops => loops.filter(loop => loop.id !== loopId));
+  readonly timelineVm = computed<TimelineViewModel>(() => {
+    const loops = this._loops();
+    const editingLoop = this._editingLoop();
+    const activeLoopId = this._activeLoop()?.id || null;
     
-    // Si c'était la boucle active, la désactiver
-    if (this._activeLoop()?.id === loopId) {
-      this._activeLoop.set(null);
-      this.stopLoop();
+    return {
+      loops,
+      editingLoop,
+      activeLoopId,
+      selectedLoopId: this._selectedLoopId(),
+      canCreateLoop: editingLoop !== null,
+      overlappingLoops: editingLoop ? this.loopService.findOverlappingLoops(editingLoop, loops) : []
+    };
+  });
+
+  // State ViewModel for compatibility
+  readonly state = computed<LoopManagerState>(() => {
+    const vm = this.vm();
+    return {
+      loops: vm.loops,
+      activeLoop: vm.activeLoop,
+      isLooping: vm.isLooping,
+      repeatCount: vm.repeatCount,
+      editingLoop: this._editingLoop(),
+      hasLoops: vm.hasLoops,
+      canStartLoop: vm.canStartLoop,
+      canNavigateNext: vm.canNavigateNext,
+      canNavigatePrevious: vm.canNavigatePrevious
+    };
+  });
+
+  constructor() {
+    // Effect for automatic loop repetition
+    effect(() => {
+      const activeLoop = this._activeLoop();
+      const isLooping = this._isLooping();
+      const repeatCount = this._repeatCount();
+      
+      // This effect will be triggered when loop reaches end
+      // Actual repeat logic will be implemented in integration with VideoPlayerFacade
+    });
+
+    // Effect for loop validation
+    effect(() => {
+      const editingLoop = this._editingLoop();
+      const existingLoops = this._loops();
+      
+      if (editingLoop) {
+        const validation = this.loopService.validateLoop(editingLoop, undefined, existingLoops);
+        if (!validation.isValid) {
+          this._error.set(`Boucle invalide: ${validation.errors.join(', ')}`);
+        } else {
+          this._error.set(null);
+        }
+      }
+    });
+  }
+
+  // Enhanced Commands with LoopService integration
+  createLoop(start: number, end: number, name: string = 'Nouvelle boucle', options: LoopCreationOptions = {}): LoopCommandResult {
+    try {
+      const existingLoops = this._loops();
+      const { loop, validation } = this.loopService.createValidatedLoop(
+        name,
+        start,
+        end,
+        {
+          playbackSpeed: options.playbackSpeed || 1,
+          color: options.color,
+          repeatCount: options.repeatCount || 1
+        },
+        undefined, // videoDuration will be provided by VideoPlayerFacade integration
+        existingLoops
+      );
+
+      if (!validation.isValid) {
+        const errorMsg = `Impossible de créer la boucle: ${validation.errors.join(', ')}`;
+        this._error.set(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
+      // Convert Loop to LoopSegment (they're compatible now)
+      const loopSegment = loop as LoopSegment;
+      this._loops.update(loops => [...loops, loopSegment]);
+      
+      // Auto-start if requested
+      if (options.autoStart) {
+        this.startLoop(loopSegment.id);
+      }
+      
+      this._error.set(null);
+      return { success: true, loop: loopSegment };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors de la création de la boucle';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
     }
   }
 
-  selectLoop(loopId: string): void {
-    const loop = this._loops().find(l => l.id === loopId);
-    if (loop) {
+  updateLoop(loopId: string, updates: Partial<LoopSegment>): LoopCommandResult {
+    try {
+      const loops = this._loops();
+      const loopIndex = loops.findIndex(l => l.id === loopId);
+      
+      if (loopIndex === -1) {
+        const errorMsg = 'Boucle non trouvée';
+        this._error.set(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
+      const currentLoop = loops[loopIndex];
+      const updatedLoop = { ...currentLoop, ...updates };
+      
+      // Validate the updated loop
+      const otherLoops = loops.filter(l => l.id !== loopId);
+      const validation = this.loopService.validateLoop(updatedLoop, undefined, otherLoops);
+      
+      if (!validation.isValid) {
+        const errorMsg = `Mise à jour invalide: ${validation.errors.join(', ')}`;
+        this._error.set(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
+      this._loops.update(loops => 
+        loops.map(loop => 
+          loop.id === loopId ? updatedLoop : loop
+        )
+      );
+      
+      // Update active loop if it's the one being modified
+      if (this._activeLoop()?.id === loopId) {
+        this._activeLoop.set(updatedLoop);
+      }
+      
+      this._error.set(null);
+      return { success: true, loop: updatedLoop };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors de la mise à jour';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  }
+
+  deleteLoop(loopId: string): LoopCommandResult {
+    try {
+      const loops = this._loops();
+      const loopToDelete = loops.find(l => l.id === loopId);
+      
+      if (!loopToDelete) {
+        const errorMsg = 'Boucle non trouvée';
+        this._error.set(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
+      this._loops.update(loops => loops.filter(loop => loop.id !== loopId));
+      
+      // Clean up related state
+      if (this._activeLoop()?.id === loopId) {
+        this._activeLoop.set(null);
+        this.stopLoop();
+      }
+      
+      if (this._editingLoop()?.id === loopId) {
+        this._editingLoop.set(null);
+      }
+      
+      if (this._selectedLoopId() === loopId) {
+        this._selectedLoopId.set(null);
+      }
+      
+      this._error.set(null);
+      return { success: true, loop: loopToDelete };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors de la suppression';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  }
+
+  selectLoop(loopId: string): LoopCommandResult {
+    try {
+      const loop = this._loops().find(l => l.id === loopId);
+      if (!loop) {
+        const errorMsg = 'Boucle non trouvée';
+        this._error.set(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
       this._activeLoop.set(loop);
+      this._selectedLoopId.set(loopId);
+      this._error.set(null);
+      return { success: true, loop };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors de la sélection';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
     }
   }
 
-  startLoop(loopId?: string): void {
-    const targetLoop = loopId ? this._loops().find(l => l.id === loopId) : this._activeLoop();
-    
-    if (targetLoop) {
+  startLoop(loopId?: string): LoopCommandResult {
+    try {
+      const targetLoop = loopId ? this._loops().find(l => l.id === loopId) : this._activeLoop();
+      
+      if (!targetLoop) {
+        const errorMsg = loopId ? 'Boucle non trouvée' : 'Aucune boucle sélectionnée';
+        this._error.set(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
       this._activeLoop.set(targetLoop);
       this._isLooping.set(true);
       this._repeatCount.set(0);
+      this._selectedLoopId.set(targetLoop.id);
+      this._error.set(null);
+      
+      return { success: true, loop: targetLoop };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors du démarrage';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
     }
   }
 
-  stopLoop(): void {
-    this._isLooping.set(false);
-    this._repeatCount.set(0);
-  }
-
-  nextLoop(): void {
-    const currentIndex = this._loops().findIndex(l => l.id === this._activeLoop()?.id);
-    if (currentIndex !== -1 && currentIndex < this._loops().length - 1) {
-      this.selectLoop(this._loops()[currentIndex + 1].id);
+  stopLoop(): LoopCommandResult {
+    try {
+      const activeLoop = this._activeLoop();
+      this._isLooping.set(false);
+      this._repeatCount.set(0);
+      this._error.set(null);
+      
+      return { success: true, loop: activeLoop || undefined };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors de l\'arrêt';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
     }
   }
 
-  previousLoop(): void {
-    const currentIndex = this._loops().findIndex(l => l.id === this._activeLoop()?.id);
-    if (currentIndex > 0) {
-      this.selectLoop(this._loops()[currentIndex - 1].id);
+  nextLoop(): LoopCommandResult {
+    return this.navigateLoop('next');
+  }
+
+  previousLoop(): LoopCommandResult {
+    return this.navigateLoop('previous');
+  }
+
+  // Enhanced navigation with direction support
+  navigateLoop(direction: LoopNavigationDirection): LoopCommandResult {
+    try {
+      const loops = this._loops();
+      if (loops.length === 0) {
+        const errorMsg = 'Aucune boucle disponible';
+        this._error.set(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
+      const currentIndex = this._activeLoop() ? loops.findIndex(l => l.id === this._activeLoop()?.id) : -1;
+      let targetIndex: number;
+
+      switch (direction) {
+        case 'next':
+          targetIndex = currentIndex !== -1 && currentIndex < loops.length - 1 ? currentIndex + 1 : currentIndex;
+          break;
+        case 'previous':
+          targetIndex = currentIndex > 0 ? currentIndex - 1 : currentIndex;
+          break;
+        case 'first':
+          targetIndex = 0;
+          break;
+        case 'last':
+          targetIndex = loops.length - 1;
+          break;
+        default:
+          throw new Error('Direction de navigation invalide');
+      }
+
+      if (targetIndex === currentIndex && currentIndex !== -1) {
+        const errorMsg = `Impossible de naviguer vers ${direction} - déjà à la limite`;
+        this._error.set(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
+      const targetLoop = loops[targetIndex];
+      return this.selectLoop(targetLoop.id);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors de la navigation';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
     }
   }
 
@@ -128,10 +405,171 @@ export class LoopManagerFacade {
     this._repeatCount.update(count => count + 1);
   }
 
-  clearAllLoops(): void {
-    this._loops.set([]);
-    this._activeLoop.set(null);
-    this.stopLoop();
+  // Enhanced repeat and loop completion logic
+  handleLoopCompletion(): LoopCommandResult {
+    try {
+      const activeLoop = this._activeLoop();
+      if (!activeLoop || !this._isLooping()) {
+        return { success: false, error: 'Aucune boucle active en cours' };
+      }
+
+      this.incrementRepeatCount();
+      const currentRepeatCount = this._repeatCount();
+      const maxRepeats = activeLoop.repeatCount || 1;
+
+      if (currentRepeatCount >= maxRepeats) {
+        // Loop completed, move to next or stop
+        const canNavigateNext = this.vm().canNavigateNext;
+        if (canNavigateNext) {
+          return this.nextLoop();
+        } else {
+          return this.stopLoop();
+        }
+      }
+
+      // Continue current loop
+      return { success: true, loop: activeLoop };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors de la gestion de fin de boucle';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  }
+
+  // Loop editing support
+  startEditingLoop(loopId: string): LoopCommandResult {
+    try {
+      const loop = this._loops().find(l => l.id === loopId);
+      if (!loop) {
+        const errorMsg = 'Boucle non trouvée';
+        this._error.set(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
+      this._editingLoop.set({ ...loop }); // Create a copy for editing
+      this._error.set(null);
+      return { success: true, loop };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors du démarrage de l\'édition';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  }
+
+  cancelEditingLoop(): LoopCommandResult {
+    try {
+      const editingLoop = this._editingLoop();
+      this._editingLoop.set(null);
+      this._error.set(null);
+      return { success: true, loop: editingLoop || undefined };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors de l\'annulation';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  }
+
+  saveEditingLoop(): LoopCommandResult {
+    try {
+      const editingLoop = this._editingLoop();
+      if (!editingLoop) {
+        const errorMsg = 'Aucune boucle en cours d\'édition';
+        this._error.set(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
+      const updateResult = this.updateLoop(editingLoop.id, editingLoop);
+      if (updateResult.success) {
+        this._editingLoop.set(null);
+      }
+      return updateResult;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors de la sauvegarde';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  }
+
+  // Batch operations
+  clearAllLoops(): LoopCommandResult {
+    try {
+      const loopsCount = this._loops().length;
+      this._loops.set([]);
+      this._activeLoop.set(null);
+      this._editingLoop.set(null);
+      this._selectedLoopId.set(null);
+      this.stopLoop();
+      this._error.set(null);
+      
+      return { success: true, error: undefined };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur lors du nettoyage';
+      this._error.set(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  }
+
+  // Utility methods
+  private calculateCurrentLoopProgress(): number {
+    const activeLoop = this._activeLoop();
+    if (!activeLoop) return 0;
+    
+    // This would need integration with VideoPlayerFacade to get current time
+    // For now, return 0 as placeholder
+    return 0;
+  }
+
+  getLoopStatistics(): {
+    totalCount: number;
+    activeCount: number;
+    totalDuration: number;
+    averageDuration: number;
+  } {
+    const loops = this._loops();
+    return this.loopService.getLoopStatistics(loops);
+  }
+
+  validateAllLoops(videoDuration?: number): {
+    isValid: boolean;
+    criticalIssues: string[];
+    warnings: string[];
+    suggestions: string[];
+  } {
+    const loops = this._loops();
+    return this.loopService.validateLoopCollection(loops, videoDuration);
+  }
+
+  // Integration methods for VideoPlayerFacade
+  getCurrentLoopAtTime(currentTime: number): LoopSegment | null {
+    const loops = this._loops();
+    return this.loopService.getCurrentLoop(currentTime, loops) as LoopSegment | null;
+  }
+
+  getLoopProgress(currentTime: number, loop?: LoopSegment): number {
+    const targetLoop = loop || this._activeLoop();
+    if (!targetLoop) return 0;
+    return this.loopService.getLoopProgress(currentTime, targetLoop);
+  }
+
+  // Auto-repeat and navigation logic
+  shouldRepeatLoop(currentTime: number): boolean {
+    const activeLoop = this._activeLoop();
+    if (!activeLoop || !this._isLooping()) return false;
+    
+    const maxRepeats = activeLoop.repeatCount || 1;
+    const currentRepeats = this._repeatCount();
+    
+    return currentTime >= activeLoop.endTime && currentRepeats < maxRepeats;
+  }
+
+  shouldNavigateToNext(): boolean {
+    const activeLoop = this._activeLoop();
+    if (!activeLoop || !this._isLooping()) return false;
+    
+    const maxRepeats = activeLoop.repeatCount || 1;
+    const currentRepeats = this._repeatCount();
+    
+    return currentRepeats >= maxRepeats && this.vm().canNavigateNext;
   }
 
   private generateId(): string {
