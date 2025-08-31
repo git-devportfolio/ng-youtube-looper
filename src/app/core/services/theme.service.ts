@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { StorageService } from './storage.service';
+import { SecureStorageService } from './storage.service';
 
 export type Theme = 'light' | 'dark';
 
@@ -7,7 +7,7 @@ export type Theme = 'light' | 'dark';
   providedIn: 'root'
 })
 export class ThemeService {
-  private readonly storageService = inject(StorageService);
+  private readonly storageService = inject(SecureStorageService);
   private readonly THEME_STORAGE_KEY = 'yl_theme_preference';
 
   // Signal privé pour le thème courant
