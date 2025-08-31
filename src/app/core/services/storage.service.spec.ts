@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { SecureStorageService } from './storage.service';
+import { VideoSession, SessionLoop } from './storage.types';
 
 describe('SecureStorageService', () => {
   let service: SecureStorageService;
@@ -159,7 +160,7 @@ describe('SecureStorageService', () => {
         
         spyOn(console, 'error'); // Prevent error logging in tests
         
-        const result = service.loadData('malicious-json', { default: 'safe' });
+        const result = service.loadData('malicious-json', { default: 'safe' }) as any;
         // Either returns sanitized data or default value due to error
         expect(result.default || result.content).toBeDefined();
       });
@@ -408,6 +409,301 @@ describe('SecureStorageService', () => {
       const retrieved = service.loadData('deep-object', {});
       
       expect(retrieved).toEqual(deepObject);
+    });
+  });
+
+  describe('Video Sessions Management (Task 22.2)', () => {
+    let mockVideoSession: VideoSession;
+    let mockSessionLoop: SessionLoop;
+
+    beforeEach(() => {
+      // Create mock data for tests
+      mockSessionLoop = {
+        id: 'loop-1',
+        name: 'Guitar Solo',
+        startTime: 60,
+        endTime: 120,
+        color: '#3B82F6',
+        playCount: 5,
+        isActive: true
+      };
+
+      mockVideoSession = {
+        id: 'session-1',
+        videoId: 'dQw4w9WgXcQ',
+        videoTitle: 'Test Video',
+        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        loops: [mockSessionLoop],
+        playbackSpeed: 1.0,
+        currentTime: 30,
+        lastPlayed: new Date('2024-01-01'),
+        totalPlayTime: 300,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01')
+      };
+
+      localStorage.clear();
+    });
+
+    describe('saveSessions and loadSessions', () => {
+      it('should save and load sessions correctly', () => {
+        const sessions = [mockVideoSession];
+        const saved = service.saveSessions(sessions);
+        expect(saved).toBe(true);
+
+        const loaded = service.loadSessions();
+        expect(loaded).toHaveSize(1);
+        expect(loaded[0].id).toBe(mockVideoSession.id);
+        expect(loaded[0].videoId).toBe(mockVideoSession.videoId);
+        expect(loaded[0].loops).toHaveSize(1);
+      });
+
+      it('should handle empty sessions array', () => {
+        const saved = service.saveSessions([]);
+        expect(saved).toBe(true);
+
+        const loaded = service.loadSessions();
+        expect(loaded).toEqual([]);
+      });
+
+      it('should return empty array when no sessions exist', () => {
+        const loaded = service.loadSessions();
+        expect(loaded).toEqual([]);
+      });
+
+      it('should validate and filter invalid sessions', () => {
+        const invalidSessions = [
+          mockVideoSession, // Valid
+          { id: '', videoId: 'test' }, // Invalid - empty id
+          { videoId: 'test' }, // Invalid - missing id
+          null, // Invalid - null
+          'not an object' // Invalid - not an object
+        ] as any[];
+
+        const saved = service.saveSessions(invalidSessions);
+        expect(saved).toBe(true);
+
+        const loaded = service.loadSessions();
+        expect(loaded).toHaveSize(1);
+        expect(loaded[0].id).toBe(mockVideoSession.id);
+      });
+
+      it('should reject non-array input', () => {
+        const saved = service.saveSessions('not an array' as any);
+        expect(saved).toBe(false);
+      });
+
+      it('should handle corrupted localStorage data gracefully', () => {
+        localStorage.setItem('ng-youtube-looper-sessions', 'invalid-json{');
+        
+        const loaded = service.loadSessions();
+        expect(loaded).toEqual([]);
+      });
+    });
+
+    describe('clearSessions', () => {
+      it('should clear all sessions', () => {
+        service.saveSessions([mockVideoSession]);
+        expect(service.loadSessions()).toHaveSize(1);
+
+        const cleared = service.clearSessions();
+        expect(cleared).toBe(true);
+        expect(service.loadSessions()).toEqual([]);
+      });
+    });
+
+    describe('saveSession and getSession', () => {
+      it('should save and retrieve a single session', () => {
+        const saved = service.saveSession(mockVideoSession);
+        expect(saved).toBe(true);
+
+        const retrieved = service.getSession(mockVideoSession.id);
+        expect(retrieved).not.toBeNull();
+        expect(retrieved!.id).toBe(mockVideoSession.id);
+      });
+
+      it('should update existing session', () => {
+        service.saveSession(mockVideoSession);
+
+        const updatedSession = {
+          ...mockVideoSession,
+          currentTime: 60,
+          totalPlayTime: 400
+        };
+
+        const saved = service.saveSession(updatedSession);
+        expect(saved).toBe(true);
+
+        const sessions = service.loadSessions();
+        expect(sessions).toHaveSize(1);
+        expect(sessions[0].currentTime).toBe(60);
+        expect(sessions[0].totalPlayTime).toBe(400);
+      });
+
+      it('should return null for non-existent session', () => {
+        const session = service.getSession('non-existent');
+        expect(session).toBeNull();
+      });
+
+      it('should reject invalid session data', () => {
+        const invalidSession = { id: '', videoId: '' } as any;
+        const saved = service.saveSession(invalidSession);
+        expect(saved).toBe(false);
+      });
+    });
+
+    describe('deleteSession', () => {
+      it('should delete an existing session', () => {
+        service.saveSession(mockVideoSession);
+        expect(service.loadSessions()).toHaveSize(1);
+
+        const deleted = service.deleteSession(mockVideoSession.id);
+        expect(deleted).toBe(true);
+        expect(service.loadSessions()).toHaveSize(0);
+      });
+
+      it('should return false when deleting non-existent session', () => {
+        const deleted = service.deleteSession('non-existent');
+        expect(deleted).toBe(false);
+      });
+    });
+
+    describe('getVideoSessions', () => {
+      it('should return sessions for specific video', () => {
+        const session1 = { ...mockVideoSession, id: 'session-1', videoId: 'video-1' };
+        const session2 = { ...mockVideoSession, id: 'session-2', videoId: 'video-2' };
+        const session3 = { ...mockVideoSession, id: 'session-3', videoId: 'video-1' };
+
+        service.saveSessions([session1, session2, session3]);
+
+        const video1Sessions = service.getVideoSessions('video-1');
+        expect(video1Sessions).toHaveSize(2);
+        expect(video1Sessions.map(s => s.id)).toContain('session-1');
+        expect(video1Sessions.map(s => s.id)).toContain('session-3');
+
+        const video2Sessions = service.getVideoSessions('video-2');
+        expect(video2Sessions).toHaveSize(1);
+        expect(video2Sessions[0].id).toBe('session-2');
+      });
+
+      it('should return empty array for video with no sessions', () => {
+        const sessions = service.getVideoSessions('non-existent-video');
+        expect(sessions).toEqual([]);
+      });
+    });
+
+    describe('Session validation and sanitization', () => {
+      it('should sanitize playback speed to valid range', () => {
+        const sessionWithInvalidSpeed = {
+          ...mockVideoSession,
+          playbackSpeed: 5.0 // Too high
+        };
+
+        service.saveSession(sessionWithInvalidSpeed);
+        const loaded = service.getSession(mockVideoSession.id);
+        
+        expect(loaded!.playbackSpeed).toBe(3.0); // Should be clamped to max
+      });
+
+      it('should sanitize negative current time to 0', () => {
+        const sessionWithNegativeTime = {
+          ...mockVideoSession,
+          currentTime: -10
+        };
+
+        service.saveSession(sessionWithNegativeTime);
+        const loaded = service.getSession(mockVideoSession.id);
+        
+        expect(loaded!.currentTime).toBe(0);
+      });
+
+      it('should filter invalid loops', () => {
+        const sessionWithInvalidLoops = {
+          ...mockVideoSession,
+          loops: [
+            mockSessionLoop, // Valid
+            { id: '', startTime: 0, endTime: 10 }, // Invalid - empty id
+            { id: 'loop-2', startTime: 20, endTime: 10 }, // Invalid - end before start
+            null // Invalid - null
+          ] as any[]
+        };
+
+        service.saveSession(sessionWithInvalidLoops);
+        const loaded = service.getSession(mockVideoSession.id);
+        
+        expect(loaded!.loops).toHaveSize(1);
+        expect(loaded!.loops[0].id).toBe(mockSessionLoop.id);
+      });
+
+      it('should convert date strings to Date objects', () => {
+        const sessionWithStringDates = {
+          ...mockVideoSession,
+          lastPlayed: '2024-01-01T10:00:00Z',
+          createdAt: '2024-01-01T09:00:00Z'
+        } as any;
+
+        service.saveSession(sessionWithStringDates);
+        const loaded = service.getSession(mockVideoSession.id);
+        
+        expect(loaded!.lastPlayed).toBeInstanceOf(Date);
+        expect(loaded!.createdAt).toBeInstanceOf(Date);
+        expect(loaded!.updatedAt).toBeInstanceOf(Date);
+      });
+
+      it('should trim string fields', () => {
+        const sessionWithUntrimmedStrings = {
+          ...mockVideoSession,
+          id: '  session-1  ',
+          videoId: '  video-id  ',
+          videoTitle: '  Video Title  ',
+          videoUrl: '  https://example.com  '
+        };
+
+        service.saveSession(sessionWithUntrimmedStrings);
+        const loaded = service.getSession('session-1');
+        
+        expect(loaded!.id).toBe('session-1');
+        expect(loaded!.videoId).toBe('video-id');
+        expect(loaded!.videoTitle).toBe('Video Title');
+        expect(loaded!.videoUrl).toBe('https://example.com');
+      });
+    });
+
+    describe('Error handling', () => {
+      it('should handle localStorage errors gracefully', () => {
+        const mockLocalStorage = {
+          setItem: jasmine.createSpy().and.throwError('Storage error'),
+          getItem: jasmine.createSpy().and.returnValue(null),
+          removeItem: jasmine.createSpy().and.throwError('Storage error'),
+          clear: jasmine.createSpy(),
+          length: 0,
+          key: jasmine.createSpy()
+        };
+
+        spyOn(console, 'error'); // Prevent error logging in tests
+        Object.defineProperty(window, 'localStorage', {
+          value: mockLocalStorage,
+          writable: true
+        });
+
+        const saved = service.saveSessions([mockVideoSession]);
+        expect(saved).toBe(false);
+        expect(console.error).toHaveBeenCalled();
+      });
+
+      it('should log appropriate messages on success/failure', () => {
+        spyOn(console, 'log');
+        spyOn(console, 'error');
+
+        service.saveSessions([mockVideoSession]);
+        expect(console.log).toHaveBeenCalledWith('Successfully saved 1 video sessions');
+
+        service.loadSessions();
+        expect(console.log).toHaveBeenCalledWith('Successfully loaded 1 video sessions');
+
+        service.clearSessions();
+        expect(console.log).toHaveBeenCalledWith('Successfully cleared all video sessions');
+      });
     });
   });
 });
