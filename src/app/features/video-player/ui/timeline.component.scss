@@ -201,20 +201,176 @@
 .loop-segment {
   position: absolute;
   top: 50%;
-  height: 12px;
+  height: 20px;
   background: rgba(var(--accent-rgb), 0.3);
-  border: 1px solid var(--accent-color);
+  border: 2px solid var(--accent-color);
   border-radius: var(--border-radius-sm);
   transform: translateY(-50%);
   transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  min-width: 20px;
+  user-select: none;
   
   &:hover {
     background: rgba(var(--accent-rgb), 0.4);
     box-shadow: var(--shadow-sm);
+    border-color: var(--accent-color);
+  }
+  
+  &.selected {
+    border-color: var(--accent-color);
+    background: rgba(var(--accent-rgb), 0.5);
+    box-shadow: var(--shadow-md);
+    
+    .resize-handle {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+  
+  &.dragging {
+    z-index: 10;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-50%) scale(1.02);
+    
+    .loop-body {
+      cursor: grabbing;
+    }
   }
   
   @include mobile {
-    height: 10px;
+    height: 24px; // Larger for better touch interaction
+    min-width: 30px;
+  }
+  
+  @include tablet-up {
+    height: 20px;
+  }
+}
+
+// Resize handles for loop segments
+.resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: var(--accent-color);
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  cursor: ew-resize;
+  
+  &.left {
+    left: -4px;
+    border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 2px;
+      width: 2px;
+      height: 8px;
+      background: white;
+      border-radius: 1px;
+      transform: translateY(-50%);
+    }
+  }
+  
+  &.right {
+    right: -4px;
+    border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 2px;
+      width: 2px;
+      height: 8px;
+      background: white;
+      border-radius: 1px;
+      transform: translateY(-50%);
+    }
+  }
+  
+  &:hover {
+    background: var(--accent-color-darker, var(--accent-color));
+    opacity: 1;
+  }
+  
+  @include mobile {
+    width: 12px; // Larger for touch
+    
+    &.left {
+      left: -6px;
+    }
+    
+    &.right {
+      right: -6px;
+    }
+  }
+}
+
+// Loop segment body
+.loop-body {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+  padding: 0 4px;
+  overflow: hidden;
+  
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// Loop label and times
+.loop-label {
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1;
+  
+  @include mobile {
+    font-size: 9px;
+  }
+}
+
+.loop-times {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 8px;
+  color: var(--text-secondary);
+  font-family: var(--font-family-mono);
+  line-height: 1;
+  margin-top: 1px;
+  
+  .start-time,
+  .end-time {
+    white-space: nowrap;
+  }
+  
+  @include mobile {
+    font-size: 7px;
+    
+    // Hide times on very small segments
+    .loop-segment[style*="width: 0."] &,
+    .loop-segment[style*="width: 1."] &,
+    .loop-segment[style*="width: 2."] & {
+      display: none;
+    }
   }
 }
 

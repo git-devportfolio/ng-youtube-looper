@@ -27,11 +27,36 @@
     
     <!-- Loop Segments Container -->
     <div class="loop-segments-container">
-      <!-- Loop segments will be implemented in 15.4 -->
       @for (loop of loops; track loop.id) {
-        <div class="loop-segment"
-             [attr.data-loop-id]="loop.id">
-          <!-- Loop segment content -->
+        <div [class]="getLoopClasses(loop)"
+             [attr.data-loop-id]="loop.id"
+             [style.left.%]="getLoopPosition(loop).left"
+             [style.width.%]="getLoopPosition(loop).width"
+             (click)="onLoopClick($event, loop)"
+             [attr.aria-label]="'Loop from ' + formatDuration(loop.startTime) + ' to ' + formatDuration(loop.endTime)">
+          
+          <!-- Left resize handle -->
+          <div class="resize-handle left"
+               (mousedown)="onLoopMouseDown($event, loop, 'resize-left')"
+               [attr.aria-label]="'Resize loop start'">
+          </div>
+          
+          <!-- Loop segment body -->
+          <div class="loop-body"
+               (mousedown)="onLoopMouseDown($event, loop, 'move')"
+               [attr.aria-label]="'Move loop segment'">
+            <span class="loop-label" *ngIf="loop.name">{{ loop.name }}</span>
+            <div class="loop-times">
+              <span class="start-time">{{ formatDuration(loop.startTime) }}</span>
+              <span class="end-time">{{ formatDuration(loop.endTime) }}</span>
+            </div>
+          </div>
+          
+          <!-- Right resize handle -->
+          <div class="resize-handle right"
+               (mousedown)="onLoopMouseDown($event, loop, 'resize-right')"
+               [attr.aria-label]="'Resize loop end'">
+          </div>
         </div>
       }
     </div>

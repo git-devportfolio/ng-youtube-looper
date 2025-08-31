@@ -1,5 +1,14 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
+// Interface pour les segments de boucle
+export interface Loop {
+  id: number;
+  startTime: number;
+  endTime: number;
+  name?: string;
+  color?: string;
+}
 
 @Component({
   selector: 'app-timeline',
@@ -14,19 +23,45 @@ export class TimelineComponent {
   @Input() disabled = false;
   @Input() isLoading = false;
   @Input() isPlaying = false; // New input for animation states
-  @Input() loops: any[] = []; // TODO: Define proper Loop interface
+  @Input() loops: Loop[] = [];
 
   // Output events for navigation
   @Output() seekTo = new EventEmitter<number>();
   @Output() timelineClick = new EventEmitter<number>();
   @Output() seekStart = new EventEmitter<void>();
   @Output() seekEnd = new EventEmitter<void>();
+  
+  // Output events for loop segments
+  @Output() loopMove = new EventEmitter<{id: number, startTime: number, endTime: number}>();
+  @Output() loopResize = new EventEmitter<{id: number, startTime: number, endTime: number}>();
+  @Output() loopSelect = new EventEmitter<number>();
+  @Output() loopDeselect = new EventEmitter<void>();
 
   // Internal state for seeking animation
   private isSeeking = false;
   
   // Touch interaction state
   private touchStartTime: number | null = null;
+  
+  // Drag & drop state for loop segments
+  private dragState: {
+    isDragging: boolean;
+    dragType: 'move' | 'resize-left' | 'resize-right' | null;
+    loopId: number | null;
+    startX: number;
+    initialStartTime: number;
+    initialEndTime: number;
+  } = {
+    isDragging: false,
+    dragType: null,
+    loopId: null,
+    startX: 0,
+    initialStartTime: 0,
+    initialEndTime: 0
+  };
+  
+  // Selected loop for editing
+  private selectedLoopId: number | null = null;
 
   /**
    * Calculate the current time position as percentage
@@ -153,6 +188,154 @@ export class TimelineComponent {
     
     // End seeking state after a short delay
     setTimeout(() => this.endSeeking(), 200);
+  }
+
+  /**
+   * Get loop segment position and width as percentages
+   */
+  getLoopPosition(loop: Loop): {left: number, width: number} {
+    if (this.duration === 0) return {left: 0, width: 0};
+    
+    const left = (loop.startTime / this.duration) * 100;
+    const width = ((loop.endTime - loop.startTime) / this.duration) * 100;
+    
+    return {
+      left: Math.max(0, Math.min(left, 100)),
+      width: Math.max(0, Math.min(width, 100 - left))
+    };
+  }
+
+  /**
+   * Get CSS classes for loop segment
+   */
+  getLoopClasses(loop: Loop): string {
+    const classes: string[] = ['loop-segment'];
+    
+    if (this.selectedLoopId === loop.id) {
+      classes.push('selected');
+    }
+    
+    if (this.dragState.isDragging && this.dragState.loopId === loop.id) {
+      classes.push('dragging');
+    }
+    
+    return classes.join(' ');
+  }
+
+  /**
+   * Handle loop segment mouse down for drag operations
+   */
+  onLoopMouseDown(event: MouseEvent, loop: Loop, dragType: 'move' | 'resize-left' | 'resize-right'): void {
+    if (!this.isReady) return;
+    
+    event.preventDefault();
+    event.stopPropagation();
+    
+    this.dragState = {
+      isDragging: true,
+      dragType,
+      loopId: loop.id,
+      startX: event.clientX,
+      initialStartTime: loop.startTime,
+      initialEndTime: loop.endTime
+    };
+    
+    this.selectedLoopId = loop.id;
+    this.loopSelect.emit(loop.id);
+  }
+
+  /**
+   * Handle loop segment selection
+   */
+  onLoopClick(event: MouseEvent, loop: Loop): void {
+    if (!this.isReady) return;
+    
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (this.selectedLoopId === loop.id) {
+      this.selectedLoopId = null;
+      this.loopDeselect.emit();
+    } else {
+      this.selectedLoopId = loop.id;
+      this.loopSelect.emit(loop.id);
+    }
+  }
+
+  /**
+   * Global mouse move handler for drag operations
+   */
+  @HostListener('document:mousemove', ['$event'])
+  onDocumentMouseMove(event: MouseEvent): void {
+    if (!this.dragState.isDragging || !this.isReady) return;
+    
+    const deltaX = event.clientX - this.dragState.startX;
+    const track = document.querySelector('.timeline-track') as HTMLElement;
+    if (!track) return;
+    
+    const rect = track.getBoundingClientRect();
+    const deltaTime = (deltaX / rect.width) * this.duration;
+    
+    const loop = this.loops.find(l => l.id === this.dragState.loopId);
+    if (!loop) return;
+    
+    let newStartTime = this.dragState.initialStartTime;
+    let newEndTime = this.dragState.initialEndTime;
+    
+    switch (this.dragState.dragType) {
+      case 'move':
+        newStartTime = Math.max(0, Math.min(this.dragState.initialStartTime + deltaTime, this.duration - (this.dragState.initialEndTime - this.dragState.initialStartTime)));
+        newEndTime = newStartTime + (this.dragState.initialEndTime - this.dragState.initialStartTime);
+        break;
+        
+      case 'resize-left':
+        newStartTime = Math.max(0, Math.min(this.dragState.initialStartTime + deltaTime, this.dragState.initialEndTime - 1));
+        break;
+        
+      case 'resize-right':
+        newEndTime = Math.max(this.dragState.initialStartTime + 1, Math.min(this.dragState.initialEndTime + deltaTime, this.duration));
+        break;
+    }
+    
+    // Check for collisions with other loops
+    if (this.checkLoopCollision(this.dragState.loopId!, newStartTime, newEndTime)) {
+      return; // Prevent collision
+    }
+    
+    // Emit appropriate event
+    const eventData = {id: this.dragState.loopId!, startTime: newStartTime, endTime: newEndTime};
+    if (this.dragState.dragType === 'move') {
+      this.loopMove.emit(eventData);
+    } else {
+      this.loopResize.emit(eventData);
+    }
+  }
+
+  /**
+   * Global mouse up handler to end drag operations
+   */
+  @HostListener('document:mouseup', ['$event'])
+  onDocumentMouseUp(): void {
+    if (this.dragState.isDragging) {
+      this.dragState = {
+        isDragging: false,
+        dragType: null,
+        loopId: null,
+        startX: 0,
+        initialStartTime: 0,
+        initialEndTime: 0
+      };
+    }
+  }
+
+  /**
+   * Check for collisions between loops
+   */
+  private checkLoopCollision(excludeLoopId: number, startTime: number, endTime: number): boolean {
+    return this.loops.some(loop => 
+      loop.id !== excludeLoopId &&
+      !(endTime <= loop.startTime || startTime >= loop.endTime)
+    );
   }
 
   /**

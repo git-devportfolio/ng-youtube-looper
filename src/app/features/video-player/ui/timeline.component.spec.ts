@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TimelineComponent } from './timeline.component';
+import { TimelineComponent, Loop } from './timeline.component';
 
 describe('TimelineComponent', () => {
   let component: TimelineComponent;
@@ -725,6 +725,440 @@ describe('TimelineComponent', () => {
         expect(component.seekEnd.emit).toHaveBeenCalled();
         done();
       }, 250);
+    });
+  });
+
+  describe('Loop Segments Draggable System (Task 15.4)', () => {
+    let testLoops: Loop[];
+
+    beforeEach(() => {
+      testLoops = [
+        { id: 1, startTime: 10, endTime: 30, name: 'Intro' },
+        { id: 2, startTime: 50, endTime: 80, name: 'Solo' },
+        { id: 3, startTime: 90, endTime: 120 }
+      ];
+      component.loops = testLoops;
+      component.duration = 150;
+    });
+
+    describe('Loop Position Calculations', () => {
+      it('should calculate correct loop position percentages', () => {
+        const loop = { id: 1, startTime: 30, endTime: 60 };
+        component.duration = 120;
+
+        const position = component.getLoopPosition(loop);
+
+        expect(position.left).toBe(25); // 30/120 * 100
+        expect(position.width).toBe(25); // (60-30)/120 * 100
+      });
+
+      it('should return zero position when duration is zero', () => {
+        const loop = { id: 1, startTime: 30, endTime: 60 };
+        component.duration = 0;
+
+        const position = component.getLoopPosition(loop);
+
+        expect(position.left).toBe(0);
+        expect(position.width).toBe(0);
+      });
+
+      it('should constrain position within bounds', () => {
+        const loop = { id: 1, startTime: 0, endTime: 200 };
+        component.duration = 100;
+
+        const position = component.getLoopPosition(loop);
+
+        expect(position.left).toBe(0);
+        expect(position.width).toBe(100); // Constrained to maximum
+      });
+    });
+
+    describe('Loop CSS Classes', () => {
+      it('should return basic loop-segment class', () => {
+        const loop = testLoops[0];
+        const classes = component.getLoopClasses(loop);
+        expect(classes).toBe('loop-segment');
+      });
+
+      it('should add selected class for selected loop', () => {
+        const loop = testLoops[0];
+        component['selectedLoopId'] = loop.id;
+        
+        const classes = component.getLoopClasses(loop);
+        expect(classes).toBe('loop-segment selected');
+      });
+
+      it('should add dragging class for dragged loop', () => {
+        const loop = testLoops[0];
+        component['dragState'].isDragging = true;
+        component['dragState'].loopId = loop.id;
+        
+        const classes = component.getLoopClasses(loop);
+        expect(classes).toBe('loop-segment dragging');
+      });
+
+      it('should combine selected and dragging classes', () => {
+        const loop = testLoops[0];
+        component['selectedLoopId'] = loop.id;
+        component['dragState'].isDragging = true;
+        component['dragState'].loopId = loop.id;
+        
+        const classes = component.getLoopClasses(loop);
+        expect(classes).toBe('loop-segment selected dragging');
+      });
+    });
+
+    describe('Loop Selection', () => {
+      beforeEach(() => {
+        spyOn(component.loopSelect, 'emit');
+        spyOn(component.loopDeselect, 'emit');
+        component.isLoading = false;
+        component.disabled = false;
+        component.duration = 150;
+      });
+
+      it('should select loop on click', () => {
+        const loop = testLoops[0];
+        const mockEvent = {
+          preventDefault: jasmine.createSpy('preventDefault'),
+          stopPropagation: jasmine.createSpy('stopPropagation')
+        } as any;
+
+        component.onLoopClick(mockEvent, loop);
+
+        expect(mockEvent.preventDefault).toHaveBeenCalled();
+        expect(mockEvent.stopPropagation).toHaveBeenCalled();
+        expect(component.loopSelect.emit).toHaveBeenCalledWith(loop.id);
+        expect(component['selectedLoopId']).toBe(loop.id);
+      });
+
+      it('should deselect loop when clicking selected loop', () => {
+        const loop = testLoops[0];
+        component['selectedLoopId'] = loop.id;
+        const mockEvent = {
+          preventDefault: jasmine.createSpy('preventDefault'),
+          stopPropagation: jasmine.createSpy('stopPropagation')
+        } as any;
+
+        component.onLoopClick(mockEvent, loop);
+
+        expect(component.loopDeselect.emit).toHaveBeenCalled();
+        expect(component['selectedLoopId']).toBeNull();
+      });
+
+      it('should not handle clicks when not ready', () => {
+        const loop = testLoops[0];
+        component.isLoading = true;
+        const mockEvent = {
+          preventDefault: jasmine.createSpy('preventDefault'),
+          stopPropagation: jasmine.createSpy('stopPropagation')
+        } as any;
+
+        component.onLoopClick(mockEvent, loop);
+
+        expect(mockEvent.preventDefault).not.toHaveBeenCalled();
+        expect(component.loopSelect.emit).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Loop Drag Operations', () => {
+      beforeEach(() => {
+        spyOn(component.loopSelect, 'emit');
+        spyOn(component.loopMove, 'emit');
+        spyOn(component.loopResize, 'emit');
+        component.isLoading = false;
+        component.disabled = false;
+        component.duration = 150;
+      });
+
+      it('should initialize drag state on mouse down', () => {
+        const loop = testLoops[0];
+        const mockEvent = {
+          preventDefault: jasmine.createSpy('preventDefault'),
+          stopPropagation: jasmine.createSpy('stopPropagation'),
+          clientX: 100
+        } as any;
+
+        component.onLoopMouseDown(mockEvent, loop, 'move');
+
+        expect(mockEvent.preventDefault).toHaveBeenCalled();
+        expect(mockEvent.stopPropagation).toHaveBeenCalled();
+        expect(component.loopSelect.emit).toHaveBeenCalledWith(loop.id);
+        expect(component['dragState'].isDragging).toBe(true);
+        expect(component['dragState'].dragType).toBe('move');
+        expect(component['dragState'].loopId).toBe(loop.id);
+      });
+
+      it('should handle move drag operation', () => {
+        const loop = testLoops[0];
+        component['dragState'] = {
+          isDragging: true,
+          dragType: 'move',
+          loopId: loop.id,
+          startX: 100,
+          initialStartTime: loop.startTime,
+          initialEndTime: loop.endTime
+        };
+
+        // Create actual timeline track element
+        const compiled = fixture.nativeElement as HTMLElement;
+        const track = compiled.querySelector('.timeline-track') as HTMLElement;
+        expect(track).toBeTruthy(); // Ensure track exists
+        
+        spyOn(track, 'getBoundingClientRect').and.returnValue({
+          left: 0,
+          width: 200,
+          top: 0,
+          right: 200,
+          bottom: 40,
+          height: 40,
+          x: 0,
+          y: 0,
+          toJSON: () => ({})
+        } as DOMRect);
+
+        // Mock collision check to return false for this test
+        spyOn(component, 'checkLoopCollision' as any).and.returnValue(false);
+
+        const mouseMoveEvent = { clientX: 150 } as MouseEvent; // 50px right
+        component.onDocumentMouseMove(mouseMoveEvent);
+
+        // 50px on 200px width = 25% = 37.5s on 150s duration  
+        const expectedDelta = 37.5;
+        const expectedStart = loop.startTime + expectedDelta;
+        const expectedEnd = loop.endTime + expectedDelta;
+
+        expect(component.loopMove.emit).toHaveBeenCalledWith({
+          id: loop.id,
+          startTime: expectedStart,
+          endTime: expectedEnd
+        });
+      });
+
+      it('should handle left resize drag operation', () => {
+        const loop = testLoops[0];
+        component['dragState'] = {
+          isDragging: true,
+          dragType: 'resize-left',
+          loopId: loop.id,
+          startX: 100,
+          initialStartTime: loop.startTime,
+          initialEndTime: loop.endTime
+        };
+
+        // Mock timeline track element
+        const mockTrack = document.createElement('div');
+        spyOn(document, 'querySelector').and.returnValue(mockTrack);
+        spyOn(mockTrack, 'getBoundingClientRect').and.returnValue({
+          left: 0,
+          width: 200,
+          top: 0,
+          right: 200,
+          bottom: 40,
+          height: 40,
+          x: 0,
+          y: 0,
+          toJSON: () => ({})
+        } as DOMRect);
+
+        const mouseMoveEvent = { clientX: 50 } as MouseEvent; // 50px left
+        component.onDocumentMouseMove(mouseMoveEvent);
+
+        // 50px left = -37.5s delta
+        const expectedStart = Math.max(0, loop.startTime - 37.5);
+
+        expect(component.loopResize.emit).toHaveBeenCalledWith({
+          id: loop.id,
+          startTime: expectedStart,
+          endTime: loop.endTime
+        });
+      });
+
+      it('should handle right resize drag operation', () => {
+        const loop = testLoops[0];
+        component['dragState'] = {
+          isDragging: true,
+          dragType: 'resize-right',
+          loopId: loop.id,
+          startX: 100,
+          initialStartTime: loop.startTime,
+          initialEndTime: loop.endTime
+        };
+
+        // Create actual timeline track element
+        const compiled = fixture.nativeElement as HTMLElement;
+        const track = compiled.querySelector('.timeline-track') as HTMLElement;
+        expect(track).toBeTruthy();
+        
+        spyOn(track, 'getBoundingClientRect').and.returnValue({
+          left: 0,
+          width: 200,
+          top: 0,
+          right: 200,
+          bottom: 40,
+          height: 40,
+          x: 0,
+          y: 0,
+          toJSON: () => ({})
+        } as DOMRect);
+
+        // Mock collision check to return false for this test
+        spyOn(component, 'checkLoopCollision' as any).and.returnValue(false);
+
+        const mouseMoveEvent = { clientX: 150 } as MouseEvent; // 50px right
+        component.onDocumentMouseMove(mouseMoveEvent);
+
+        // 50px right = +37.5s delta
+        const expectedEnd = Math.min(component.duration, loop.endTime + 37.5);
+
+        expect(component.loopResize.emit).toHaveBeenCalledWith({
+          id: loop.id,
+          startTime: loop.startTime,
+          endTime: expectedEnd
+        });
+      });
+
+      it('should end drag operation on mouse up', () => {
+        component['dragState'] = {
+          isDragging: true,
+          dragType: 'move',
+          loopId: 1,
+          startX: 100,
+          initialStartTime: 10,
+          initialEndTime: 30
+        };
+
+        component.onDocumentMouseUp();
+
+        expect(component['dragState'].isDragging).toBe(false);
+        expect(component['dragState'].dragType).toBeNull();
+        expect(component['dragState'].loopId).toBeNull();
+      });
+
+      it('should not handle drag when not ready', () => {
+        const loop = testLoops[0];
+        component.isLoading = true;
+        const mockEvent = {
+          preventDefault: jasmine.createSpy('preventDefault'),
+          stopPropagation: jasmine.createSpy('stopPropagation'),
+          clientX: 100
+        } as any;
+
+        component.onLoopMouseDown(mockEvent, loop, 'move');
+
+        expect(mockEvent.preventDefault).not.toHaveBeenCalled();
+        expect(component['dragState'].isDragging).toBe(false);
+      });
+    });
+
+    describe('Collision Detection', () => {
+      it('should detect collision between overlapping loops', () => {
+        const hasCollision = component['checkLoopCollision'](1, 25, 55); // Overlaps with loop 2 (50-80)
+        expect(hasCollision).toBe(true);
+      });
+
+      it('should not detect collision for adjacent loops', () => {
+        const hasCollision = component['checkLoopCollision'](1, 25, 50); // Ends where loop 2 starts
+        expect(hasCollision).toBe(false);
+      });
+
+      it('should not detect collision for non-overlapping loops', () => {
+        const hasCollision = component['checkLoopCollision'](1, 5, 8); // Completely separate
+        expect(hasCollision).toBe(false);
+      });
+
+      it('should ignore collision with itself', () => {
+        const hasCollision = component['checkLoopCollision'](2, 50, 80); // Same as loop 2
+        expect(hasCollision).toBe(false);
+      });
+
+      it('should prevent drag operation when collision detected', () => {
+        spyOn(component.loopMove, 'emit');
+        spyOn(component, 'checkLoopCollision' as any).and.returnValue(true);
+
+        component['dragState'] = {
+          isDragging: true,
+          dragType: 'move',
+          loopId: testLoops[0].id,
+          startX: 100,
+          initialStartTime: testLoops[0].startTime,
+          initialEndTime: testLoops[0].endTime
+        };
+
+        // Mock timeline track
+        const mockTrack = document.createElement('div');
+        spyOn(document, 'querySelector').and.returnValue(mockTrack);
+        spyOn(mockTrack, 'getBoundingClientRect').and.returnValue({
+          width: 200
+        } as DOMRect);
+
+        const mouseMoveEvent = { clientX: 150 } as MouseEvent;
+        component.onDocumentMouseMove(mouseMoveEvent);
+
+        expect(component.loopMove.emit).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Template Integration', () => {
+      beforeEach(() => {
+        component.loops = testLoops;
+        component.duration = 150;
+        component.isLoading = false;
+        component.disabled = false;
+        fixture.detectChanges();
+      });
+
+      it('should render loop segments in template', () => {
+        const compiled = fixture.nativeElement as HTMLElement;
+        const segments = compiled.querySelectorAll('.loop-segment');
+        
+        expect(segments.length).toBe(testLoops.length);
+      });
+
+      it('should apply correct position styles to segments', () => {
+        const compiled = fixture.nativeElement as HTMLElement;
+        const firstSegment = compiled.querySelector('.loop-segment') as HTMLElement;
+        
+        // First loop: 10-30 on 150 duration = 6.67%-13.33%
+        expect(firstSegment.style.left).toBe('6.66667%');
+        expect(firstSegment.style.width).toMatch(/13\.3+%/);
+      });
+
+      it('should render resize handles for segments', () => {
+        const compiled = fixture.nativeElement as HTMLElement;
+        const firstSegment = compiled.querySelector('.loop-segment') as HTMLElement;
+        const leftHandle = firstSegment.querySelector('.resize-handle.left');
+        const rightHandle = firstSegment.querySelector('.resize-handle.right');
+        
+        expect(leftHandle).toBeTruthy();
+        expect(rightHandle).toBeTruthy();
+      });
+
+      it('should render loop body with times', () => {
+        const compiled = fixture.nativeElement as HTMLElement;
+        const firstSegment = compiled.querySelector('.loop-segment') as HTMLElement;
+        const loopTimes = firstSegment.querySelector('.loop-times');
+        const startTime = loopTimes?.querySelector('.start-time');
+        const endTime = loopTimes?.querySelector('.end-time');
+        
+        expect(startTime?.textContent).toBe('0:10');
+        expect(endTime?.textContent).toBe('0:30');
+      });
+
+      it('should render loop label when provided', () => {
+        const compiled = fixture.nativeElement as HTMLElement;
+        const firstSegment = compiled.querySelector('.loop-segment') as HTMLElement;
+        const label = firstSegment.querySelector('.loop-label');
+        
+        expect(label?.textContent).toBe('Intro');
+      });
+
+      it('should set correct aria-labels for accessibility', () => {
+        const compiled = fixture.nativeElement as HTMLElement;
+        const firstSegment = compiled.querySelector('.loop-segment') as HTMLElement;
+        
+        expect(firstSegment.getAttribute('aria-label')).toBe('Loop from 0:10 to 0:30');
+      });
     });
   });
 });
