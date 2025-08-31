@@ -510,4 +510,440 @@ export class LoopService {
     
     return null;
   }
+
+  /**
+   * Advanced collision detection and resolution methods (Task 23.4)
+   */
+
+  /**
+   * Detect all types of loop conflicts in a collection
+   */
+  detectLoopConflicts(loops: Loop[], videoDuration?: number): {
+    overlapping: { loop1: Loop; loop2: Loop; overlapStart: number; overlapEnd: number; overlapDuration: number }[];
+    exceedingDuration: Loop[];
+    invalidTimes: Loop[];
+    duplicateNames: Loop[];
+  } {
+    const conflicts = {
+      overlapping: [] as { loop1: Loop; loop2: Loop; overlapStart: number; overlapEnd: number; overlapDuration: number }[],
+      exceedingDuration: [] as Loop[],
+      invalidTimes: [] as Loop[],
+      duplicateNames: [] as Loop[]
+    };
+
+    // Check for invalid times (negative, NaN, or zero duration)
+    conflicts.invalidTimes = loops.filter(loop => 
+      isNaN(loop.startTime) || isNaN(loop.endTime) ||
+      loop.startTime < 0 || loop.endTime < 0 ||
+      loop.endTime <= loop.startTime
+    );
+
+    // Check for loops exceeding video duration
+    if (videoDuration && videoDuration > 0) {
+      conflicts.exceedingDuration = loops.filter(loop => 
+        loop.endTime > videoDuration || loop.startTime >= videoDuration
+      );
+    }
+
+    // Check for overlapping loops
+    for (let i = 0; i < loops.length; i++) {
+      for (let j = i + 1; j < loops.length; j++) {
+        const loop1 = loops[i];
+        const loop2 = loops[j];
+        
+        if (this.doLoopsOverlap(loop1, loop2)) {
+          const overlapStart = Math.max(loop1.startTime, loop2.startTime);
+          const overlapEnd = Math.min(loop1.endTime, loop2.endTime);
+          const overlapDuration = overlapEnd - overlapStart;
+          
+          conflicts.overlapping.push({
+            loop1,
+            loop2,
+            overlapStart,
+            overlapEnd,
+            overlapDuration
+          });
+        }
+      }
+    }
+
+    // Check for duplicate names
+    const nameCount = new Map<string, Loop[]>();
+    loops.forEach(loop => {
+      const normalizedName = loop.name.trim().toLowerCase();
+      if (!nameCount.has(normalizedName)) {
+        nameCount.set(normalizedName, []);
+      }
+      nameCount.get(normalizedName)!.push(loop);
+    });
+
+    nameCount.forEach(loopsWithSameName => {
+      if (loopsWithSameName.length > 1) {
+        conflicts.duplicateNames.push(...loopsWithSameName);
+      }
+    });
+
+    return conflicts;
+  }
+
+  /**
+   * Automatically resolve loop conflicts where possible
+   */
+  resolveLoopConflicts(
+    loops: Loop[], 
+    videoDuration?: number,
+    options: {
+      adjustOverlaps?: boolean;
+      trimToVideoDuration?: boolean;
+      renameDuplicates?: boolean;
+      removeInvalid?: boolean;
+    } = {}
+  ): {
+    resolvedLoops: Loop[];
+    removedLoops: Loop[];
+    modifications: Array<{
+      loopId: string;
+      action: 'renamed' | 'adjusted' | 'trimmed' | 'removed';
+      details: string;
+    }>;
+  } {
+    const {
+      adjustOverlaps = true,
+      trimToVideoDuration = true,
+      renameDuplicates = true,
+      removeInvalid = true
+    } = options;
+
+    let workingLoops = [...loops];
+    const removedLoops: Loop[] = [];
+    const modifications: Array<{
+      loopId: string;
+      action: 'renamed' | 'adjusted' | 'trimmed' | 'removed';
+      details: string;
+    }> = [];
+
+    // Remove invalid loops
+    if (removeInvalid) {
+      const invalidLoops = workingLoops.filter(loop => 
+        isNaN(loop.startTime) || isNaN(loop.endTime) ||
+        loop.startTime < 0 || loop.endTime < 0 ||
+        loop.endTime <= loop.startTime
+      );
+      
+      invalidLoops.forEach(loop => {
+        modifications.push({
+          loopId: loop.id,
+          action: 'removed',
+          details: 'Invalid time values (negative, NaN, or zero duration)'
+        });
+        removedLoops.push(loop);
+      });
+      
+      workingLoops = workingLoops.filter(loop => !invalidLoops.includes(loop));
+    }
+
+    // Trim loops that exceed video duration
+    if (trimToVideoDuration && videoDuration && videoDuration > 0) {
+      workingLoops = workingLoops.map(loop => {
+        if (loop.endTime > videoDuration) {
+          if (loop.startTime >= videoDuration) {
+            // Loop starts after video ends, remove it
+            modifications.push({
+              loopId: loop.id,
+              action: 'removed',
+              details: `Loop starts after video duration (${videoDuration}s)`
+            });
+            removedLoops.push(loop);
+            return null;
+          } else {
+            // Trim end time to video duration
+            modifications.push({
+              loopId: loop.id,
+              action: 'trimmed',
+              details: `End time adjusted from ${loop.endTime}s to ${videoDuration}s`
+            });
+            return { ...loop, endTime: videoDuration };
+          }
+        }
+        return loop;
+      }).filter((loop): loop is Loop => loop !== null);
+    }
+
+    // Resolve duplicate names
+    if (renameDuplicates) {
+      const nameCount = new Map<string, number>();
+      workingLoops = workingLoops.map(loop => {
+        const baseName = loop.name.trim();
+        const normalizedName = baseName.toLowerCase();
+        
+        if (!nameCount.has(normalizedName)) {
+          nameCount.set(normalizedName, 1);
+          return loop;
+        } else {
+          const count = nameCount.get(normalizedName)!;
+          nameCount.set(normalizedName, count + 1);
+          const newName = `${baseName} (${count + 1})`;
+          
+          modifications.push({
+            loopId: loop.id,
+            action: 'renamed',
+            details: `Renamed from "${baseName}" to "${newName}" to avoid duplicates`
+          });
+          
+          return { ...loop, name: newName };
+        }
+      });
+    }
+
+    // Adjust overlapping loops
+    if (adjustOverlaps) {
+      const sortedLoops = this.sortLoopsByStartTime(workingLoops);
+      const adjustedLoops: Loop[] = [];
+      
+      for (const currentLoop of sortedLoops) {
+        let adjustedLoop = { ...currentLoop };
+        let hasOverlap = true;
+        let attempts = 0;
+        const maxAttempts = 10; // Prevent infinite loops
+        
+        while (hasOverlap && attempts < maxAttempts) {
+          hasOverlap = false;
+          attempts++;
+          
+          for (const existingLoop of adjustedLoops) {
+            if (this.doLoopsOverlap(adjustedLoop, existingLoop)) {
+              hasOverlap = true;
+              
+              // Try to place after the existing loop
+              const newStartTime = existingLoop.endTime;
+              const duration = adjustedLoop.endTime - adjustedLoop.startTime;
+              const newEndTime = newStartTime + duration;
+              
+              // Check if the new position would exceed video duration
+              if (videoDuration && newEndTime > videoDuration) {
+                // Try to place before the existing loop
+                const beforeEndTime = existingLoop.startTime;
+                const beforeStartTime = Math.max(0, beforeEndTime - duration);
+                
+                if (beforeStartTime >= 0 && beforeEndTime > beforeStartTime) {
+                  adjustedLoop = {
+                    ...adjustedLoop,
+                    startTime: beforeStartTime,
+                    endTime: beforeEndTime
+                  };
+                } else {
+                  // Can't fit anywhere, remove this loop
+                  modifications.push({
+                    loopId: adjustedLoop.id,
+                    action: 'removed',
+                    details: 'Could not resolve overlap - insufficient space'
+                  });
+                  removedLoops.push(adjustedLoop);
+                  hasOverlap = false; // Exit the loop
+                  adjustedLoop = null as any;
+                  break;
+                }
+              } else {
+                adjustedLoop = {
+                  ...adjustedLoop,
+                  startTime: newStartTime,
+                  endTime: newEndTime
+                };
+              }
+              
+              if (adjustedLoop) {
+                modifications.push({
+                  loopId: adjustedLoop.id,
+                  action: 'adjusted',
+                  details: `Moved to ${adjustedLoop.startTime}s-${adjustedLoop.endTime}s to resolve overlap`
+                });
+              }
+              break; // Check overlaps again with the new position
+            }
+          }
+        }
+        
+        if (adjustedLoop && attempts < maxAttempts) {
+          adjustedLoops.push(adjustedLoop);
+        } else if (adjustedLoop && attempts >= maxAttempts) {
+          modifications.push({
+            loopId: adjustedLoop.id,
+            action: 'removed',
+            details: 'Could not resolve overlap after maximum attempts'
+          });
+          removedLoops.push(adjustedLoop);
+        }
+      }
+      
+      workingLoops = adjustedLoops;
+    }
+
+    return {
+      resolvedLoops: workingLoops,
+      removedLoops,
+      modifications
+    };
+  }
+
+  /**
+   * Check if loops collection has any critical issues
+   */
+  validateLoopCollection(loops: Loop[], videoDuration?: number): {
+    isValid: boolean;
+    criticalIssues: string[];
+    warnings: string[];
+    suggestions: string[];
+  } {
+    const criticalIssues: string[] = [];
+    const warnings: string[] = [];
+    const suggestions: string[] = [];
+
+    if (loops.length === 0) {
+      warnings.push('No loops defined');
+      suggestions.push('Add at least one loop to begin practicing');
+      return { isValid: true, criticalIssues, warnings, suggestions };
+    }
+
+    const conflicts = this.detectLoopConflicts(loops, videoDuration);
+
+    // Critical issues
+    if (conflicts.invalidTimes.length > 0) {
+      criticalIssues.push(`${conflicts.invalidTimes.length} loop(s) have invalid time values`);
+    }
+
+    if (videoDuration && conflicts.exceedingDuration.length > 0) {
+      criticalIssues.push(`${conflicts.exceedingDuration.length} loop(s) exceed video duration (${videoDuration}s)`);
+    }
+
+    // Warnings
+    if (conflicts.overlapping.length > 0) {
+      warnings.push(`${conflicts.overlapping.length} overlapping loop pair(s) detected`);
+      suggestions.push('Use resolveLoopConflicts() to automatically adjust overlapping loops');
+    }
+
+    if (conflicts.duplicateNames.length > 0) {
+      const uniqueNames = new Set(conflicts.duplicateNames.map(l => l.name.toLowerCase()));
+      warnings.push(`${uniqueNames.size} duplicate loop name(s) found`);
+      suggestions.push('Consider renaming loops for better organization');
+    }
+
+    // Performance suggestions
+    const totalDuration = this.calculateTotalLoopsDuration(loops);
+    if (videoDuration && totalDuration > videoDuration * 1.5) {
+      suggestions.push('Total loop duration exceeds 150% of video duration - consider reducing overlap');
+    }
+
+    const activeLoops = this.getActiveLoops(loops);
+    if (activeLoops.length === 0) {
+      warnings.push('No active loops - enable at least one loop for playback');
+    }
+
+    if (activeLoops.length > 5) {
+      suggestions.push('Consider organizing loops into practice sessions for better focus');
+    }
+
+    return {
+      isValid: criticalIssues.length === 0,
+      criticalIssues,
+      warnings,
+      suggestions
+    };
+  }
+
+  /**
+   * Get comprehensive loop analysis for debugging
+   */
+  analyzeLoopsForDebug(loops: Loop[], videoDuration?: number): {
+    summary: {
+      total: number;
+      active: number;
+      totalDuration: number;
+      averageDuration: number;
+      coveragePercentage?: number;
+    };
+    timeRanges: {
+      earliest: number;
+      latest: number;
+      gaps: Array<{ start: number; end: number; duration: number }>;
+      overlaps: Array<{ start: number; end: number; duration: number; loopCount: number }>;
+    };
+    conflicts: {
+      overlapping: { loop1: Loop; loop2: Loop; overlapStart: number; overlapEnd: number; overlapDuration: number }[];
+      exceedingDuration: Loop[];
+      invalidTimes: Loop[];
+      duplicateNames: Loop[];
+    };
+    validation: {
+      isValid: boolean;
+      criticalIssues: string[];
+      warnings: string[];
+      suggestions: string[];
+    };
+  } {
+    const totalDuration = this.calculateTotalLoopsDuration(loops);
+    const sortedLoops = this.sortLoopsByStartTime(loops);
+    
+    const summary = {
+      total: loops.length,
+      active: this.getActiveLoops(loops).length,
+      totalDuration,
+      averageDuration: loops.length > 0 ? totalDuration / loops.length : 0,
+      ...(videoDuration && { coveragePercentage: (totalDuration / videoDuration) * 100 })
+    };
+
+    // Analyze time ranges
+    const timeRanges = {
+      earliest: loops.length > 0 ? Math.min(...loops.map(l => l.startTime)) : 0,
+      latest: loops.length > 0 ? Math.max(...loops.map(l => l.endTime)) : 0,
+      gaps: [] as Array<{ start: number; end: number; duration: number }>,
+      overlaps: [] as Array<{ start: number; end: number; duration: number; loopCount: number }>
+    };
+
+    // Find gaps between loops
+    for (let i = 0; i < sortedLoops.length - 1; i++) {
+      const currentEnd = sortedLoops[i].endTime;
+      const nextStart = sortedLoops[i + 1].startTime;
+      if (nextStart > currentEnd) {
+        timeRanges.gaps.push({
+          start: currentEnd,
+          end: nextStart,
+          duration: nextStart - currentEnd
+        });
+      }
+    }
+
+    // Find overlapping regions
+    const conflicts = this.detectLoopConflicts(loops, videoDuration);
+    const overlapMap = new Map<string, { start: number; end: number; loopIds: Set<string> }>();
+    
+    conflicts.overlapping.forEach(({ overlapStart, overlapEnd, loop1, loop2 }) => {
+      const key = `${overlapStart}-${overlapEnd}`;
+      if (!overlapMap.has(key)) {
+        overlapMap.set(key, {
+          start: overlapStart,
+          end: overlapEnd,
+          loopIds: new Set([loop1.id, loop2.id])
+        });
+      } else {
+        overlapMap.get(key)!.loopIds.add(loop1.id);
+        overlapMap.get(key)!.loopIds.add(loop2.id);
+      }
+    });
+
+    timeRanges.overlaps = Array.from(overlapMap.values()).map(overlap => ({
+      start: overlap.start,
+      end: overlap.end,
+      duration: overlap.end - overlap.start,
+      loopCount: overlap.loopIds.size
+    }));
+
+    const validation = this.validateLoopCollection(loops, videoDuration);
+
+    return {
+      summary,
+      timeRanges,
+      conflicts,
+      validation
+    };
+  }
 }

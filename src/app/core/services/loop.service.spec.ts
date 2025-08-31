@@ -680,4 +680,335 @@ describe('LoopService', () => {
       });
     });
   });
+
+  describe('edge cases and collision handling (Task 23.4)', () => {
+    describe('detectLoopConflicts', () => {
+      it('should detect overlapping loops', () => {
+        const loops = [
+          service.createLoop('Loop 1', 10, 30),
+          service.createLoop('Loop 2', 25, 45),
+          service.createLoop('Loop 3', 50, 60)
+        ];
+
+        const conflicts = service.detectLoopConflicts(loops);
+
+        expect(conflicts.overlapping).toHaveSize(1);
+        expect(conflicts.overlapping[0].loop1.name).toBe('Loop 1');
+        expect(conflicts.overlapping[0].loop2.name).toBe('Loop 2');
+        expect(conflicts.overlapping[0].overlapStart).toBe(25);
+        expect(conflicts.overlapping[0].overlapEnd).toBe(30);
+        expect(conflicts.overlapping[0].overlapDuration).toBe(5);
+      });
+
+      it('should detect loops exceeding video duration', () => {
+        const loops = [
+          service.createLoop('Loop 1', 10, 30),
+          service.createLoop('Loop 2', 80, 120),
+          service.createLoop('Loop 3', 150, 180)
+        ];
+
+        const conflicts = service.detectLoopConflicts(loops, 100);
+
+        expect(conflicts.exceedingDuration).toHaveSize(2);
+        expect(conflicts.exceedingDuration[0].name).toBe('Loop 2');
+        expect(conflicts.exceedingDuration[1].name).toBe('Loop 3');
+      });
+
+      it('should detect invalid time values', () => {
+        const invalidLoops = [
+          { ...service.createLoop('Valid Loop', 10, 30), startTime: -5 } as any,
+          { ...service.createLoop('NaN Loop', 0, 10), endTime: NaN } as any,
+          service.createLoop('Zero Duration', 20, 20),
+          service.createLoop('Negative Duration', 30, 25)
+        ];
+
+        const conflicts = service.detectLoopConflicts(invalidLoops);
+
+        expect(conflicts.invalidTimes).toHaveSize(4);
+        expect(conflicts.invalidTimes.map(l => l.name)).toContain('Valid Loop');
+        expect(conflicts.invalidTimes.map(l => l.name)).toContain('NaN Loop');
+        expect(conflicts.invalidTimes.map(l => l.name)).toContain('Zero Duration');
+        expect(conflicts.invalidTimes.map(l => l.name)).toContain('Negative Duration');
+      });
+
+      it('should detect duplicate names', () => {
+        const loops = [
+          service.createLoop('Practice Section', 10, 30),
+          service.createLoop('practice section', 40, 50), // Different case
+          service.createLoop('Practice Section  ', 60, 70), // Extra spaces
+          service.createLoop('Other Loop', 80, 90)
+        ];
+
+        const conflicts = service.detectLoopConflicts(loops);
+
+        expect(conflicts.duplicateNames).toHaveSize(3);
+        expect(conflicts.duplicateNames.every(l => 
+          l.name.toLowerCase().trim() === 'practice section'
+        )).toBe(true);
+      });
+    });
+
+    describe('resolveLoopConflicts', () => {
+      it('should remove invalid loops', () => {
+        const loops = [
+          service.createLoop('Valid Loop', 10, 30),
+          { ...service.createLoop('Invalid Loop', 0, 10), startTime: -5 } as any
+        ];
+
+        const result = service.resolveLoopConflicts(loops, 100, { removeInvalid: true });
+
+        expect(result.resolvedLoops).toHaveSize(1);
+        expect(result.removedLoops).toHaveSize(1);
+        expect(result.modifications).toHaveSize(1);
+        expect(result.modifications[0].action).toBe('removed');
+        expect(result.modifications[0].details).toContain('Invalid time values');
+      });
+
+      it('should trim loops exceeding video duration', () => {
+        const loops = [
+          service.createLoop('Normal Loop', 10, 30),
+          service.createLoop('Exceeding Loop', 80, 120),
+          service.createLoop('After Video', 150, 180)
+        ];
+
+        const result = service.resolveLoopConflicts(loops, 100, { 
+          trimToVideoDuration: true,
+          removeInvalid: false 
+        });
+
+        expect(result.resolvedLoops).toHaveSize(2);
+        expect(result.removedLoops).toHaveSize(1);
+        expect(result.resolvedLoops[1].endTime).toBe(100);
+        expect(result.modifications.some(m => m.action === 'trimmed')).toBe(true);
+        expect(result.modifications.some(m => m.action === 'removed')).toBe(true);
+      });
+
+      it('should rename duplicate loops', () => {
+        const loops = [
+          service.createLoop('Practice', 10, 20),
+          service.createLoop('Practice', 30, 40),
+          service.createLoop('Practice', 50, 60)
+        ];
+
+        const result = service.resolveLoopConflicts(loops, 100, { 
+          renameDuplicates: true,
+          adjustOverlaps: false 
+        });
+
+        expect(result.resolvedLoops).toHaveSize(3);
+        expect(result.resolvedLoops[0].name).toBe('Practice');
+        expect(result.resolvedLoops[1].name).toBe('Practice (2)');
+        expect(result.resolvedLoops[2].name).toBe('Practice (3)');
+        expect(result.modifications.filter(m => m.action === 'renamed')).toHaveSize(2);
+      });
+
+      it('should adjust overlapping loops', () => {
+        const loops = [
+          service.createLoop('Loop 1', 10, 30),
+          service.createLoop('Loop 2', 25, 45),
+          service.createLoop('Loop 3', 40, 50)
+        ];
+
+        const result = service.resolveLoopConflicts(loops, 100, { 
+          adjustOverlaps: true,
+          renameDuplicates: false 
+        });
+
+        expect(result.resolvedLoops).toHaveSize(3);
+        
+        // First loop should remain unchanged
+        expect(result.resolvedLoops[0].startTime).toBe(10);
+        expect(result.resolvedLoops[0].endTime).toBe(30);
+        
+        // Second loop should be moved after first
+        expect(result.resolvedLoops[1].startTime).toBe(30);
+        expect(result.resolvedLoops[1].endTime).toBe(50);
+        
+        // Third loop should be moved after second
+        expect(result.resolvedLoops[2].startTime).toBe(50);
+        expect(result.resolvedLoops[2].endTime).toBe(60);
+        
+        expect(result.modifications.filter(m => m.action === 'adjusted')).toHaveSize(2);
+      });
+
+      it('should remove loops that cannot be resolved', () => {
+        const loops = [
+          service.createLoop('Loop 1', 0, 50),
+          service.createLoop('Loop 2', 25, 75),
+          service.createLoop('Loop 3', 40, 90)
+        ];
+
+        const result = service.resolveLoopConflicts(loops, 60, { 
+          adjustOverlaps: true,
+          trimToVideoDuration: false 
+        });
+
+        // Some loops may be removed due to insufficient space
+        expect(result.resolvedLoops.length + result.removedLoops.length).toBe(3);
+        expect(result.modifications.some(m => m.action === 'removed')).toBe(true);
+      });
+    });
+
+    describe('validateLoopCollection', () => {
+      it('should validate empty collection', () => {
+        const validation = service.validateLoopCollection([]);
+        
+        expect(validation.isValid).toBe(true);
+        expect(validation.criticalIssues).toHaveSize(0);
+        expect(validation.warnings).toContain('No loops defined');
+        expect(validation.suggestions).toContain('Add at least one loop to begin practicing');
+      });
+
+      it('should identify critical issues', () => {
+        const loops = [
+          { ...service.createLoop('Invalid Loop', 0, 10), startTime: -5 } as any,
+          service.createLoop('Exceeding Loop', 80, 120)
+        ];
+
+        const validation = service.validateLoopCollection(loops, 100);
+        
+        expect(validation.isValid).toBe(false);
+        expect(validation.criticalIssues).toHaveSize(2);
+        expect(validation.criticalIssues[0]).toContain('invalid time values');
+        expect(validation.criticalIssues[1]).toContain('exceed video duration');
+      });
+
+      it('should provide warnings and suggestions', () => {
+        const loops = [
+          service.createLoop('Overlap 1', 10, 30),
+          service.createLoop('Overlap 2', 25, 45),
+          service.createLoop('Duplicate', 50, 60),
+          service.createLoop('Duplicate', 70, 80)
+        ];
+
+        const validation = service.validateLoopCollection(loops, 100);
+        
+        expect(validation.isValid).toBe(true);
+        expect(validation.warnings.some(w => w.includes('overlapping'))).toBe(true);
+        expect(validation.warnings.some(w => w.includes('duplicate'))).toBe(true);
+        expect(validation.suggestions.some(s => s.includes('resolveLoopConflicts'))).toBe(true);
+      });
+
+      it('should provide performance suggestions', () => {
+        const manyActiveLoops = Array.from({ length: 7 }, (_, i) => 
+          service.createLoop(`Loop ${i}`, i * 10, (i + 1) * 10, { isActive: true })
+        );
+
+        const validation = service.validateLoopCollection(manyActiveLoops, 100);
+        
+        expect(validation.suggestions.some(s => s.includes('organizing loops'))).toBe(true);
+      });
+    });
+
+    describe('analyzeLoopsForDebug', () => {
+      it('should provide comprehensive analysis', () => {
+        const loops = [
+          service.createLoop('Loop 1', 10, 30, { isActive: true }),
+          service.createLoop('Loop 2', 35, 50),
+          service.createLoop('Loop 3', 45, 65, { isActive: true })
+        ];
+
+        const analysis = service.analyzeLoopsForDebug(loops, 100);
+
+        expect(analysis.summary.total).toBe(3);
+        expect(analysis.summary.active).toBe(2);
+        expect(analysis.summary.totalDuration).toBe(55); // 20 + 15 + 20 (no overlap subtracted in this calculation)
+        expect(analysis.summary.coveragePercentage).toBeCloseTo(55, 1);
+
+        expect(analysis.timeRanges.earliest).toBe(10);
+        expect(analysis.timeRanges.latest).toBe(65);
+        expect(analysis.timeRanges.gaps).toHaveSize(1);
+        expect(analysis.timeRanges.gaps[0]).toEqual({ start: 30, end: 35, duration: 5 });
+
+        expect(analysis.timeRanges.overlaps).toHaveSize(1);
+        expect(analysis.timeRanges.overlaps[0]).toEqual({
+          start: 45,
+          end: 50,
+          duration: 5,
+          loopCount: 2
+        });
+
+        expect(analysis.conflicts).toBeDefined();
+        expect(analysis.validation).toBeDefined();
+      });
+
+      it('should handle empty loops collection', () => {
+        const analysis = service.analyzeLoopsForDebug([]);
+
+        expect(analysis.summary.total).toBe(0);
+        expect(analysis.summary.active).toBe(0);
+        expect(analysis.summary.totalDuration).toBe(0);
+        expect(analysis.summary.averageDuration).toBe(0);
+
+        expect(analysis.timeRanges.earliest).toBe(0);
+        expect(analysis.timeRanges.latest).toBe(0);
+        expect(analysis.timeRanges.gaps).toHaveSize(0);
+        expect(analysis.timeRanges.overlaps).toHaveSize(0);
+      });
+
+      it('should calculate coverage percentage correctly', () => {
+        const loops = [
+          service.createLoop('Full Coverage', 0, 100)
+        ];
+
+        const analysis = service.analyzeLoopsForDebug(loops, 100);
+        expect(analysis.summary.coveragePercentage).toBe(100);
+
+        const analysisNoDuration = service.analyzeLoopsForDebug(loops);
+        expect(analysisNoDuration.summary.coveragePercentage).toBeUndefined();
+      });
+    });
+
+    describe('edge cases handling', () => {
+      it('should handle NaN and undefined values gracefully', () => {
+        const problematicLoop = {
+          ...service.createLoop('Test', 10, 20),
+          startTime: NaN,
+          endTime: undefined as any
+        };
+
+        const conflicts = service.detectLoopConflicts([problematicLoop]);
+        expect(conflicts.invalidTimes).toHaveSize(1);
+
+        const validation = service.validateLoopCollection([problematicLoop]);
+        expect(validation.isValid).toBe(false);
+      });
+
+      it('should handle very large numbers', () => {
+        const loops = [
+          service.createLoop('Large Numbers', Number.MAX_SAFE_INTEGER - 100, Number.MAX_SAFE_INTEGER)
+        ];
+
+        const analysis = service.analyzeLoopsForDebug(loops);
+        expect(analysis.summary.totalDuration).toBe(100);
+        expect(analysis.timeRanges.earliest).toBe(Number.MAX_SAFE_INTEGER - 100);
+        expect(analysis.timeRanges.latest).toBe(Number.MAX_SAFE_INTEGER);
+      });
+
+      it('should handle identical start and end times', () => {
+        const loops = [
+          service.createLoop('Zero Duration', 30, 30)
+        ];
+
+        const conflicts = service.detectLoopConflicts(loops);
+        expect(conflicts.invalidTimes).toHaveSize(1);
+
+        const resolved = service.resolveLoopConflicts(loops);
+        expect(resolved.removedLoops).toHaveSize(1);
+      });
+
+      it('should handle loops with extreme negative values', () => {
+        const loops = [
+          { ...service.createLoop('Negative', 0, 10), startTime: -1000000 } as any
+        ];
+
+        const conflicts = service.detectLoopConflicts(loops);
+        expect(conflicts.invalidTimes).toHaveSize(1);
+
+        const resolved = service.resolveLoopConflicts(loops);
+        expect(resolved.removedLoops).toHaveSize(1);
+        expect(resolved.modifications[0].details).toContain('Invalid time values');
+      });
+    });
+  });
 });
