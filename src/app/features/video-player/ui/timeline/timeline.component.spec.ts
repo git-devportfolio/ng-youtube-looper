@@ -2286,24 +2286,24 @@ describe('TimelineComponent', () => {
       });
 
       it('should handle facade validation errors during creation', () => {
-        spyOn(component.validationError, 'emit');
+        spyOn(component.validationErrorChange, 'emit');
         
         const isValid = component['handleLoopValidation'](10, 5); // Invalid: end < start
         
         expect(isValid).toBe(false);
-        expect(component.validationError.emit).toHaveBeenCalledWith(jasmine.stringMatching(/Start time must be less than end time/));
+        expect(component.validationErrorChange.emit).toHaveBeenCalledWith(jasmine.stringMatching(/Start time must be less than end time/));
       });
 
       it('should provide collision recommendations', () => {
         component.loops = [
           { id: '1', startTime: 20, endTime: 40, name: 'Existing Loop', playCount: 0, isActive: false }
         ];
-        spyOn(component.validationError, 'emit');
+        spyOn(component.validationErrorChange, 'emit');
         
         const isValid = component['handleLoopValidation'](30, 50); // Overlaps with existing loop
         
         expect(isValid).toBe(false);
-        expect(component.validationError.emit).toHaveBeenCalledWith(jasmine.stringMatching(/Collision detected. Try position/));
+        expect(component.validationErrorChange.emit).toHaveBeenCalledWith(jasmine.stringMatching(/Collision detected. Try position/));
       });
     });
 
