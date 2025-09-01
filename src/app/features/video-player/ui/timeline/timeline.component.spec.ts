@@ -512,8 +512,8 @@ describe('TimelineComponent', () => {
 
     it('should render loop segments', () => {
       component.loops = [
-        { id: 1, startTime: 10, endTime: 30 },
-        { id: 2, startTime: 50, endTime: 80 }
+        { id: '1', startTime: 10, endTime: 30, name: 'Loop 1', playCount: 0, isActive: false },
+        { id: '2', startTime: 50, endTime: 80, name: 'Loop 2', playCount: 0, isActive: false }
       ];
       fixture.detectChanges();
 
@@ -781,9 +781,9 @@ describe('TimelineComponent', () => {
 
     beforeEach(() => {
       testLoops = [
-        { id: '1', startTime: 10, endTime: 30, name: 'Intro' },
-        { id: '2', startTime: 50, endTime: 80, name: 'Solo' },
-        { id: '3', startTime: 90, endTime: 120, name: 'Bridge' }
+        { id: '1', startTime: 10, endTime: 30, name: 'Intro', playCount: 0, isActive: false },
+        { id: '2', startTime: 50, endTime: 80, name: 'Solo', playCount: 0, isActive: false },
+        { id: '3', startTime: 90, endTime: 120, name: 'Bridge', playCount: 0, isActive: false }
       ];
       component.loops = testLoops;
       component.duration = 150;
@@ -791,7 +791,7 @@ describe('TimelineComponent', () => {
 
     describe('Loop Position Calculations', () => {
       it('should calculate correct loop position percentages', () => {
-        const loop = { id: '1', startTime: 30, endTime: 60, name: 'Test Loop' };
+        const loop = { id: '1', startTime: 30, endTime: 60, name: 'Test Loop', playCount: 0, isActive: false };
         component.duration = 120;
 
         const position = component.getLoopPosition(loop);
@@ -801,7 +801,7 @@ describe('TimelineComponent', () => {
       });
 
       it('should return zero position when duration is zero', () => {
-        const loop = { id: '1', startTime: 30, endTime: 60, name: 'Test Loop' };
+        const loop = { id: '1', startTime: 30, endTime: 60, name: 'Test Loop', playCount: 0, isActive: false };
         component.duration = 0;
 
         const position = component.getLoopPosition(loop);
@@ -811,7 +811,7 @@ describe('TimelineComponent', () => {
       });
 
       it('should constrain position within bounds', () => {
-        const loop = { id: 1, startTime: 0, endTime: 200 };
+        const loop = { id: '1', startTime: 0, endTime: 200, name: 'Test Loop', playCount: 0, isActive: false };
         component.duration = 100;
 
         const position = component.getLoopPosition(loop);
@@ -828,9 +828,9 @@ describe('TimelineComponent', () => {
 
       it('should calculate multiple loop positions efficiently', () => {
         const loops = [
-          { id: '1', startTime: 20, endTime: 60, name: 'Loop 1' },
-          { id: '2', startTime: 80, endTime: 120, name: 'Loop 2' },
-          { id: '3', startTime: 140, endTime: 180, name: 'Loop 3' }
+          { id: '1', startTime: 20, endTime: 60, name: 'Loop 1', playCount: 0, isActive: false },
+          { id: '2', startTime: 80, endTime: 120, name: 'Loop 2', playCount: 0, isActive: false },
+          { id: '3', startTime: 140, endTime: 180, name: 'Loop 3', playCount: 0, isActive: false }
         ];
 
         const results = component.getMultipleLoopPositions(loops);
@@ -850,8 +850,8 @@ describe('TimelineComponent', () => {
       it('should return zeros when duration is 0', () => {
         component.duration = 0;
         const loops = [
-          { id: '1', startTime: 20, endTime: 60, name: 'Loop 1' },
-          { id: '2', startTime: 80, endTime: 120, name: 'Loop 2' }
+          { id: '1', startTime: 20, endTime: 60, name: 'Loop 1', playCount: 0, isActive: false },
+          { id: '2', startTime: 80, endTime: 120, name: 'Loop 2', playCount: 0, isActive: false }
         ];
 
         const results = component.getMultipleLoopPositions(loops);
@@ -864,8 +864,8 @@ describe('TimelineComponent', () => {
 
       it('should constrain out-of-bounds loops', () => {
         const loops = [
-          { id: '1', startTime: -10, endTime: 50, name: 'Loop 1' },
-          { id: '2', startTime: 150, endTime: 250, name: 'Loop 2' }
+          { id: '1', startTime: -10, endTime: 50, name: 'Loop 1', playCount: 0, isActive: false },
+          { id: '2', startTime: 150, endTime: 250, name: 'Loop 2', playCount: 0, isActive: false }
         ];
 
         const results = component.getMultipleLoopPositions(loops);
@@ -1126,7 +1126,7 @@ describe('TimelineComponent', () => {
         component['dragState'] = {
           isDragging: true,
           dragType: 'move',
-          loopId: 1,
+          loopId: '1',
           startX: 100,
           initialStartTime: 10,
           initialEndTime: 30
@@ -1157,22 +1157,22 @@ describe('TimelineComponent', () => {
 
     describe('Collision Detection', () => {
       it('should detect collision between overlapping loops', () => {
-        const hasCollision = component['checkLoopCollision'](1, 25, 55); // Overlaps with loop 2 (50-80)
+        const hasCollision = component['checkLoopCollision']('1', 25, 55); // Overlaps with loop 2 (50-80)
         expect(hasCollision).toBe(true);
       });
 
       it('should not detect collision for adjacent loops', () => {
-        const hasCollision = component['checkLoopCollision'](1, 25, 50); // Ends where loop 2 starts
+        const hasCollision = component['checkLoopCollision']('1', 25, 50); // Ends where loop 2 starts
         expect(hasCollision).toBe(false);
       });
 
       it('should not detect collision for non-overlapping loops', () => {
-        const hasCollision = component['checkLoopCollision'](1, 5, 8); // Completely separate
+        const hasCollision = component['checkLoopCollision']('1', 5, 8); // Completely separate
         expect(hasCollision).toBe(false);
       });
 
       it('should ignore collision with itself', () => {
-        const hasCollision = component['checkLoopCollision'](2, 50, 80); // Same as loop 2
+        const hasCollision = component['checkLoopCollision']('2', 50, 80); // Same as loop 2
         expect(hasCollision).toBe(false);
       });
 
@@ -1388,7 +1388,7 @@ describe('TimelineComponent', () => {
   describe('Animations and Micro-interactions (Task 15.5)', () => {
     beforeEach(() => {
       component.loops = [
-        { id: 1, startTime: 10, endTime: 30, name: 'Test Loop' }
+        { id: '1', startTime: 10, endTime: 30, name: 'Test Loop', playCount: 0, isActive: false }
       ];
       component.duration = 100;
       component.isLoading = false;
@@ -1424,7 +1424,7 @@ describe('TimelineComponent', () => {
         const segment = compiled.querySelector('.loop-segment') as HTMLElement;
         
         // Select the loop
-        component['_selectedLoopId'] = 1;
+        component['_selectedLoopId'] = '1';
         fixture.detectChanges();
         
         expect(segment.getAttribute('aria-pressed')).toBe('true');
@@ -1456,9 +1456,9 @@ describe('TimelineComponent', () => {
 
       it('should have staggered animation delay for multiple loops', () => {
         component.loops = [
-          { id: 1, startTime: 10, endTime: 30 },
-          { id: 2, startTime: 40, endTime: 60 },
-          { id: 3, startTime: 70, endTime: 90 }
+          { id: '1', startTime: 10, endTime: 30, name: 'Loop 1', playCount: 0, isActive: false },
+          { id: '2', startTime: 40, endTime: 60, name: 'Loop 2', playCount: 0, isActive: false },
+          { id: '3', startTime: 70, endTime: 90, name: 'Loop 3', playCount: 0, isActive: false }
         ];
         fixture.detectChanges();
 
@@ -1547,19 +1547,464 @@ describe('TimelineComponent', () => {
       it('should expose selectedLoopId through getter', () => {
         expect(component.selectedLoopId).toBe(null);
         
-        component['_selectedLoopId'] = 1;
-        expect(component.selectedLoopId).toBe(1);
+        component['_selectedLoopId'] = '1';
+        expect(component.selectedLoopId).toBe('1');
       });
 
       it('should update selectedLoopId in template when changed', () => {
         const compiled = fixture.nativeElement as HTMLElement;
         
-        component['_selectedLoopId'] = 1;
+        component['_selectedLoopId'] = '1';
         fixture.detectChanges();
         
         const segment = compiled.querySelector('.loop-segment') as HTMLElement;
         expect(segment.getAttribute('aria-pressed')).toBe('true');
         expect(segment.classList.contains('selected')).toBe(true);
+      });
+    });
+  });
+
+  describe('Enhanced Interaction and Navigation (Task 29.3)', () => {
+    let testLoops: LoopSegment[];
+
+    beforeEach(() => {
+      testLoops = [
+        { id: '1', startTime: 10, endTime: 30, name: 'Intro', playCount: 0, isActive: false },
+        { id: '2', startTime: 50, endTime: 80, name: 'Solo', playCount: 0, isActive: false },
+        { id: '3', startTime: 90, endTime: 120, name: 'Bridge', playCount: 0, isActive: false }
+      ];
+      component.loops = testLoops;
+      component.duration = 150;
+      component.isLoading = false;
+      component.disabled = false;
+      
+      spyOn(component.seekTo, 'emit');
+      spyOn(component.timelineClick, 'emit');
+      spyOn(component.loopSelect, 'emit');
+      spyOn(component.loopDeselect, 'emit');
+      spyOn(component.seekStart, 'emit');
+      spyOn(component.seekEnd, 'emit');
+    });
+
+    describe('getLoopAtTime', () => {
+      it('should return loop segment at specific time', () => {
+        const loop = component['getLoopAtTime'](20); // Within loop 1 (10-30)
+        expect(loop).toBeTruthy();
+        expect(loop?.id).toBe('1');
+      });
+
+      it('should return null for time outside loops', () => {
+        const loop = component['getLoopAtTime'](40); // Between loops
+        expect(loop).toBeNull();
+      });
+
+      it('should handle boundary times correctly', () => {
+        const loopAtStart = component['getLoopAtTime'](10); // Start of loop 1
+        const loopAtEnd = component['getLoopAtTime'](30);   // End of loop 1
+        
+        expect(loopAtStart?.id).toBe('1');
+        expect(loopAtEnd?.id).toBe('1');
+      });
+    });
+
+    describe('Enhanced Track Click with Loop Selection', () => {
+      let mockEvent: jasmine.SpyObj<MouseEvent>;
+      let mockElement: jasmine.SpyObj<HTMLElement>;
+
+      beforeEach(() => {
+        mockElement = jasmine.createSpyObj('HTMLElement', ['getBoundingClientRect']);
+        mockElement.getBoundingClientRect.and.returnValue({
+          left: 0,
+          width: 150, // Timeline represents 150 seconds
+          top: 0,
+          right: 150,
+          bottom: 40,
+          height: 40,
+          x: 0,
+          y: 0,
+          toJSON: () => ({})
+        } as DOMRect);
+
+        mockEvent = jasmine.createSpyObj('MouseEvent', [], {
+          currentTarget: mockElement,
+          target: mockElement
+        });
+      });
+
+      it('should select loop when clicking within loop segment', () => {
+        // Click at position 20 seconds (within loop 1: 10-30)
+        Object.defineProperty(mockEvent, 'clientX', { value: 20, writable: true });
+        
+        component.onTrackClick(mockEvent);
+
+        expect(component.loopSelect.emit).toHaveBeenCalledWith('1');
+        expect(component['_selectedLoopId']).toBe('1');
+        expect(component.seekTo.emit).toHaveBeenCalledWith(20);
+        expect(component.timelineClick.emit).toHaveBeenCalledWith(20);
+      });
+
+      it('should deselect current loop when clicking outside loops', () => {
+        // First select a loop
+        component['_selectedLoopId'] = '1';
+        
+        // Click outside loops (at 40 seconds)
+        Object.defineProperty(mockEvent, 'clientX', { value: 40, writable: true });
+        
+        component.onTrackClick(mockEvent);
+
+        expect(component.loopDeselect.emit).toHaveBeenCalled();
+        expect(component['_selectedLoopId']).toBeNull();
+        expect(component.seekTo.emit).toHaveBeenCalledWith(40);
+      });
+
+      it('should handle double-click detection', () => {
+        // Simulate rapid clicks
+        Object.defineProperty(mockEvent, 'clientX', { value: 20, writable: true });
+        
+        component.onTrackClick(mockEvent);
+        
+        // Quick second click (within 300ms)
+        component.onTrackClick(mockEvent);
+
+        // First click should select, second should navigate only (no selection change)
+        expect(component.loopSelect.emit).toHaveBeenCalledTimes(1);
+      });
+
+      it('should update focus state for accessibility', () => {
+        spyOn(component as any, 'updateFocusState');
+        Object.defineProperty(mockEvent, 'clientX', { value: 20, writable: true });
+        
+        component.onTrackClick(mockEvent);
+
+        expect(component['updateFocusState']).toHaveBeenCalledWith(mockElement);
+      });
+
+      it('should set navigation state during interaction', () => {
+        Object.defineProperty(mockEvent, 'clientX', { value: 20, writable: true });
+        
+        component.onTrackClick(mockEvent);
+
+        expect(component.isNavigating).toBe(true);
+        expect(component.seekStart.emit).toHaveBeenCalled();
+      });
+    });
+
+    describe('Enhanced Touch Events with Loop Selection', () => {
+      let mockElement: jasmine.SpyObj<HTMLElement>;
+
+      beforeEach(() => {
+        mockElement = jasmine.createSpyObj('HTMLElement', ['getBoundingClientRect']);
+        mockElement.getBoundingClientRect.and.returnValue({
+          left: 0,
+          width: 150,
+          top: 0,
+          right: 150,
+          bottom: 40,
+          height: 40,
+          x: 0,
+          y: 0,
+          toJSON: () => ({})
+        } as DOMRect);
+      });
+
+      it('should pre-identify touched loop during touch start', () => {
+        const touchEvent = {
+          currentTarget: mockElement,
+          preventDefault: jasmine.createSpy('preventDefault'),
+          touches: [{ clientX: 20 }] // Within loop 1
+        } as any;
+
+        component.onTouchStart(touchEvent);
+
+        expect(component.isNavigating).toBe(true);
+      });
+
+      it('should select loop on brief touch end', () => {
+        // Start touch
+        const touchStartEvent = {
+          currentTarget: mockElement,
+          preventDefault: jasmine.createSpy('preventDefault'),
+          touches: [{ clientX: 20 }]
+        } as any;
+        
+        component.onTouchStart(touchStartEvent);
+
+        // End touch quickly (within loop)
+        const touchEndEvent = {
+          currentTarget: mockElement,
+          preventDefault: jasmine.createSpy('preventDefault'),
+          changedTouches: [{ clientX: 20 }]
+        } as any;
+        
+        component.onTouchEnd(touchEndEvent);
+
+        expect(component.loopSelect.emit).toHaveBeenCalledWith('1');
+        expect(component.seekTo.emit).toHaveBeenCalledWith(20);
+      });
+
+      it('should deselect when touching outside loops', () => {
+        component['_selectedLoopId'] = '1';
+        
+        // Start touch
+        const touchStartEvent = {
+          currentTarget: mockElement,
+          preventDefault: jasmine.createSpy('preventDefault'),
+          touches: [{ clientX: 40 }] // Outside loops
+        } as any;
+        
+        component.onTouchStart(touchStartEvent);
+
+        // End touch quickly
+        const touchEndEvent = {
+          currentTarget: mockElement,
+          preventDefault: jasmine.createSpy('preventDefault'),
+          changedTouches: [{ clientX: 40 }]
+        } as any;
+        
+        component.onTouchEnd(touchEndEvent);
+
+        expect(component.loopDeselect.emit).toHaveBeenCalled();
+        expect(component['_selectedLoopId']).toBeNull();
+      });
+    });
+
+    describe('Loop Navigation Methods', () => {
+      beforeEach(() => {
+        component.currentTime = 35; // Between loops 1 and 2
+      });
+
+      describe('navigateToLoop', () => {
+        it('should navigate to specific loop', () => {
+          component.navigateToLoop('2');
+
+          expect(component['_selectedLoopId']).toBe('2');
+          expect(component.loopSelect.emit).toHaveBeenCalledWith('2');
+          expect(component.seekTo.emit).toHaveBeenCalledWith(50); // Start of loop 2
+          expect(component.timelineClick.emit).toHaveBeenCalledWith(50);
+        });
+
+        it('should do nothing for non-existent loop', () => {
+          component.navigateToLoop('999');
+
+          expect(component.loopSelect.emit).not.toHaveBeenCalled();
+          expect(component.seekTo.emit).not.toHaveBeenCalled();
+        });
+
+        it('should not navigate when not ready', () => {
+          component.isLoading = true;
+          
+          component.navigateToLoop('1');
+
+          expect(component.seekTo.emit).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('navigateToNextLoop', () => {
+        it('should navigate to next loop after current time', () => {
+          component.navigateToNextLoop();
+
+          expect(component.loopSelect.emit).toHaveBeenCalledWith('2'); // Next loop after current time (35)
+          expect(component.seekTo.emit).toHaveBeenCalledWith(50);
+        });
+
+        it('should navigate to next loop when one is selected', () => {
+          component['_selectedLoopId'] = '1';
+          
+          component.navigateToNextLoop();
+
+          expect(component.loopSelect.emit).toHaveBeenCalledWith('2');
+          expect(component.seekTo.emit).toHaveBeenCalledWith(50);
+        });
+
+        it('should wrap to first loop when at last loop', () => {
+          component['_selectedLoopId'] = '3';
+          
+          component.navigateToNextLoop();
+
+          expect(component.loopSelect.emit).toHaveBeenCalledWith('1');
+          expect(component.seekTo.emit).toHaveBeenCalledWith(10);
+        });
+
+        it('should handle empty loops array', () => {
+          component.loops = [];
+          
+          component.navigateToNextLoop();
+
+          expect(component.loopSelect.emit).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('navigateToPrevLoop', () => {
+        it('should navigate to previous loop when one is selected', () => {
+          component['_selectedLoopId'] = '2';
+          
+          component.navigateToPrevLoop();
+
+          expect(component.loopSelect.emit).toHaveBeenCalledWith('1');
+          expect(component.seekTo.emit).toHaveBeenCalledWith(10);
+        });
+
+        it('should wrap to last loop when at first loop', () => {
+          component['_selectedLoopId'] = '1';
+          
+          component.navigateToPrevLoop();
+
+          expect(component.loopSelect.emit).toHaveBeenCalledWith('3');
+          expect(component.seekTo.emit).toHaveBeenCalledWith(90);
+        });
+
+        it('should find last loop before current time when none selected', () => {
+          component.currentTime = 85; // After loop 2 (50-80)
+          
+          component.navigateToPrevLoop();
+
+          expect(component.loopSelect.emit).toHaveBeenCalledWith('2');
+          expect(component.seekTo.emit).toHaveBeenCalledWith(50);
+        });
+      });
+    });
+
+    describe('Focus Management', () => {
+      it('should update focus state on element', () => {
+        const mockElement = document.createElement('div');
+        spyOn(mockElement, 'focus');
+        
+        component['updateFocusState'](mockElement);
+
+        expect(component['interactionState'].focusedElement).toBe(mockElement);
+        expect(mockElement.focus).toHaveBeenCalled();
+      });
+
+      it('should handle null element gracefully', () => {
+        expect(() => {
+          component['updateFocusState'](null as any);
+        }).not.toThrow();
+      });
+    });
+
+    describe('Navigation State Management', () => {
+      it('should track navigation state correctly', () => {
+        expect(component.isNavigating).toBe(false);
+        
+        component['interactionState'].isNavigating = true;
+        expect(component.isNavigating).toBe(true);
+      });
+
+      it('should reset navigation state after interaction', (done) => {
+        const mockEvent = {
+          currentTarget: { getBoundingClientRect: () => ({ left: 0, width: 150 }) },
+          clientX: 20
+        } as any;
+        
+        component.onTrackClick(mockEvent);
+        
+        expect(component.isNavigating).toBe(true);
+        
+        setTimeout(() => {
+          expect(component.isNavigating).toBe(false);
+          done();
+        }, 250);
+      });
+    });
+
+    describe('Integration with Existing Functionality', () => {
+      it('should work with existing loop selection via onLoopClick', () => {
+        const loop = testLoops[0];
+        const mockEvent = {
+          preventDefault: jasmine.createSpy('preventDefault'),
+          stopPropagation: jasmine.createSpy('stopPropagation')
+        } as any;
+
+        component.onLoopClick(mockEvent, loop);
+
+        expect(component.loopSelect.emit).toHaveBeenCalledWith('1');
+        expect(component['_selectedLoopId']).toBe('1');
+      });
+
+      it('should maintain compatibility with drag operations', () => {
+        const loop = testLoops[0];
+        const mockEvent = {
+          preventDefault: jasmine.createSpy('preventDefault'),
+          stopPropagation: jasmine.createSpy('stopPropagation'),
+          clientX: 100
+        } as any;
+
+        component.onLoopMouseDown(mockEvent, loop, 'move');
+
+        expect(component['dragState'].isDragging).toBe(true);
+        expect(component.loopSelect.emit).toHaveBeenCalledWith('1');
+      });
+
+      it('should prevent touch/click interference', () => {
+        const mockElement = { getBoundingClientRect: () => ({ left: 0, width: 150 }) };
+        
+        // Start touch interaction
+        const touchStartEvent = {
+          currentTarget: mockElement,
+          preventDefault: jasmine.createSpy('preventDefault'),
+          touches: [{ clientX: 20 }]
+        } as any;
+        
+        component.onTouchStart(touchStartEvent);
+
+        // Try click - should be prevented
+        const clickEvent = {
+          currentTarget: mockElement,
+          clientX: 20
+        } as any;
+        
+        component.onTrackClick(clickEvent);
+
+        expect(component.seekTo.emit).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Error Handling and Edge Cases', () => {
+      it('should handle zero duration gracefully', () => {
+        component.duration = 0;
+        
+        const loop = component['getLoopAtTime'](10);
+        expect(loop).toBeNull();
+      });
+
+      it('should handle empty loops array', () => {
+        component.loops = [];
+        
+        const loop = component['getLoopAtTime'](10);
+        expect(loop).toBeNull();
+      });
+
+      it('should handle negative time values', () => {
+        const loop = component['getLoopAtTime'](-10);
+        expect(loop).toBeNull();
+      });
+
+      it('should handle time beyond duration', () => {
+        const loop = component['getLoopAtTime'](200);
+        expect(loop).toBeNull();
+      });
+    });
+
+    describe('Performance Optimizations', () => {
+      it('should efficiently find loops at time', () => {
+        // Create many loops to test performance
+        const manyLoops = Array.from({ length: 100 }, (_, i) => ({
+          id: `loop-${i}`,
+          startTime: i * 10,
+          endTime: i * 10 + 5,
+          name: `Loop ${i}`,
+          playCount: 0,
+          isActive: false
+        })) as LoopSegment[];
+        
+        component.loops = manyLoops;
+        
+        const startTime = performance.now();
+        const loop = component['getLoopAtTime'](555); // Should find loop-55
+        const endTime = performance.now();
+        
+        expect(loop?.id).toBe('loop-55');
+        expect(endTime - startTime).toBeLessThan(5); // Should be very fast
       });
     });
   });

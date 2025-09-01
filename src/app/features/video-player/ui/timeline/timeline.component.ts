@@ -548,7 +548,7 @@ export class TimelineComponent {
     hasCollision: boolean;
     collidingLoops: LoopSegment[];
     overlapDuration: number;
-    recommendedPosition?: {startTime: number, endTime: number};
+    recommendedPosition: {startTime: number, endTime: number} | undefined;
   } {
     const collidingLoops = this.effectiveLoops.filter(loop => 
       loop.id !== excludeLoopId &&

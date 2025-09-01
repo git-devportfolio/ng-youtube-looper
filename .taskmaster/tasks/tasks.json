@@ -835,8 +835,8 @@
             "dependencies": [
               "29.2"
             ],
-            "details": "Étendre les méthodes onTrackClick(), onTouchStart(), et onTouchEnd() existantes pour gérer la sélection de segments de boucles, implémenter la navigation par clic dans la timeline, ajouter la gestion du focus et des états sélectionnés, et intégrer avec les événements loopSelect et seekTo pour la synchronisation avec le lecteur vidéo.",
-            "status": "in-progress",
+            "details": "Étendre les méthodes onTrackClick(), onTouchStart(), et onTouchEnd() existantes pour gérer la sélection de segments de boucles, implémenter la navigation par clic dans la timeline, ajouter la gestion du focus et des états sélectionnés, et intégrer avec les événements loopSelect et seekTo pour la synchronisation avec le lecteur vidéo.\n<info added on 2025-09-01T18:00:15.307Z>\nImplémentation complète effectuée avec succès : logique de sélection de segments lors des clics sur timeline, amélioration des événements tactiles avec prise en compte des boucles, méthodes de navigation (navigateToLoop, navigateToNextLoop, navigateToPrevLoop), gestion du focus pour l'accessibilité, et tests complets couvrant toutes les nouvelles fonctionnalités. La solution gère les cas limites, évite les interférences entre touch/click, et maintient la compatibilité avec les opérations de drag existantes.\n</info added on 2025-09-01T18:00:15.307Z>",
+            "status": "done",
             "testStrategy": "Tests des interactions de clic et touch, validation des événements émis, tests de navigation dans les segments, et tests d'accessibilité"
           },
           {
@@ -884,7 +884,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-01T05:54:05.718Z",
+      "updated": "2025-09-01T18:00:28.897Z",
       "description": "Tasks for master context"
     }
   }
