@@ -675,12 +675,13 @@ export class SecureStorageService {
    */
   saveSettings(settings: AppSettings): boolean {
     try {
-      if (!this.isValidSettings(settings)) {
+      // Basic structure validation - only reject if fundamentally malformed
+      if (!settings || typeof settings !== 'object') {
         console.error('Invalid settings data provided');
         return false;
       }
 
-      // Sanitize and validate settings
+      // Always sanitize and validate settings instead of rejecting them
       const sanitizedSettings = this.sanitizeSettings(settings);
       
       const success = this.saveData(this.SETTINGS_STORAGE_KEY, sanitizedSettings);
@@ -991,30 +992,6 @@ export class SecureStorageService {
            typeof loop.isActive === 'boolean';
   }
 
-  /**
-   * Check if settings object is valid
-   */
-  private isValidSettings(settings: any): settings is AppSettings {
-    return settings &&
-           typeof settings === 'object' &&
-           ['light', 'dark', 'auto'].includes(settings.theme) &&
-           typeof settings.defaultPlaybackSpeed === 'number' &&
-           settings.defaultPlaybackSpeed >= 0.25 &&
-           settings.defaultPlaybackSpeed <= 3.0 &&
-           typeof settings.autoSaveInterval === 'number' &&
-           settings.autoSaveInterval >= 5000 && // Minimum 5 seconds
-           typeof settings.maxHistoryEntries === 'number' &&
-           settings.maxHistoryEntries >= 10 &&
-           settings.maxHistoryEntries <= 1000 &&
-           typeof settings.enableKeyboardShortcuts === 'boolean' &&
-           typeof settings.showLoopLabels === 'boolean' &&
-           Array.isArray(settings.loopColors) &&
-           settings.loopColors.every((color: any) => typeof color === 'string' && this.isValidHexColor(color)) &&
-           typeof settings.language === 'string' &&
-           settings.language.length >= 2 &&
-           typeof settings.enableNotifications === 'boolean' &&
-           typeof settings.autoPlayNext === 'boolean';
-  }
 
   /**
    * Sanitize and validate settings object

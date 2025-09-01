@@ -699,8 +699,62 @@
           23,
           24
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer les interfaces et types de base LoopManagerFacade",
+            "description": "Définir les interfaces LoopManagerState, LoopManagerViewModel et TimelineViewModel pour la gestion des boucles avec signals, en harmonisant avec l'interface LoopSegment existante",
+            "dependencies": [],
+            "details": "Créer les interfaces TypeScript pour l'état de gestion des boucles (LoopManagerState avec _loops, _activeLoop, _isLooping, _repeatCount, _editingLoop), les ViewModels computed (LoopManagerViewModel et TimelineViewModel) et les types pour les commandes. Harmoniser avec l'interface LoopSegment existante dans loop-manager.facade.ts et s'assurer de la compatibilité avec les types Loop du LoopService.\n<info added on 2025-08-31T20:00:31.249Z>\nAnalyse terminée : Identification de conflits d'interfaces entre LoopSegment (dans loop-manager.facade.ts) et Loop (dans loop.service.ts). LoopSegment a playbackSpeed et repeatCount comme propriétés obligatoires alors que Loop les a comme optionnelles. Nécessité d'harmoniser en mettant à jour LoopSegment pour correspondre à la structure de l'interface Loop et d'ajouter les propriétés manquantes comme color et playCount. Création également des interfaces appropriées LoopManagerState, LoopManagerViewModel et TimelineViewModel pour remplacer l'implémentation basique actuelle.\n</info added on 2025-08-31T20:00:31.249Z>",
+            "status": "done",
+            "testStrategy": "Tests unitaires pour la validation des types, tests de compatibilité entre interfaces LoopSegment et Loop, vérification des propriétés requises pour chaque interface"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter les signals privés et publics de state management",
+            "description": "Créer les signals privés (_loops, _activeLoop, _isLooping, _repeatCount, _editingLoop) et leurs versions publiques en lecture seule pour la gestion d'état",
+            "dependencies": [
+              "25.1"
+            ],
+            "details": "Implémenter les signals privés avec writableSignal pour l'état interne et leurs versions publiques asReadonly(). Configurer les signals _loops (LoopSegment[]), _activeLoop (LoopSegment | null), _isLooping (boolean), _repeatCount (number), et _editingLoop (LoopSegment | null). Intégrer les services ValidationService et LoopService injectés.\n<info added on 2025-08-31T20:05:38.914Z>\nImplémentation terminée avec succès : Structure des signals complète avec signals privés (_loops, _activeLoop, _isLooping, _repeatCount, _editingLoop, _selectedLoopId, _error) et leurs versions publiques readonly correspondantes. Injection correcte des services ValidationService et LoopService configurée. Typage rigoureux appliqué avec LoopSegment[] pour les collections de boucles, LoopSegment | null pour les références de boucles individuelles, et types primitifs appropriés pour les indicateurs d'état. Les signals sont maintenant réactifs et correctement intégrés avec le LoopService pour les opérations de validation.\n</info added on 2025-08-31T20:05:38.914Z>",
+            "status": "done",
+            "testStrategy": "Tests unitaires des signals (get/set/update), tests de l'immutabilité des signals publics, tests d'injection des services, vérification de la réactivité des signals"
+          },
+          {
+            "id": 3,
+            "title": "Développer les ViewModels computed (vm et timelineVm)",
+            "description": "Créer les computed signals vm et timelineVm pour exposer l'état combiné et les propriétés dérivées nécessaires aux composants UI",
+            "dependencies": [
+              "25.2"
+            ],
+            "details": "Implémenter le ViewModel principal (vm) avec loops, activeLoop, isLooping, repeatCount, hasLoops, et canStartLoop. Créer le TimelineViewModel (timelineVm) avec loops, editingLoop, et activeLoopId pour les besoins spécifiques de la timeline. Utiliser computed() pour calculer les propriétés dérivées de manière réactive.\n<info added on 2025-08-31T20:07:03.544Z>\nViewModels entièrement implémentés : LoopManagerViewModel principal (vm) créé avec propriétés étendues incluant loops, activeLoop, isLooping, repeatCount, hasLoops, canStartLoop, canNavigateNext, canNavigatePrevious, totalLoops, activeLoopIndex, et loopProgress. TimelineViewModel (timelineVm) développé avec loops, editingLoop, activeLoopId, selectedLoopId, canCreateLoop, et overlappingLoops. LoopManagerState computed additionnel ajouté pour compatibilité. Tous les ViewModels utilisent computed() avec dépendances réactives appropriées sur les signaux privés.\n</info added on 2025-08-31T20:07:03.544Z>",
+            "status": "done",
+            "testStrategy": "Tests unitaires des computed signals, tests de réactivité lors des changements d'état, tests des propriétés dérivées (hasLoops, canStartLoop), validation des ViewModels avec différents états"
+          },
+          {
+            "id": 4,
+            "title": "Implémenter les commandes de gestion des boucles",
+            "description": "Développer les méthodes createLoop, deleteLoop, updateLoop, selectLoop avec validation et gestion d'erreurs intégrée",
+            "dependencies": [
+              "25.3"
+            ],
+            "details": "Créer les commandes CRUD pour les boucles : createLoop avec validation via ValidationService, deleteLoop avec nettoyage de l'état, updateLoop pour modification partielle, et selectLoop pour navigation. Intégrer la validation des plages temporelles, des noms de boucles, et la gestion des erreurs. Utiliser les méthodes update() des signals pour les modifications d'état.\n<info added on 2025-08-31T20:08:07.731Z>\nDéveloppement terminé avec succès : implémentation complète des commandes CRUD (createLoop, deleteLoop, updateLoop, selectLoop) avec intégration LoopService et ValidationService. Ajout de LoopCommandResult pour un suivi d'erreur amélioré. Fonctionnalités d'édition avancées développées (startEditingLoop, cancelEditingLoop, saveEditingLoop). Validation robuste intégrée et gestion d'erreur complète. Toutes les modifications d'état utilisent signal.update() pour la réactivité.\n</info added on 2025-08-31T20:08:07.731Z>",
+            "status": "done",
+            "testStrategy": "Tests unitaires de chaque commande, tests de validation des paramètres, tests de gestion d'erreurs, tests des effets de bord (nettoyage état actif), tests d'intégration avec ValidationService"
+          },
+          {
+            "id": 5,
+            "title": "Implémenter la logique de répétition et navigation des boucles",
+            "description": "Développer les commandes startLoop, stopLoop, nextLoop, previousLoop, et la logique de répétition automatique avec incrementRepeatCount",
+            "dependencies": [
+              "25.4"
+            ],
+            "details": "Implémenter startLoop/stopLoop pour contrôler l'état de lecture des boucles, nextLoop/previousLoop pour la navigation séquentielle, et incrementRepeatCount pour le suivi des répétitions. Développer la logique de répétition automatique qui détecte la fin d'une boucle et la redémarre selon le repeatCount. Intégrer la gestion de l'état _isLooping et _repeatCount.\n<info added on 2025-08-31T20:09:01.893Z>\nImplémentation complète de la logique de navigation et répétition avec gestion d'erreurs renforcée dans startLoop/stopLoop et gestion d'état optimisée. Navigation nextLoop/previousLoop utilisant navigateLoop amélioré avec support directionnel. Ajout de handleLoopCompletion pour gestion automatique des répétitions et navigation. incrementRepeatCount intégré pour suivi des cycles de répétition. Méthodes d'intégration shouldRepeatLoop et shouldNavigateToNext développées pour liaison avec VideoPlayerFacade. Navigation respectant les limites des boucles avec feedback d'erreur approprié. Progression automatique entre boucles quand le nombre de répétitions est atteint.\n</info added on 2025-08-31T20:09:01.893Z>",
+            "status": "done",
+            "testStrategy": "Tests unitaires des commandes de navigation, tests de la logique de répétition automatique, tests de gestion d'état lors des transitions, tests de navigation cyclique entre boucles, tests d'intégration avec le player vidéo"
+          }
+        ]
       },
       {
         "id": 26,
@@ -726,7 +780,7 @@
         "dependencies": [
           24
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -753,7 +807,64 @@
           25
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer la structure de base du TimelineComponent",
+            "description": "Initialiser le composant TimelineComponent avec les inputs/outputs nécessaires et les interfaces pour la gestion des boucles visuelles",
+            "dependencies": [],
+            "details": "Compléter la structure existante du TimelineComponent en ajoutant les inputs pour les données de boucles (loops[], currentTime, duration), les outputs pour les interactions (loopCreate, loopUpdate, loopSelect), et mettre à jour l'interface Loop pour inclure les propriétés d'affichage visuel (color, name). Intégrer avec LoopManagerFacade via les ViewModels timelineVm.",
+            "status": "pending",
+            "testStrategy": "Tests unitaires pour vérifier la réception correcte des inputs, l'émission des outputs, et la compatibilité avec l'interface LoopSegment existante"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter les calculs de positionnement des segments",
+            "description": "Développer les méthodes de calcul des pourcentages de position et largeur des segments de boucles sur la timeline",
+            "dependencies": [
+              "29.1"
+            ],
+            "details": "Étendre les méthodes existantes getLoopPosition() et getPositionForTime() pour gérer plusieurs segments simultanément, calculer les positions relatives en pourcentage, gérer les cas limites (durée zéro, segments hors limites), et optimiser les performances pour les mises à jour fréquentes. Ajouter la gestion des collisions entre segments.",
+            "status": "pending",
+            "testStrategy": "Tests unitaires des calculs de pourcentage avec différentes durées de vidéo, tests des cas limites, validation des positions relatives et tests de performance"
+          },
+          {
+            "id": 3,
+            "title": "Implémenter l'interaction de sélection et navigation sur timeline",
+            "description": "Développer la logique de gestion des clics sur timeline pour sélection de temps et navigation dans les segments",
+            "dependencies": [
+              "29.2"
+            ],
+            "details": "Étendre les méthodes onTrackClick(), onTouchStart(), et onTouchEnd() existantes pour gérer la sélection de segments de boucles, implémenter la navigation par clic dans la timeline, ajouter la gestion du focus et des états sélectionnés, et intégrer avec les événements loopSelect et seekTo pour la synchronisation avec le lecteur vidéo.",
+            "status": "pending",
+            "testStrategy": "Tests des interactions de clic et touch, validation des événements émis, tests de navigation dans les segments, et tests d'accessibilité"
+          },
+          {
+            "id": 4,
+            "title": "Développer la création visuelle de nouvelles boucles",
+            "description": "Implémenter l'interface de création de boucles par sélection glisser-déposer sur la timeline",
+            "dependencies": [
+              "29.3"
+            ],
+            "details": "Ajouter la fonctionnalité de création de boucles par glisser-déposer sur la timeline vide, implémenter les handles de redimensionnement pour les segments existants (étendre le système existant avec onLoopMouseDown()), gérer la validation en temps réel pendant la création, et intégrer avec LoopManagerFacade.createLoop() pour la persistance des nouvelles boucles.",
+            "status": "pending",
+            "testStrategy": "Tests de création de boucles par drag & drop, validation des contraintes de temps, tests des handles de redimensionnement, et tests d'intégration avec la façade"
+          },
+          {
+            "id": 5,
+            "title": "Finaliser l'intégration avec LoopManagerFacade et les animations",
+            "description": "Intégrer complètement le TimelineComponent avec LoopManagerFacade et ajouter les animations et micro-interactions",
+            "dependencies": [
+              "29.1",
+              "29.2",
+              "29.3",
+              "29.4"
+            ],
+            "details": "Connecter le TimelineComponent avec le timelineVm de LoopManagerFacade, implémenter les animations pour la visualisation des segments (transitions, hover states), ajouter les micro-interactions avec feedback visuel, gérer les états de loading et error, et assurer la compatibilité avec le système d'état global des boucles. Utiliser le control flow moderne (@for, @if) pour l'affichage.",
+            "status": "pending",
+            "testStrategy": "Tests d'intégration avec LoopManagerFacade, validation des animations et transitions, tests des micro-interactions, et tests de gestion des états d'erreur"
+          }
+        ]
       },
       {
         "id": 30,
@@ -773,7 +884,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-08-31T19:54:14.689Z",
+      "updated": "2025-09-01T05:23:21.098Z",
       "description": "Tasks for master context"
     }
   }

@@ -1096,9 +1096,9 @@ describe('LoopService', () => {
       });
 
       it('should integrate properly with ValidationService for time parsing', () => {
-        const result = service.parseTime('invalid:format');
+        const result = service.parseTime('invalid::format::too:many'); // Too many colons
         
-        expect(validationService.parseTime).toHaveBeenCalledWith('invalid:format');
+        expect(validationService.parseTime).toHaveBeenCalledWith('invalid::format::too:many');
         expect(result).toBe(0); // Falls back to 0 for invalid formats in our enhanced parseTime
       });
 
@@ -1171,7 +1171,7 @@ describe('LoopService', () => {
         const loops = [
           service.createLoop('Intro', 0, 15, { isActive: true }),
           service.createLoop('Verse 1', 15, 45, { playbackSpeed: 0.8 }),
-          service.createLoop('Chorus', 45, 75, { repeatCount: 3, color: '#ff6b6b' }),
+          service.createLoop('Chorus', 45, 75, { repeatCount: 3, color: '#ff6b6b', isActive: true }),
           service.createLoop('Bridge', 75, 95, { isActive: true }),
           service.createLoop('Outro', 95, 110)
         ];
@@ -1183,7 +1183,7 @@ describe('LoopService', () => {
         // 3. Get statistics
         const stats = service.getLoopStatistics(loops);
         expect(stats.totalCount).toBe(5);
-        expect(stats.activeCount).toBe(2);
+        expect(stats.activeCount).toBe(3); // Intro, Chorus, Bridge are active
 
         // 4. Sort and analyze
         const sortedLoops = service.sortLoopsByStartTime(loops);
@@ -1196,14 +1196,14 @@ describe('LoopService', () => {
 
         // 6. Calculate durations and progress
         const totalDuration = service.calculateTotalLoopsDuration(loops);
-        expect(totalDuration).toBe(85); // Sum of all loop durations
+        expect(totalDuration).toBe(110); // Sum of all loop durations: 15+30+30+20+15=110
 
         const progress = service.getLoopProgress(60, loops.find(l => l.name === 'Chorus')!);
         expect(progress).toBe(50); // 50% through the chorus
 
         // 7. Advanced analysis
         const analysis = service.analyzeLoopsForDebug(loops, 120);
-        expect(analysis.summary.coveragePercentage).toBeCloseTo(70.83, 1); // 85/120 * 100
+        expect(analysis.summary.coveragePercentage).toBeCloseTo(91.67, 1); // 110/120 * 100 = 91.67
 
         // 8. Test conflict resolution if needed
         const conflicts = service.detectLoopConflicts(loops);

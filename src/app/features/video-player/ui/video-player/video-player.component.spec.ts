@@ -48,7 +48,21 @@ describe('VideoPlayerComponent', () => {
       // Mock computed signals as functions
       vm: computed(() => mockVideoPlayerState),
       isValidUrl: computed(() => false),
-      currentVideo: signal(null)
+      
+      // Mock signals needed by PlayerControlsComponent
+      playerState: signal({
+        isReady: false,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 0,
+        playbackRate: 1,
+        volume: 100,
+        error: null
+      }),
+      currentVideo: signal(null),
+      canPlay: signal(false),
+      canPause: signal(false),
+      hasError: signal(false)
     };
 
     await TestBed.configureTestingModule({
@@ -183,7 +197,7 @@ describe('VideoPlayerComponent', () => {
     });
 
     it('should generate correct YouTube embed URL with appropriate parameters', () => {
-      const embedUrl = component.getYouTubeEmbedUrl();
+      const embedUrl = component.getYouTubeEmbedUrlString(); // Use string version for testing
       
       expect(embedUrl).toContain('https://www.youtube.com/embed/dQw4w9WgXcQ');
       expect(embedUrl).toContain('autoplay=0');
@@ -224,7 +238,7 @@ describe('VideoPlayerComponent', () => {
       mockFacade.vm = computed(() => mockVideoState);
       fixture.detectChanges();
       
-      const embedUrl = component.getYouTubeEmbedUrl();
+      const embedUrl = component.getYouTubeEmbedUrlString(); // Use string version for testing
       expect(embedUrl).toBe('');
     });
 

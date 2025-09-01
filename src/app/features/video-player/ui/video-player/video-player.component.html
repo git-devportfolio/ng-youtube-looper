@@ -93,16 +93,7 @@
                 <!-- Bottom overlay section with main controls -->
                 <div class="overlay-bottom">
                   <div class="overlay-controls">
-                    <app-player-controls 
-                      [canPlay]="facade.vm().canPlay"
-                      [canPause]="facade.vm().canPause"
-                      [isPlaying]="facade.vm().playerState.isPlaying"
-                      (play)="playVideo()"
-                      (pause)="pauseVideo()"
-                      (stop)="facade.stop()"
-                      (seekBack)="seekToTime(facade.vm().playerState.currentTime - 10)"
-                      (seekForward)="seekToTime(facade.vm().playerState.currentTime + 10)"
-                      class="overlay-player-controls">
+                    <app-player-controls class="overlay-player-controls">
                     </app-player-controls>
 
                     <app-speed-control
