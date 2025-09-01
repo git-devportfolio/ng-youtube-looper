@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TimelineComponent } from './timeline.component';
-import { LoopSegment } from '../../../loop-manager/data-access/loop-manager.facade';
+import { LoopSegment, LoopManagerFacade, TimelineViewModel } from '../../../loop-manager/data-access/loop-manager.facade';
 
 describe('TimelineComponent', () => {
   let component: TimelineComponent;
@@ -2005,6 +2005,853 @@ describe('TimelineComponent', () => {
         
         expect(loop?.id).toBe('loop-55');
         expect(endTime - startTime).toBeLessThan(5); // Should be very fast
+      });
+    });
+  });
+
+  describe('LoopManagerFacade Integration (Task 29.5)', () => {
+    let mockLoopManagerFacade: jasmine.SpyObj<LoopManagerFacade>;
+    let mockTimelineVm: TimelineViewModel;
+
+    beforeEach(() => {
+      // Create mock facade with proper signals
+      mockTimelineVm = {
+        loops: [
+          { id: '1', startTime: 10, endTime: 30, name: 'Test Loop 1', playCount: 0, isActive: false },
+          { id: '2', startTime: 50, endTime: 80, name: 'Test Loop 2', playCount: 0, isActive: false }
+        ],
+        editingLoop: null,
+        activeLoopId: '1',
+        selectedLoopId: '1',
+        canCreateLoop: true
+      };
+
+      mockLoopManagerFacade = jasmine.createSpyObj('LoopManagerFacade', [
+        'createLoop',
+        'updateLoop',
+        'deleteLoop',
+        'selectLoop',
+        'getLoopProgress'
+      ], {
+        timelineVm: jasmine.createSpy().and.returnValue(mockTimelineVm),
+        activeLoop: jasmine.createSpy().and.returnValue({ id: '1', startTime: 10, endTime: 30, name: 'Test Loop 1', playCount: 0, isActive: true }),
+        isLooping: jasmine.createSpy().and.returnValue(true),
+        error: jasmine.createSpy().and.returnValue(null)
+      });
+
+      // Replace the injected facade with our mock
+      (component as any).loopManagerFacade = mockLoopManagerFacade;
+    });
+
+    describe('Facade Integration Setup', () => {
+      it('should setup facade integration when useFacade is true', () => {
+        component.useFacade = true;
+        spyOn(component as any, 'setupFacadeIntegration');
+        
+        component.ngOnInit();
+        
+        expect(component['setupFacadeIntegration']).toHaveBeenCalled();
+      });
+
+      it('should not setup facade integration when useFacade is false', () => {
+        component.useFacade = false;
+        spyOn(component as any, 'setupFacadeIntegration');
+        
+        component.ngOnInit();
+        
+        expect(component['setupFacadeIntegration']).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Effective Data Sources', () => {
+      it('should use facade loops when useFacade is true', () => {
+        component.useFacade = true;
+        
+        const loops = component.effectiveLoops;
+        
+        expect(loops).toEqual(mockTimelineVm.loops);
+        expect(mockLoopManagerFacade.timelineVm).toHaveBeenCalled();
+      });
+
+      it('should use input loops when useFacade is false', () => {
+        component.useFacade = false;
+        const inputLoops = [{ id: '3', startTime: 100, endTime: 120, name: 'Input Loop', playCount: 0, isActive: false }];
+        component.loops = inputLoops;
+        
+        const loops = component.effectiveLoops;
+        
+        expect(loops).toEqual(inputLoops);
+      });
+
+      it('should get active loop ID from facade when useFacade is true', () => {
+        component.useFacade = true;
+        
+        const activeLoopId = component.activeLoopId;
+        
+        expect(activeLoopId).toBe('1');
+        expect(mockLoopManagerFacade.activeLoop).toHaveBeenCalled();
+      });
+
+      it('should get validation error from facade when useFacade is true', () => {
+        component.useFacade = true;
+        mockLoopManagerFacade.error = jasmine.createSpy().and.returnValue('Test error');
+        
+        const hasError = component.hasValidationError;
+        const error = component.validationError;
+        
+        expect(hasError).toBe(true);
+        expect(error).toBe('Test error');
+        expect(mockLoopManagerFacade.error).toHaveBeenCalled();
+      });
+    });
+
+    describe('Loop Creation with Facade', () => {
+      beforeEach(() => {
+        component.useFacade = true;
+        component.duration = 100;
+        component.isLoading = false;
+        component.disabled = false;
+      });
+
+      it('should create loop through facade on double-click', () => {
+        mockLoopManagerFacade.createLoop.and.returnValue({ success: true });
+        
+        const mockEvent = new MouseEvent('dblclick');
+        const mockElement = document.createElement('div');
+        Object.defineProperty(mockEvent, 'currentTarget', { value: mockElement });
+        Object.defineProperty(mockEvent, 'clientX', { value: 50 });
+        
+        spyOn(mockElement, 'getBoundingClientRect').and.returnValue({
+          left: 0, width: 100, top: 0, right: 100, bottom: 40, height: 40, x: 0, y: 0, toJSON: () => ({})
+        } as DOMRect);
+        
+        component.onTrackDoubleClick(mockEvent);
+        
+        expect(mockLoopManagerFacade.createLoop).toHaveBeenCalled();
+      });
+
+      it('should handle facade creation errors', () => {
+        mockLoopManagerFacade.createLoop.and.returnValue({ success: false, error: 'Creation failed' });
+        spyOn(component.validationError, 'emit');
+        
+        const mockEvent = new MouseEvent('dblclick');
+        const mockElement = document.createElement('div');
+        Object.defineProperty(mockEvent, 'currentTarget', { value: mockElement });
+        Object.defineProperty(mockEvent, 'clientX', { value: 50 });
+        
+        spyOn(mockElement, 'getBoundingClientRect').and.returnValue({
+          left: 0, width: 100, top: 0, right: 100, bottom: 40, height: 40, x: 0, y: 0, toJSON: () => ({})
+        } as DOMRect);
+        
+        component.onTrackDoubleClick(mockEvent);
+        
+        expect(component.validationError.emit).toHaveBeenCalledWith('Creation failed');
+      });
+
+      it('should create loop through facade on keyboard shortcut', () => {
+        mockLoopManagerFacade.createLoop.and.returnValue({ success: true });
+        component.currentTime = 50;
+        
+        const keyEvent = new KeyboardEvent('keydown', { key: 'l', ctrlKey: true });
+        component.onKeyDown(keyEvent);
+        
+        expect(mockLoopManagerFacade.createLoop).toHaveBeenCalled();
+      });
+    });
+
+    describe('Loop Manipulation with Facade', () => {
+      beforeEach(() => {
+        component.useFacade = true;
+        component.duration = 100;
+        component.isLoading = false;
+        component.disabled = false;
+      });
+
+      it('should select loop through facade', () => {
+        mockLoopManagerFacade.selectLoop.and.returnValue({ success: true });
+        const mockEvent = new MouseEvent('click');
+        const testLoop = mockTimelineVm.loops[0];
+        
+        component.onLoopClick(mockEvent, testLoop);
+        
+        expect(mockLoopManagerFacade.selectLoop).toHaveBeenCalledWith('1');
+      });
+
+      it('should handle facade selection errors', () => {
+        mockLoopManagerFacade.selectLoop.and.returnValue({ success: false, error: 'Selection failed' });
+        spyOn(component.validationError, 'emit');
+        const mockEvent = new MouseEvent('click');
+        const testLoop = mockTimelineVm.loops[0];
+        
+        component.onLoopClick(mockEvent, testLoop);
+        
+        expect(component.validationError.emit).toHaveBeenCalledWith('Selection failed');
+      });
+
+      it('should delete loop through facade on keyboard shortcut', () => {
+        mockLoopManagerFacade.deleteLoop.and.returnValue({ success: true });
+        component['_selectedLoopId'] = '1';
+        
+        const keyEvent = new KeyboardEvent('keydown', { key: 'Delete' });
+        component.onKeyDown(keyEvent);
+        
+        expect(mockLoopManagerFacade.deleteLoop).toHaveBeenCalledWith('1');
+      });
+
+      it('should handle facade deletion errors', () => {
+        mockLoopManagerFacade.deleteLoop.and.returnValue({ success: false, error: 'Deletion failed' });
+        spyOn(component.validationError, 'emit');
+        component['_selectedLoopId'] = '1';
+        
+        const keyEvent = new KeyboardEvent('keydown', { key: 'Delete' });
+        component.onKeyDown(keyEvent);
+        
+        expect(component.validationError.emit).toHaveBeenCalledWith('Deletion failed');
+      });
+    });
+
+    describe('Animation States and Visual Feedback', () => {
+      beforeEach(() => {
+        component.useFacade = true;
+        component.duration = 100;
+        component.isLoading = false;
+        component.disabled = false;
+      });
+
+      it('should emit animation state changes on loop hover', () => {
+        spyOn(component.animationStateChange, 'emit');
+        const testLoop = mockTimelineVm.loops[0];
+        
+        component.onLoopMouseEnter(testLoop);
+        
+        expect(component.animationStateChange.emit).toHaveBeenCalledWith({ state: 'hover', loopId: '1' });
+      });
+
+      it('should clear hover state on mouse leave', () => {
+        spyOn(component.animationStateChange, 'emit');
+        const testLoop = mockTimelineVm.loops[0];
+        
+        component.onLoopMouseEnter(testLoop);
+        component.onLoopMouseLeave(testLoop);
+        
+        expect(component.animationStateChange.emit).toHaveBeenCalledWith({ state: 'idle' });
+      });
+
+      it('should get correct container classes with facade states', () => {
+        component.useFacade = true;
+        mockLoopManagerFacade.isLooping = jasmine.createSpy().and.returnValue(true);
+        mockLoopManagerFacade.error = jasmine.createSpy().and.returnValue('Test error');
+        
+        const classes = component.getContainerClasses();
+        
+        expect(classes).toContain('looping');
+        expect(classes).toContain('validation-error');
+      });
+
+      it('should apply correct loop classes with facade states', () => {
+        const testLoop = mockTimelineVm.loops[0];
+        component['_selectedLoopId'] = '1';
+        mockLoopManagerFacade.isLooping = jasmine.createSpy().and.returnValue(true);
+        
+        const classes = component.getLoopClasses(testLoop);
+        
+        expect(classes).toContain('selected');
+        expect(classes).toContain('active');
+        expect(classes).toContain('playing');
+      });
+
+      it('should check if loop is playing correctly', () => {
+        const testLoop = mockTimelineVm.loops[0];
+        mockLoopManagerFacade.isLooping = jasmine.createSpy().and.returnValue(true);
+        
+        const isPlaying = component.isLoopPlaying(testLoop);
+        
+        expect(isPlaying).toBe(true);
+      });
+
+      it('should get active loop progress from facade', () => {
+        mockLoopManagerFacade.getLoopProgress.and.returnValue(0.5);
+        component.currentTime = 20;
+        
+        const progress = component.getActiveLoopProgress();
+        
+        expect(progress).toBe(0.5);
+        expect(mockLoopManagerFacade.getLoopProgress).toHaveBeenCalledWith(20, jasmine.any(Object));
+      });
+    });
+
+    describe('Enhanced Validation and Error Handling', () => {
+      beforeEach(() => {
+        component.useFacade = true;
+      });
+
+      it('should handle facade validation errors during creation', () => {
+        spyOn(component.validationError, 'emit');
+        
+        const isValid = component['handleLoopValidation'](10, 5); // Invalid: end < start
+        
+        expect(isValid).toBe(false);
+        expect(component.validationError.emit).toHaveBeenCalledWith(jasmine.stringMatching(/Start time must be less than end time/));
+      });
+
+      it('should provide collision recommendations', () => {
+        component.loops = [
+          { id: '1', startTime: 20, endTime: 40, name: 'Existing Loop', playCount: 0, isActive: false }
+        ];
+        spyOn(component.validationError, 'emit');
+        
+        const isValid = component['handleLoopValidation'](30, 50); // Overlaps with existing loop
+        
+        expect(isValid).toBe(false);
+        expect(component.validationError.emit).toHaveBeenCalledWith(jasmine.stringMatching(/Collision detected. Try position/));
+      });
+    });
+
+    describe('Integration Test: Full Workflow', () => {
+      it('should complete full loop creation workflow with facade', () => {
+        component.useFacade = true;
+        component.duration = 100;
+        component.isLoading = false;
+        component.disabled = false;
+        
+        mockLoopManagerFacade.createLoop.and.returnValue({ success: true, loop: mockTimelineVm.loops[0] });
+        spyOn(component.loopCreate, 'emit');
+        spyOn(component.animationStateChange, 'emit');
+        
+        // Double-click to create
+        const mockEvent = new MouseEvent('dblclick');
+        const mockElement = document.createElement('div');
+        Object.defineProperty(mockEvent, 'currentTarget', { value: mockElement });
+        Object.defineProperty(mockEvent, 'clientX', { value: 50 });
+        
+        spyOn(mockElement, 'getBoundingClientRect').and.returnValue({
+          left: 0, width: 100, top: 0, right: 100, bottom: 40, height: 40, x: 0, y: 0, toJSON: () => ({})
+        } as DOMRect);
+        
+        component.onTrackDoubleClick(mockEvent);
+        
+        expect(mockLoopManagerFacade.createLoop).toHaveBeenCalled();
+        expect(component.animationStateChange.emit).toHaveBeenCalledWith({ state: 'creating' });
+      });
+    });
+
+    describe('Performance and Optimization', () => {
+      it('should use staggered animation delays correctly', () => {
+        const delay1 = component.getLoopAnimationDelay(0);
+        const delay2 = component.getLoopAnimationDelay(1);
+        const delay3 = component.getLoopAnimationDelay(2);
+        
+        expect(delay1).toBe('0s');
+        expect(delay2).toBe('0.05s');
+        expect(delay3).toBe('0.1s');
+      });
+
+      it('should cleanup resources on destroy', () => {
+        spyOn(component['destroy$'], 'next');
+        spyOn(component['destroy$'], 'complete');
+        
+        component.ngOnDestroy();
+        
+        expect(component['destroy$'].next).toHaveBeenCalled();
+        expect(component['destroy$'].complete).toHaveBeenCalled();
+      });
+    });
+  });
+  
+  describe('Visual Loop Creation (Task 29.4)', () => {
+    let mockTrack: HTMLElement;
+    let mockEvent: jasmine.SpyObj<MouseEvent>;
+    
+    beforeEach(() => {
+      // Setup component for tests
+      component.duration = 120;
+      component.isLoading = false;
+      component.disabled = false;
+      component.canCreateLoop = true;
+      
+      // Create mock track element
+      mockTrack = document.createElement('div');
+      spyOn(mockTrack, 'getBoundingClientRect').and.returnValue({
+        left: 0,
+        width: 300, // 300px width for easy calculation
+        top: 0,
+        right: 300,
+        bottom: 40,
+        height: 40,
+        x: 0,
+        y: 0,
+        toJSON: () => ({})
+      } as DOMRect);
+      
+      // Mock document.querySelector for timeline track
+      spyOn(document, 'querySelector').and.returnValue(mockTrack);
+      
+      // Setup event spies
+      spyOn(component.loopCreate, 'emit');
+      spyOn(document.body.classList, 'add');
+      spyOn(document.body.classList, 'remove');
+      
+      fixture.detectChanges();
+    });
+    
+    describe('Track Mouse Down for Visual Creation', () => {
+      beforeEach(() => {
+        mockEvent = jasmine.createSpyObj('MouseEvent', ['preventDefault', 'stopPropagation'], {
+          clientX: 150, // 50% of 300px width = 60s on 120s duration
+          currentTarget: mockTrack
+        });
+      });
+      
+      it('should start visual loop creation on empty timeline area', () => {
+        component.onTrackMouseDown(mockEvent);
+        
+        expect(mockEvent.preventDefault).toHaveBeenCalled();
+        expect(mockEvent.stopPropagation).toHaveBeenCalled();
+        expect(component.isCreatingLoop).toBe(true);
+        expect(component['dragState'].dragType).toBe('create');
+        expect(component['dragState'].isDragging).toBe(true);
+        expect(document.body.classList.add).toHaveBeenCalledWith('creating-loop');
+      });
+      
+      it('should not start creation when clicking on existing loop', () => {
+        // Add a loop at the click position
+        component.loops = [{
+          id: '1',
+          startTime: 55,
+          endTime: 65,
+          name: 'Existing Loop',
+          playCount: 0,
+          isActive: false
+        }];
+        
+        component.onTrackMouseDown(mockEvent);
+        
+        expect(mockEvent.preventDefault).not.toHaveBeenCalled();
+        expect(component.isCreatingLoop).toBe(false);
+      });
+      
+      it('should not start creation when not ready', () => {
+        component.isLoading = true;
+        
+        component.onTrackMouseDown(mockEvent);
+        
+        expect(component.isCreatingLoop).toBe(false);
+        expect(document.body.classList.add).not.toHaveBeenCalled();
+      });
+      
+      it('should not start creation when loop creation is disabled', () => {
+        component.canCreateLoop = false;
+        
+        component.onTrackMouseDown(mockEvent);
+        
+        expect(component.isCreatingLoop).toBe(false);
+        expect(document.body.classList.add).not.toHaveBeenCalled();
+      });
+    });
+    
+    describe('Visual Creation Preview State', () => {
+      beforeEach(() => {
+        mockEvent = jasmine.createSpyObj('MouseEvent', ['preventDefault', 'stopPropagation'], {
+          clientX: 90, // 30% of 300px width = 36s on 120s duration
+          currentTarget: mockTrack
+        });
+      });
+      
+      it('should initialize creation preview state correctly', () => {
+        component.onTrackMouseDown(mockEvent);
+        
+        const preview = component.creationPreview;
+        expect(preview).toBeTruthy();
+        expect(preview!.startTime).toBe(36); // 30% of 120s
+        expect(preview!.endTime).toBe(36);
+        expect(preview!.isVisible).toBe(true);
+      });
+      
+      it('should update creation preview during mouse move', () => {
+        // Start creation
+        component.onTrackMouseDown(mockEvent);
+        
+        // Move mouse to create larger loop
+        component.onDocumentMouseMove({ clientX: 210 } as MouseEvent); // 70% position
+        
+        const preview = component.creationPreview;
+        expect(preview!.startTime).toBe(36); // Original start
+        expect(preview!.endTime).toBeCloseTo(84, 0); // 70% of 120s
+      });
+      
+      it('should respect minimum loop duration', () => {
+        component.onTrackMouseDown(mockEvent);
+        
+        // Move mouse only slightly
+        component.onDocumentMouseMove({ clientX: 95 } as MouseEvent); // Just 5px
+        
+        const preview = component.creationPreview;
+        expect(preview!.endTime - preview!.startTime).toBeGreaterThanOrEqual(0.5);
+      });
+      
+      it('should handle reverse dragging (right to left)', () => {
+        // Start at 70% position
+        const startEvent = jasmine.createSpyObj('MouseEvent', ['preventDefault', 'stopPropagation'], {
+          clientX: 210,
+          currentTarget: mockTrack
+        });
+        
+        component.onTrackMouseDown(startEvent);
+        
+        // Drag left to 30% position
+        component.onDocumentMouseMove({ clientX: 90 } as MouseEvent);
+        
+        const preview = component.creationPreview;
+        expect(preview!.startTime).toBeCloseTo(36, 0); // Left position becomes start
+        expect(preview!.endTime).toBeCloseTo(84, 0); // Right position becomes end
+      });
+    });
+    
+    describe('Creation Preview Position Calculation', () => {
+      it('should calculate preview position correctly', () => {
+        component['_creationPreview'] = {
+          startTime: 24, // 20% of 120s
+          endTime: 60,   // 50% of 120s
+          startX: 60,
+          currentX: 150,
+          isVisible: true
+        };
+        
+        const position = component.getCreationPreviewPosition();
+        
+        expect(position).toBeTruthy();
+        expect(position!.left).toBe(20); // 20% of timeline
+        expect(position!.width).toBe(30); // 30% of timeline (50% - 20%)
+      });
+      
+      it('should return null when no preview exists', () => {
+        component['_creationPreview'] = null;
+        
+        const position = component.getCreationPreviewPosition();
+        expect(position).toBeNull();
+      });
+      
+      it('should constrain position within bounds', () => {
+        component['_creationPreview'] = {
+          startTime: -10, // Invalid negative time
+          endTime: 140,   // Beyond duration
+          startX: 0,
+          currentX: 350,
+          isVisible: true
+        };
+        
+        const position = component.getCreationPreviewPosition();
+        
+        expect(position!.left).toBe(0); // Constrained to 0
+        expect(position!.width).toBeGreaterThan(0); // Should have some width
+        expect(position!.width).toBeLessThanOrEqual(100); // Should not exceed 100%
+      });
+    });
+    
+    describe('Collision Detection During Creation', () => {
+      beforeEach(() => {
+        component.loops = [
+          { id: '1', startTime: 30, endTime: 60, name: 'Existing Loop', playCount: 0, isActive: false }
+        ];
+      });
+      
+      it('should detect collision during visual creation', () => {
+        // Start creation that will overlap with existing loop
+        mockEvent = jasmine.createSpyObj('MouseEvent', ['preventDefault', 'stopPropagation'], {
+          clientX: 75, // 25% position (30s)
+          currentTarget: mockTrack
+        });
+        
+        component.onTrackMouseDown(mockEvent);
+        
+        // Drag to create overlapping loop
+        component.onDocumentMouseMove({ clientX: 135 } as MouseEvent); // 45% position (54s)
+        
+        expect(component.creationHasCollision).toBe(true);
+        expect(document.body.classList.add).toHaveBeenCalledWith('creation-collision');
+      });
+      
+      it('should not detect collision for non-overlapping creation', () => {
+        mockEvent = jasmine.createSpyObj('MouseEvent', ['preventDefault', 'stopPropagation'], {
+          clientX: 25, // 8.33% position (10s)
+          currentTarget: mockTrack
+        });
+        
+        component.onTrackMouseDown(mockEvent);
+        
+        // Create non-overlapping loop
+        component.onDocumentMouseMove({ clientX: 75 } as MouseEvent); // 25% position (30s)
+        
+        expect(component.creationHasCollision).toBe(false);
+        expect(document.body.classList.remove).toHaveBeenCalledWith('creation-collision');
+      });
+    });
+    
+    describe('Visual Creation Completion', () => {
+      beforeEach(() => {
+        mockEvent = jasmine.createSpyObj('MouseEvent', ['preventDefault', 'stopPropagation'], {
+          clientX: 60, // 20% position (24s)
+          currentTarget: mockTrack
+        });
+      });
+      
+      it('should emit loop creation event on successful completion', () => {
+        component.onTrackMouseDown(mockEvent);
+        
+        // Drag to create 30-second loop
+        component.onDocumentMouseMove({ clientX: 135 } as MouseEvent); // 45% position (54s)
+        
+        // Finish creation
+        component.onDocumentMouseUp();
+        
+        expect(component.loopCreate.emit).toHaveBeenCalledWith({
+          startTime: 24,
+          endTime: 54
+        });
+      });
+      
+      it('should not create loop when duration is too small', () => {
+        component.onTrackMouseDown(mockEvent);
+        
+        // Move mouse only slightly (less than 0.5s duration)
+        component.onDocumentMouseMove({ clientX: 62 } as MouseEvent);
+        
+        // Finish creation
+        component.onDocumentMouseUp();
+        
+        expect(component.loopCreate.emit).not.toHaveBeenCalled();
+      });
+      
+      it('should not create loop when collision detected', () => {
+        component.loops = [
+          { id: '1', startTime: 20, endTime: 40, name: 'Existing', playCount: 0, isActive: false }
+        ];
+        
+        component.onTrackMouseDown(mockEvent);
+        
+        // Create overlapping loop
+        component.onDocumentMouseMove({ clientX: 105 } as MouseEvent); // 35% position (42s)
+        
+        // Finish creation
+        component.onDocumentMouseUp();
+        
+        expect(component.loopCreate.emit).not.toHaveBeenCalled();
+      });
+      
+      it('should clean up visual state after completion', () => {
+        component.onTrackMouseDown(mockEvent);
+        component.onDocumentMouseMove({ clientX: 135 } as MouseEvent);
+        component.onDocumentMouseUp();
+        
+        expect(component.isCreatingLoop).toBe(false);
+        expect(component.creationPreview).toBeNull();
+        expect(document.body.classList.remove).toHaveBeenCalledWith('creating-loop');
+        expect(document.body.classList.remove).toHaveBeenCalledWith('creation-collision');
+      });
+      
+      it('should use adjusted bounds when validation suggests them', () => {
+        // Create a loop that goes beyond duration
+        component.duration = 50; // Short duration
+        mockEvent = jasmine.createSpyObj('MouseEvent', ['preventDefault', 'stopPropagation'], {
+          clientX: 240, // 80% position (40s of 50s duration)
+          currentTarget: mockTrack
+        });
+        
+        component.onTrackMouseDown(mockEvent);
+        
+        // Drag beyond duration
+        component.onDocumentMouseMove({ clientX: 300 } as MouseEvent); // 100% position (50s)
+        
+        // Finish creation
+        component.onDocumentMouseUp();
+        
+        expect(component.loopCreate.emit).toHaveBeenCalledWith(jasmine.objectContaining({
+          startTime: jasmine.any(Number),
+          endTime: 50 // Should be adjusted to duration limit
+        }));
+      });
+    });
+    
+    describe('Template Integration for Visual Creation', () => {
+      beforeEach(() => {
+        component.duration = 100;
+        fixture.detectChanges();
+      });
+      
+      it('should add mousedown event listener to timeline track', () => {
+        const compiled = fixture.nativeElement as HTMLElement;
+        const track = compiled.querySelector('.timeline-track') as HTMLElement;
+        
+        expect(track).toBeTruthy();
+        
+        // Mock mousedown event
+        const mousedownEvent = new MouseEvent('mousedown', { clientX: 150 });
+        spyOn(component, 'onTrackMouseDown');
+        
+        track.dispatchEvent(mousedownEvent);
+        
+        expect(component.onTrackMouseDown).toHaveBeenCalled();
+      });
+      
+      it('should show creation preview when creating loop', () => {
+        component['_creationPreview'] = {
+          startTime: 20,
+          endTime: 40,
+          startX: 60,
+          currentX: 120,
+          isVisible: true
+        };
+        
+        fixture.detectChanges();
+        
+        const compiled = fixture.nativeElement as HTMLElement;
+        const preview = compiled.querySelector('.creation-preview');
+        
+        expect(preview).toBeTruthy();
+        expect(preview?.getAttribute('style')).toContain('left: 20%');
+        expect(preview?.getAttribute('style')).toContain('width: 20%');
+      });
+      
+      it('should show collision warning during creation collision', () => {
+        component.loops = [
+          { id: '1', startTime: 25, endTime: 35, name: 'Collision', playCount: 0, isActive: false }
+        ];
+        
+        component['_creationPreview'] = {
+          startTime: 20,
+          endTime: 30, // Overlaps with existing loop
+          startX: 60,
+          currentX: 90,
+          isVisible: true
+        };
+        
+        fixture.detectChanges();
+        
+        const compiled = fixture.nativeElement as HTMLElement;
+        const preview = compiled.querySelector('.creation-preview');
+        const warning = preview?.querySelector('.collision-warning');
+        
+        expect(preview?.classList.contains('has-collision')).toBe(true);
+        expect(warning).toBeTruthy();
+        expect(warning?.textContent).toBe('⚠');
+      });
+      
+      it('should apply correct cursor styles during creation', () => {
+        const compiled = fixture.nativeElement as HTMLElement;
+        const track = compiled.querySelector('.timeline-track') as HTMLElement;
+        
+        // Default state
+        expect(track.style.cursor).toBe('crosshair');
+        
+        // During creation
+        component['dragState'].isDragging = true;
+        component['dragState'].dragType = 'create';
+        fixture.detectChanges();
+        
+        expect(track.style.cursor).toBe('grabbing');
+      });
+      
+      it('should apply creation mode classes to timeline track', () => {
+        const compiled = fixture.nativeElement as HTMLElement;
+        const track = compiled.querySelector('.timeline-track') as HTMLElement;
+        
+        // Start creation mode
+        component['dragState'].isDragging = true;
+        component['dragState'].dragType = 'create';
+        fixture.detectChanges();
+        
+        expect(track.classList.contains('creating')).toBe(true);
+        
+        // With collision
+        component['_creationPreview'] = {
+          startTime: 20,
+          endTime: 30,
+          startX: 60,
+          currentX: 90,
+          isVisible: true
+        };
+        component.loops = [
+          { id: '1', startTime: 25, endTime: 35, name: 'Collision', playCount: 0, isActive: false }
+        ];
+        fixture.detectChanges();
+        
+        expect(track.classList.contains('has-collision')).toBe(true);
+      });
+    });
+    
+    describe('Accessibility for Visual Creation', () => {
+      it('should update aria-label to include creation instructions', () => {
+        component.duration = 100;
+        fixture.detectChanges();
+        
+        const compiled = fixture.nativeElement as HTMLElement;
+        const track = compiled.querySelector('.timeline-track') as HTMLElement;
+        const ariaLabel = track.getAttribute('aria-label');
+        
+        expect(ariaLabel).toContain('Double-click or drag to create loop');
+      });
+      
+      it('should provide aria-label for creation preview', () => {
+        component['_creationPreview'] = {
+          startTime: 15,
+          endTime: 45,
+          startX: 45,
+          currentX: 135,
+          isVisible: true
+        };
+        
+        fixture.detectChanges();
+        
+        const compiled = fixture.nativeElement as HTMLElement;
+        const preview = compiled.querySelector('.creation-preview');
+        const ariaLabel = preview?.getAttribute('aria-label');
+        
+        expect(ariaLabel).toBe('Creating loop from 0:15 to 0:45');
+      });
+    });
+    
+    describe('Error Handling and Edge Cases for Visual Creation', () => {
+      it('should handle mouse move without active creation gracefully', () => {
+        expect(() => {
+          component.onDocumentMouseMove({ clientX: 150 } as MouseEvent);
+        }).not.toThrow();
+      });
+      
+      it('should handle mouse up without active creation gracefully', () => {
+        expect(() => {
+          component.onDocumentMouseUp();
+        }).not.toThrow();
+        
+        expect(component.isCreatingLoop).toBe(false);
+      });
+      
+      it('should handle missing timeline track element', () => {
+        spyOn(document, 'querySelector').and.returnValue(null);
+        
+        mockEvent = jasmine.createSpyObj('MouseEvent', ['preventDefault', 'stopPropagation'], {
+          clientX: 150,
+          currentTarget: mockTrack
+        });
+        
+        component.onTrackMouseDown(mockEvent);
+        
+        expect(() => {
+          component.onDocumentMouseMove({ clientX: 200 } as MouseEvent);
+        }).not.toThrow();
+      });
+      
+      it('should handle creation preview position calculation with zero duration', () => {
+        component.duration = 0;
+        component['_creationPreview'] = {
+          startTime: 10,
+          endTime: 20,
+          startX: 30,
+          currentX: 60,
+          isVisible: true
+        };
+        
+        const position = component.getCreationPreviewPosition();
+        expect(position).toBeNull();
       });
     });
   });

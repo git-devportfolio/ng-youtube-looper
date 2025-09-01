@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, inject, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TimelineViewModel, LoopSegment } from '../../../loop-manager/data-access/loop-manager.facade';
+import { TimelineViewModel, LoopSegment, LoopManagerFacade } from '../../../loop-manager/data-access/loop-manager.facade';
+import { Subject } from 'rxjs';
 
 @Component({
   selector: 'app-timeline',
@@ -8,7 +9,9 @@ import { TimelineViewModel, LoopSegment } from '../../../loop-manager/data-acces
   templateUrl: './timeline.component.html',
   styleUrl: './timeline.component.scss'
 })
-export class TimelineComponent {
+export class TimelineComponent implements OnInit, OnDestroy {
+  private readonly loopManagerFacade = inject(LoopManagerFacade);
+  private readonly destroy$ = new Subject<void>();
   // Input properties
   @Input() currentTime = 0;
   @Input() duration = 0;
@@ -18,6 +21,7 @@ export class TimelineComponent {
   @Input() loops: LoopSegment[] = [];
   @Input() timelineVm?: TimelineViewModel; // Optional ViewModel input
   @Input() canCreateLoop = true; // Allow loop creation by default
+  @Input() useFacade = true; // Enable automatic facade integration
 
   // Output events for navigation
   @Output() seekTo = new EventEmitter<number>();
@@ -35,6 +39,10 @@ export class TimelineComponent {
   @Output() loopCreate = new EventEmitter<{startTime: number, endTime: number}>();
   @Output() loopDelete = new EventEmitter<string>();
   @Output() loopUpdate = new EventEmitter<{id: string, name?: string, color?: string}>();
+  
+  // Enhanced output events for facade integration
+  @Output() validationErrorChange = new EventEmitter<string>();
+  @Output() animationStateChange = new EventEmitter<{state: string, loopId?: string}>();
 
   // Internal state for seeking animation
   private isSeeking = false;
@@ -60,6 +68,8 @@ export class TimelineComponent {
     // Loop creation state
     createStartTime?: number;
     createStartX?: number;
+    createCurrentX?: number;
+    createPreviewId?: string;
   } = {
     isDragging: false,
     dragType: null,
@@ -72,6 +82,23 @@ export class TimelineComponent {
   // Selected loop for editing - updated to use string ID
   private _selectedLoopId: string | null = null;
   
+  // Visual creation preview state
+  private _creationPreview: {
+    startTime: number;
+    endTime: number;
+    startX: number;
+    currentX: number;
+    isVisible: boolean;
+  } | null = null;
+  
+  // Animation states for smooth transitions
+  private animationStates = {
+    isCreatingLoop: false,
+    draggedLoopId: null as string | null,
+    hoveredLoopId: null as string | null,
+    lastInteractionTime: 0
+  };
+  
   /**
    * Get selected loop ID for template binding
    */
@@ -80,17 +107,89 @@ export class TimelineComponent {
   }
   
   /**
-   * Get effective loops from input or ViewModel
+   * Get creation preview state for template binding
+   */
+  get creationPreview(): {
+    startTime: number;
+    endTime: number;
+    startX: number;
+    currentX: number;
+    isVisible: boolean;
+  } | null {
+    return this._creationPreview;
+  }
+  
+  /**
+   * Check if currently in loop creation mode
+   */
+  get isCreatingLoop(): boolean {
+    return this.dragState.isDragging && this.dragState.dragType === 'create';
+  }
+  
+  /**
+   * Get effective loops from input, ViewModel, or Facade
    */
   get effectiveLoops(): LoopSegment[] {
+    if (this.useFacade) {
+      return this.loopManagerFacade.timelineVm().loops;
+    }
     return this.timelineVm?.loops || this.loops;
+  }
+
+  /**
+   * Get effective timelineVm from input or Facade
+   */
+  get effectiveTimelineVm(): TimelineViewModel {
+    if (this.useFacade) {
+      return this.loopManagerFacade.timelineVm();
+    }
+    return this.timelineVm || {
+      loops: this.loops,
+      editingLoop: null,
+      activeLoopId: null,
+      selectedLoopId: this._selectedLoopId,
+      canCreateLoop: this.canCreateLoop
+    };
   }
   
   /**
    * Check if loop creation is enabled
    */
   get canCreateLoops(): boolean {
+    if (this.useFacade) {
+      return this.effectiveTimelineVm.canCreateLoop;
+    }
     return this.canCreateLoop && (this.timelineVm?.canCreateLoop ?? true);
+  }
+
+  /**
+   * Get the active loop ID from facade or local state
+   */
+  get activeLoopId(): string | null {
+    if (this.useFacade) {
+      return this.loopManagerFacade.activeLoop()?.id || null;
+    }
+    return this.effectiveTimelineVm.activeLoopId;
+  }
+
+  /**
+   * Check if there are any validation errors
+   */
+  get hasValidationError(): boolean {
+    if (this.useFacade) {
+      return this.loopManagerFacade.error() !== null;
+    }
+    return false;
+  }
+
+  /**
+   * Get current validation error message
+   */
+  get validationError(): string | null {
+    if (this.useFacade) {
+      return this.loopManagerFacade.error();
+    }
+    return null;
   }
 
   /**
@@ -122,7 +221,55 @@ export class TimelineComponent {
       classes.push('paused');
     }
     
+    if (this.hasValidationError) {
+      classes.push('error');
+    }
+    
     return classes.join(' ');
+  }
+
+  ngOnInit(): void {
+    // Setup facade integration if enabled
+    if (this.useFacade) {
+      this.setupFacadeIntegration();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  /**
+   * Setup integration with LoopManagerFacade
+   */
+  private setupFacadeIntegration(): void {
+    // Sync selected loop with facade
+    effect(() => {
+      const facadeSelectedId = this.loopManagerFacade.timelineVm().selectedLoopId;
+      if (facadeSelectedId !== this._selectedLoopId) {
+        this._selectedLoopId = facadeSelectedId || null;
+      }
+    });
+
+    // Monitor facade errors for visual feedback
+    effect(() => {
+      const error = this.loopManagerFacade.error();
+      if (error) {
+        this.handleValidationError(error);
+      }
+    });
+  }
+
+  /**
+   * Handle validation errors from facade
+   */
+  private handleValidationError(error: string): void {
+    // Add visual feedback for validation errors
+    this.animationStates.lastInteractionTime = Date.now();
+    
+    // Could emit an error event or show visual feedback
+    console.warn('Timeline validation error:', error);
   }
 
 
@@ -306,6 +453,30 @@ export class TimelineComponent {
       this.interactionState.isNavigating = false;
     }, 200);
   }
+  
+  /**
+   * Handle mouse down on track for visual loop creation
+   */
+  onTrackMouseDown(event: MouseEvent): void {
+    if (!this.isReady || !this.canCreateLoops) return;
+    
+    const track = event.currentTarget as HTMLElement;
+    const rect = track.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const percentage = Math.min(Math.max(mouseX / rect.width, 0), 1);
+    const targetTime = percentage * this.duration;
+    
+    // Check if mouse down is in empty space (not on existing loop)
+    const clickedLoop = this.getLoopAtTime(targetTime);
+    if (clickedLoop) return; // Let existing loop handle the drag
+    
+    // Prevent default to avoid text selection
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Start visual loop creation
+    this.startVisualLoopCreation(mouseX, targetTime);
+  }
 
   /**
    * Handle double-click for loop creation
@@ -472,6 +643,11 @@ export class TimelineComponent {
   onDocumentMouseMove(event: MouseEvent): void {
     if (!this.dragState.isDragging || !this.isReady) return;
     
+    if (this.dragState.dragType === 'create') {
+      this.updateVisualLoopCreation(event.clientX);
+      return;
+    }
+    
     const deltaX = event.clientX - this.dragState.startX;
     const track = document.querySelector('.timeline-track') as HTMLElement;
     if (!track) return;
@@ -520,6 +696,10 @@ export class TimelineComponent {
   @HostListener('document:mouseup', ['$event'])
   onDocumentMouseUp(): void {
     if (this.dragState.isDragging) {
+      if (this.dragState.dragType === 'create') {
+        this.finishVisualLoopCreation();
+      }
+      
       this.dragState = {
         isDragging: false,
         dragType: null,
@@ -528,6 +708,9 @@ export class TimelineComponent {
         initialStartTime: 0,
         initialEndTime: 0
       };
+      
+      // Clear creation preview
+      this._creationPreview = null;
     }
   }
 
@@ -814,5 +997,271 @@ export class TimelineComponent {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+  
+  /**
+   * Handle loop segment hover for enhanced visual feedback
+   */
+  onLoopMouseEnter(loop: LoopSegment): void {
+    if (!this.isReady) return;
+    
+    this.animationStates.hoveredLoopId = loop.id;
+    this.animationStateChange.emit({ state: 'hover', loopId: loop.id });
+  }
+
+  /**
+   * Handle loop segment hover end
+   */
+  onLoopMouseLeave(loop: LoopSegment): void {
+    if (!this.isReady) return;
+    
+    if (this.animationStates.hoveredLoopId === loop.id) {
+      this.animationStates.hoveredLoopId = null;
+      this.animationStateChange.emit({ state: 'idle' });
+    }
+  }
+
+  /**
+   * Get container classes with loading and error states
+   */
+  getContainerClasses(): string {
+    const classes: string[] = ['timeline-container'];
+    
+    if (this.isLoading) {
+      classes.push('loading');
+    }
+    
+    if (this.disabled) {
+      classes.push('disabled');
+    }
+    
+    if (this.isReady) {
+      classes.push('ready');
+    }
+    
+    if (this.hasValidationError) {
+      classes.push('validation-error');
+    }
+    
+    if (this.useFacade && this.loopManagerFacade.isLooping()) {
+      classes.push('looping');
+    }
+    
+    if (this.animationStates.isCreatingLoop) {
+      classes.push('creating-loop');
+    }
+    
+    return classes.join(' ');
+  }
+
+  /**
+   * Get progress for currently playing loop
+   */
+  getActiveLoopProgress(): number {
+    if (!this.useFacade || !this.activeLoopId) {
+      return 0;
+    }
+    
+    const activeLoop = this.effectiveLoops.find(loop => loop.id === this.activeLoopId);
+    if (!activeLoop) {
+      return 0;
+    }
+    
+    return this.loopManagerFacade.getLoopProgress(this.currentTime, activeLoop);
+  }
+
+  /**
+   * Check if a loop is currently playing
+   */
+  isLoopPlaying(loop: LoopSegment): boolean {
+    if (!this.useFacade) {
+      return false;
+    }
+    
+    return this.loopManagerFacade.isLooping() && this.activeLoopId === loop.id;
+  }
+
+  /**
+   * Get staggered animation delay for loop segment
+   */
+  getLoopAnimationDelay(index: number): string {
+    return `${index * 0.05}s`; // 50ms stagger between loops
+  }
+
+  /**
+   * Handle validation and provide user feedback
+   */
+  private handleLoopValidation(startTime: number, endTime: number, excludeLoopId?: string): boolean {
+    // Check basic bounds
+    const boundsValidation = this.validateSegmentBounds(startTime, endTime);
+    if (!boundsValidation.isValid) {
+      this.validationErrorChange.emit(boundsValidation.errors.join(', '));
+      return false;
+    }
+    
+    // Check collisions
+    if (this.checkLoopCollision(excludeLoopId || '', startTime, endTime)) {
+      const collisionInfo = this.getLoopCollisionInfo(excludeLoopId || '', startTime, endTime);
+      if (collisionInfo.recommendedPosition) {
+        const suggestion = collisionInfo.recommendedPosition;
+        this.validationErrorChange.emit(
+          `Collision detected. Try position ${this.formatDuration(suggestion.startTime)} - ${this.formatDuration(suggestion.endTime)}`
+        );
+      } else {
+        this.validationErrorChange.emit('Collision detected with existing loops');
+      }
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Start visual loop creation with drag
+   */
+  private startVisualLoopCreation(startX: number, startTime: number): void {
+    if (!this.isReady || !this.canCreateLoops) return;
+    
+    // Initialize drag state for creation
+    this.dragState = {
+      isDragging: true,
+      dragType: 'create',
+      loopId: null,
+      startX: startX,
+      initialStartTime: startTime,
+      initialEndTime: startTime,
+      createStartTime: startTime,
+      createStartX: startX,
+      createCurrentX: startX
+    };
+    
+    // Initialize creation preview
+    this._creationPreview = {
+      startTime: startTime,
+      endTime: startTime,
+      startX: startX,
+      currentX: startX,
+      isVisible: true
+    };
+    
+    // Add visual feedback class to timeline
+    document.body.classList.add('creating-loop');
+  }
+  
+  /**
+   * Update visual loop creation during drag
+   */
+  private updateVisualLoopCreation(currentX: number): void {
+    if (!this._creationPreview || !this.dragState.createStartX || !this.dragState.createStartTime) return;
+    
+    const track = document.querySelector('.timeline-track') as HTMLElement;
+    if (!track) return;
+    
+    const rect = track.getBoundingClientRect();
+    const relativeCurrentX = currentX - rect.left;
+    const relativeBounds = Math.min(Math.max(relativeCurrentX, 0), rect.width);
+    const currentTime = (relativeBounds / rect.width) * this.duration;
+    
+    // Determine start and end times based on drag direction
+    const startTime = Math.min(this.dragState.createStartTime, currentTime);
+    const endTime = Math.max(this.dragState.createStartTime, currentTime);
+    
+    // Minimum loop duration (0.5 seconds)
+    const minDuration = 0.5;
+    const adjustedEndTime = Math.max(startTime + minDuration, endTime);
+    
+    // Update creation preview
+    this._creationPreview = {
+      startTime,
+      endTime: adjustedEndTime,
+      startX: Math.min(this.dragState.createStartX, relativeBounds),
+      currentX: Math.max(this.dragState.createStartX, relativeBounds),
+      isVisible: true
+    };
+    
+    // Store current X for drag state
+    this.dragState.createCurrentX = currentX;
+    
+    // Check for collisions and update visual feedback
+    const hasCollision = this.checkLoopCollision('', startTime, adjustedEndTime);
+    if (hasCollision) {
+      document.body.classList.add('creation-collision');
+    } else {
+      document.body.classList.remove('creation-collision');
+    }
+  }
+  
+  /**
+   * Finish visual loop creation and emit event
+   */
+  private finishVisualLoopCreation(): void {
+    if (!this._creationPreview || !this.dragState.createStartTime) return;
+    
+    const startTime = this._creationPreview.startTime;
+    const endTime = this._creationPreview.endTime;
+    
+    // Minimum duration validation
+    if (endTime - startTime < 0.5) {
+      this.cancelVisualLoopCreation();
+      return;
+    }
+    
+    // Check for collisions before creating
+    if (!this.checkLoopCollision('', startTime, endTime)) {
+      // Validate bounds
+      const validation = this.validateSegmentBounds(startTime, endTime);
+      if (validation.isValid) {
+        this.loopCreate.emit({ startTime, endTime });
+      } else if (validation.adjustedStartTime !== undefined && validation.adjustedEndTime !== undefined) {
+        // Use adjusted bounds if available
+        this.loopCreate.emit({ 
+          startTime: validation.adjustedStartTime, 
+          endTime: validation.adjustedEndTime 
+        });
+      }
+    }
+    
+    this.cleanupVisualLoopCreation();
+  }
+  
+  /**
+   * Cancel visual loop creation
+   */
+  private cancelVisualLoopCreation(): void {
+    this.cleanupVisualLoopCreation();
+  }
+  
+  /**
+   * Clean up visual loop creation state and classes
+   */
+  private cleanupVisualLoopCreation(): void {
+    // Remove visual feedback classes
+    document.body.classList.remove('creating-loop', 'creation-collision');
+    
+    // Clear creation preview
+    this._creationPreview = null;
+  }
+  
+  /**
+   * Get creation preview position for template
+   */
+  getCreationPreviewPosition(): {left: number, width: number} | null {
+    if (!this._creationPreview || !this.duration) return null;
+    
+    const left = (this._creationPreview.startTime / this.duration) * 100;
+    const width = ((this._creationPreview.endTime - this._creationPreview.startTime) / this.duration) * 100;
+    
+    return {
+      left: Math.max(0, Math.min(left, 100)),
+      width: Math.max(0.1, Math.min(width, 100 - left)) // Minimum visible width
+    };
+  }
+  
+  /**
+   * Check if creation preview has collision
+   */
+  get creationHasCollision(): boolean {
+    if (!this._creationPreview) return false;
+    return this.checkLoopCollision('', this._creationPreview.startTime, this._creationPreview.endTime);
   }
 }
