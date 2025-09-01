@@ -1,9 +1,10 @@
-import { Component, Input, inject, computed, effect } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { VideoPlayerFacade } from '../../data-access/video-player.facade';
+import { VideoPlayerViewModel } from '../../data-access/video-player.facade';
 import { TimeDisplayComponent } from '../time-display';
 import { TimeSliderComponent } from '../time-slider';
 import { SpeedControlComponent } from '../speed-control';
+import { LoopService } from '@core/services/loop.service';
 
 @Component({
   selector: 'app-player-controls',
@@ -12,7 +13,19 @@ import { SpeedControlComponent } from '../speed-control';
   styleUrls: ['./player-controls.component.scss']
 })
 export class PlayerControlsComponent {
-  private readonly videoPlayerFacade = inject(VideoPlayerFacade);
+  private readonly loopService = inject(LoopService);
+
+  // Internal signal for viewModel to enable reactive computed properties
+  private readonly viewModelSignal = signal<VideoPlayerViewModel | null>(null);
+  
+  // ViewModel input - the component is now stateless
+  @Input({ required: true }) 
+  set viewModel(value: VideoPlayerViewModel) {
+    this.viewModelSignal.set(value);
+  }
+  get viewModel(): VideoPlayerViewModel {
+    return this.viewModelSignal()!;
+  }
 
   // Configuration inputs
   @Input() circular = false;
@@ -21,32 +34,41 @@ export class PlayerControlsComponent {
   @Input() showSpeedControls = true;
   @Input() showSlider = true;
 
-  // Real-time synchronized computed signals
-  readonly playerState = this.videoPlayerFacade.playerState;
-  readonly currentVideo = this.videoPlayerFacade.currentVideo;
-  readonly canPlay = this.videoPlayerFacade.canPlay;
-  readonly canPause = this.videoPlayerFacade.canPause;
-  readonly hasError = this.videoPlayerFacade.hasError;
+  // Event outputs for pure UI component communication
+  @Output() playRequested = new EventEmitter<void>();
+  @Output() pauseRequested = new EventEmitter<void>();
+  @Output() stopRequested = new EventEmitter<void>();
+  @Output() togglePlayPauseRequested = new EventEmitter<void>();
+  @Output() seekRequested = new EventEmitter<number>();
+  @Output() seekByRequested = new EventEmitter<number>();
+  @Output() playbackRateChangeRequested = new EventEmitter<number>();
+  @Output() speedIncreaseRequested = new EventEmitter<void>();
+  @Output() speedDecreaseRequested = new EventEmitter<void>();
+  @Output() volumeChangeRequested = new EventEmitter<number>();
+  @Output() muteRequested = new EventEmitter<void>();
+  @Output() seekStarted = new EventEmitter<void>();
+  @Output() seekEnded = new EventEmitter<void>();
 
-  // Derived states for UI components
-  readonly isPlaying = computed(() => this.playerState().isPlaying);
-  readonly isLoading = computed(() => !this.playerState().isReady);
-  readonly currentTime = computed(() => this.playerState().currentTime);
-  readonly duration = computed(() => this.playerState().duration);
-  readonly playbackRate = computed(() => this.playerState().playbackRate);
-  readonly volume = computed(() => this.playerState().volume);
+  // Computed properties derived from viewModel signal for proper reactivity
+  readonly isPlaying = computed(() => this.viewModelSignal()?.isPlaying ?? false);
+  readonly isLoading = computed(() => this.viewModelSignal()?.loading ?? false);
+  readonly currentTime = computed(() => this.viewModelSignal()?.currentTime ?? 0);
+  readonly duration = computed(() => this.viewModelSignal()?.duration ?? 0);
+  readonly playbackRate = computed(() => this.viewModelSignal()?.playbackRate ?? 1);
+  readonly volume = computed(() => this.viewModelSignal()?.volume ?? 100);
+  readonly hasError = computed(() => this.viewModelSignal()?.hasError ?? false);
+  readonly canPlay = computed(() => this.viewModelSignal()?.canPlay ?? false);
+  readonly canPause = computed(() => this.viewModelSignal()?.canPause ?? false);
+  readonly canSeek = computed(() => this.viewModelSignal()?.canSeek ?? false);
+  readonly isPlayerReady = computed(() => this.viewModelSignal()?.isPlayerReady ?? false);
   
-  // Note: buffered is not available in the current PlayerState interface
-  // This could be added to YouTubeService if needed for buffer visualization
+  // Note: buffered is not available in the current PlayerViewModel interface
+  // This could be added to VideoPlayerViewModel if needed for buffer visualization
   readonly buffered = computed(() => 0); // Placeholder for now
 
-  // Control states
+  // Control states derived from viewModel
   readonly controlsDisabled = computed(() => 
-    !this.playerState().isReady || this.hasError()
-  );
-
-  readonly canSeek = computed(() => 
-    this.playerState().isReady && this.duration() > 0
+    !this.isPlayerReady() || this.hasError()
   );
 
   readonly progressPercentage = computed(() => {
@@ -55,93 +77,78 @@ export class PlayerControlsComponent {
     return total > 0 ? (current / total) * 100 : 0;
   });
 
-  constructor() {
-    // Effect for error handling and user feedback
-    effect(() => {
-      const state = this.playerState();
-      const error = state.error;
-      
-      if (error) {
-        console.error('Player error:', error);
-        // Could trigger user notifications here
-      }
-    });
+  // Formatted time displays using LoopService
+  readonly currentTimeFormatted = computed(() => 
+    this.loopService.formatTime(this.currentTime())
+  );
+  
+  readonly durationFormatted = computed(() => 
+    this.loopService.formatTime(this.duration())
+  );
 
-    // Effect for logging state changes in development
-    effect(() => {
-      const state = this.playerState();
-      if (state.isReady) {
-        console.log('Player state updated:', {
-          playing: state.isPlaying,
-          currentTime: state.currentTime,
-          duration: state.duration,
-          rate: state.playbackRate
-        });
-      }
-    });
-  }
+  // No constructor needed - pure UI component without side effects
 
+  // Pure UI event handlers that emit to parent components
+  
   // Play/Pause controls
   togglePlayPause(): void {
-    this.videoPlayerFacade.togglePlayPause();
+    this.togglePlayPauseRequested.emit();
   }
 
   play(): void {
-    this.videoPlayerFacade.play();
+    this.playRequested.emit();
   }
 
   pause(): void {
-    this.videoPlayerFacade.pause();
+    this.pauseRequested.emit();
   }
 
   stop(): void {
-    this.videoPlayerFacade.stop();
+    this.stopRequested.emit();
   }
 
   // Seek controls
   seekTo(seconds: number): void {
-    this.videoPlayerFacade.seekTo(seconds);
+    this.seekRequested.emit(seconds);
   }
 
   seekBack(): void {
-    this.videoPlayerFacade.seekBy(-10);
+    this.seekByRequested.emit(-10);
   }
 
   seekForward(): void {
-    this.videoPlayerFacade.seekBy(10);
+    this.seekByRequested.emit(10);
   }
 
   // Speed controls
   setPlaybackRate(rate: number): void {
-    this.videoPlayerFacade.setPlaybackRate(rate);
+    this.playbackRateChangeRequested.emit(rate);
   }
 
   increaseSpeed(): void {
-    this.videoPlayerFacade.increaseSpeed();
+    this.speedIncreaseRequested.emit();
   }
 
   decreaseSpeed(): void {
-    this.videoPlayerFacade.decreaseSpeed();
+    this.speedDecreaseRequested.emit();
   }
 
   // Slider events
   onSeekStart(): void {
-    // Optional: Pause updates while seeking for smoother UX
-    console.log('Seek started');
+    this.seekStarted.emit();
   }
 
   onSeekEnd(): void {
-    // Optional: Resume updates after seeking
-    console.log('Seek ended');
+    this.seekEnded.emit();
   }
 
   // Volume controls
   setVolume(volume: number): void {
-    this.videoPlayerFacade.setVolume(volume);
+    this.volumeChangeRequested.emit(volume);
   }
 
   mute(): void {
-    this.videoPlayerFacade.mute();
+    this.muteRequested.emit();
   }
 
   // Utility getters for template readability
@@ -159,5 +166,17 @@ export class PlayerControlsComponent {
 
   get canPauseValue(): boolean {
     return this.canPause();
+  }
+
+  get isLoadingValue(): boolean {
+    return this.isLoading();
+  }
+
+  get hasErrorValue(): boolean {
+    return this.hasError();
+  }
+
+  get controlsDisabledValue(): boolean {
+    return this.controlsDisabled();
   }
 }

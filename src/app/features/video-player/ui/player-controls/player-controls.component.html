@@ -1,15 +1,15 @@
 <div class="player-controls" 
      [class.compact]="compact"
-     [class.loading]="isLoading()"
-     [class.error]="hasError()">
+     [class.loading]="isLoadingValue"
+     [class.error]="hasErrorValue">
 
   <!-- Time Display -->
   @if (showTimeDisplay) {
     <app-time-display
       [currentTime]="currentTime()"
       [duration]="duration()"
-      [isLoading]="isLoading()"
-      [hasError]="hasError()"
+      [isLoading]="isLoadingValue"
+      [hasError]="hasErrorValue"
       [showDuration]="duration() > 0"
       [class.compact]="compact">
     </app-time-display>
@@ -20,7 +20,7 @@
     <app-time-slider
       [currentTime]="currentTime()"
       [duration]="duration()"
-      [disabled]="controlsDisabled() || !canSeekValue"
+      [disabled]="controlsDisabledValue || !canSeekValue"
       [buffered]="buffered()"
       (seekTo)="seekTo($event)"
       (seekStart)="onSeekStart()"
@@ -36,7 +36,7 @@
       type="button"
       class="control-button seek-button"
       (click)="seekBack()"
-      [disabled]="controlsDisabled() || !canSeekValue"
+      [disabled]="controlsDisabledValue || !canSeekValue"
       title="Reculer de 10 secondes"
     >
       <span class="control-icon">⏪</span>
@@ -50,12 +50,12 @@
       [class.circular]="circular"
       [class.playing]="isPlayingValue"
       (click)="togglePlayPause()"
-      [disabled]="controlsDisabled() || (!canPlayValue && !canPauseValue)"
+      [disabled]="controlsDisabledValue || (!canPlayValue && !canPauseValue)"
       [title]="isPlayingValue ? 'Mettre en pause' : 'Lire'"
     >
-      @if (isLoading()) {
+      @if (isLoadingValue) {
         <span class="control-icon loading">⏳</span>
-      } @else if (hasError()) {
+      } @else if (hasErrorValue) {
         <span class="control-icon error">❌</span>
       } @else if (isPlayingValue) {
         <span class="control-icon">⏸️</span>
@@ -69,7 +69,7 @@
       type="button"
       class="control-button stop-button"
       (click)="stop()"
-      [disabled]="controlsDisabled() || !canSeekValue"
+      [disabled]="controlsDisabledValue || !canSeekValue"
       title="Arrêter"
     >
       <span class="control-icon">⏹️</span>
@@ -80,7 +80,7 @@
       type="button"
       class="control-button seek-button"
       (click)="seekForward()"
-      [disabled]="controlsDisabled() || !canSeekValue"
+      [disabled]="controlsDisabledValue || !canSeekValue"
       title="Avancer de 10 secondes"
     >
       <span class="control-icon">⏩</span>
@@ -92,7 +92,7 @@
   @if (showSpeedControls) {
     <app-speed-control
       [currentRate]="playbackRate()"
-      [disabled]="controlsDisabled()"
+      [disabled]="controlsDisabledValue"
       (rateChange)="setPlaybackRate($event)"
       (increaseSpeed)="increaseSpeed()"
       (decreaseSpeed)="decreaseSpeed()"
@@ -101,15 +101,15 @@
   }
 
   <!-- Error Message -->
-  @if (hasError()) {
+  @if (hasErrorValue) {
     <div class="error-message">
       <span class="error-icon">⚠️</span>
-      <span class="error-text">Erreur de lecture vidéo</span>
+      <span class="error-text">{{ viewModel?.error || 'Erreur de lecture vidéo' }}</span>
     </div>
   }
 
   <!-- Loading Indicator -->
-  @if (isLoading()) {
+  @if (isLoadingValue) {
     <div class="loading-indicator">
       <span class="loading-icon">⏳</span>
       <span class="loading-text">Chargement...</span>
