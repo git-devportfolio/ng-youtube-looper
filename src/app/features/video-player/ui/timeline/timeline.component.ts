@@ -1,14 +1,7 @@
-import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-// Interface pour les segments de boucle
-export interface Loop {
-  id: number;
-  startTime: number;
-  endTime: number;
-  name?: string;
-  color?: string;
-}
+import { Loop } from '@core/services/loop.service';
+import { TimelineViewModel, LoopSegment } from '../../loop-manager/data-access/loop-manager.facade';
 
 @Component({
   selector: 'app-timeline',
@@ -23,7 +16,9 @@ export class TimelineComponent {
   @Input() disabled = false;
   @Input() isLoading = false;
   @Input() isPlaying = false; // New input for animation states
-  @Input() loops: Loop[] = [];
+  @Input() loops: LoopSegment[] = [];
+  @Input() timelineVm?: TimelineViewModel; // Optional ViewModel input
+  @Input() canCreateLoop = true; // Allow loop creation by default
 
   // Output events for navigation
   @Output() seekTo = new EventEmitter<number>();
@@ -31,11 +26,16 @@ export class TimelineComponent {
   @Output() seekStart = new EventEmitter<void>();
   @Output() seekEnd = new EventEmitter<void>();
   
-  // Output events for loop segments
-  @Output() loopMove = new EventEmitter<{id: number, startTime: number, endTime: number}>();
-  @Output() loopResize = new EventEmitter<{id: number, startTime: number, endTime: number}>();
-  @Output() loopSelect = new EventEmitter<number>();
+  // Output events for loop segments - updated to use string IDs
+  @Output() loopMove = new EventEmitter<{id: string, startTime: number, endTime: number}>();
+  @Output() loopResize = new EventEmitter<{id: string, startTime: number, endTime: number}>();
+  @Output() loopSelect = new EventEmitter<string>();
   @Output() loopDeselect = new EventEmitter<void>();
+  
+  // Output events for loop creation
+  @Output() loopCreate = new EventEmitter<{startTime: number, endTime: number}>();
+  @Output() loopDelete = new EventEmitter<string>();
+  @Output() loopUpdate = new EventEmitter<{id: string, name?: string, color?: string}>();
 
   // Internal state for seeking animation
   private isSeeking = false;
@@ -43,14 +43,17 @@ export class TimelineComponent {
   // Touch interaction state
   private touchStartTime: number | null = null;
   
-  // Drag & drop state for loop segments
+  // Drag & drop state for loop segments - updated to use string IDs
   private dragState: {
     isDragging: boolean;
-    dragType: 'move' | 'resize-left' | 'resize-right' | null;
-    loopId: number | null;
+    dragType: 'move' | 'resize-left' | 'resize-right' | 'create' | null;
+    loopId: string | null;
     startX: number;
     initialStartTime: number;
     initialEndTime: number;
+    // Loop creation state
+    createStartTime?: number;
+    createStartX?: number;
   } = {
     isDragging: false,
     dragType: null,
@@ -60,14 +63,28 @@ export class TimelineComponent {
     initialEndTime: 0
   };
   
-  // Selected loop for editing
-  private _selectedLoopId: number | null = null;
+  // Selected loop for editing - updated to use string ID
+  private _selectedLoopId: string | null = null;
   
   /**
    * Get selected loop ID for template binding
    */
-  get selectedLoopId(): number | null {
+  get selectedLoopId(): string | null {
     return this._selectedLoopId;
+  }
+  
+  /**
+   * Get effective loops from input or ViewModel
+   */
+  get effectiveLoops(): LoopSegment[] {
+    return this.timelineVm?.loops || this.loops;
+  }
+  
+  /**
+   * Check if loop creation is enabled
+   */
+  get canCreateLoops(): boolean {
+    return this.canCreateLoop && (this.timelineVm?.canCreateLoop ?? true);
   }
 
   /**
@@ -198,9 +215,62 @@ export class TimelineComponent {
   }
 
   /**
+   * Handle double-click for loop creation
+   */
+  onTrackDoubleClick(event: MouseEvent): void {
+    if (!this.isReady || !this.canCreateLoops) return;
+    
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const track = event.currentTarget as HTMLElement;
+    const rect = track.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percentage = Math.min(Math.max(clickX / rect.width, 0), 1);
+    const clickTime = percentage * this.duration;
+    
+    // Create a 5-second loop centered on the click position
+    const loopDuration = 5; // 5 seconds
+    const startTime = Math.max(0, clickTime - loopDuration / 2);
+    const endTime = Math.min(this.duration, startTime + loopDuration);
+    
+    // Check for collisions before creating
+    if (!this.checkLoopCollision('', startTime, endTime)) {
+      this.loopCreate.emit({ startTime, endTime });
+    }
+  }
+
+  /**
+   * Handle keyboard shortcuts for loop creation
+   */
+  onKeyDown(event: KeyboardEvent): void {
+    if (!this.isReady || !this.canCreateLoops) return;
+    
+    // Ctrl+L or Cmd+L to create loop at current time
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'l') {
+      event.preventDefault();
+      
+      const loopDuration = 5; // 5 seconds
+      const startTime = Math.max(0, this.currentTime - loopDuration / 2);
+      const endTime = Math.min(this.duration, startTime + loopDuration);
+      
+      if (!this.checkLoopCollision('', startTime, endTime)) {
+        this.loopCreate.emit({ startTime, endTime });
+      }
+    }
+    
+    // Delete key to delete selected loop
+    if (event.key === 'Delete' && this._selectedLoopId) {
+      event.preventDefault();
+      this.loopDelete.emit(this._selectedLoopId);
+      this._selectedLoopId = null;
+    }
+  }
+
+  /**
    * Get loop segment position and width as percentages
    */
-  getLoopPosition(loop: Loop): {left: number, width: number} {
+  getLoopPosition(loop: LoopSegment): {left: number, width: number} {
     if (this.duration === 0) return {left: 0, width: 0};
     
     const left = (loop.startTime / this.duration) * 100;
@@ -215,7 +285,7 @@ export class TimelineComponent {
   /**
    * Get CSS classes for loop segment
    */
-  getLoopClasses(loop: Loop): string {
+  getLoopClasses(loop: LoopSegment): string {
     const classes: string[] = ['loop-segment'];
     
     if (this._selectedLoopId === loop.id) {
@@ -232,7 +302,7 @@ export class TimelineComponent {
   /**
    * Handle loop segment mouse down for drag operations
    */
-  onLoopMouseDown(event: MouseEvent, loop: Loop, dragType: 'move' | 'resize-left' | 'resize-right'): void {
+  onLoopMouseDown(event: MouseEvent, loop: LoopSegment, dragType: 'move' | 'resize-left' | 'resize-right'): void {
     if (!this.isReady) return;
     
     event.preventDefault();
@@ -254,7 +324,7 @@ export class TimelineComponent {
   /**
    * Handle loop segment selection
    */
-  onLoopClick(event: MouseEvent, loop: Loop): void {
+  onLoopClick(event: MouseEvent, loop: LoopSegment): void {
     if (!this.isReady) return;
     
     event.preventDefault();
@@ -283,7 +353,7 @@ export class TimelineComponent {
     const rect = track.getBoundingClientRect();
     const deltaTime = (deltaX / rect.width) * this.duration;
     
-    const loop = this.loops.find(l => l.id === this.dragState.loopId);
+    const loop = this.effectiveLoops.find(l => l.id === this.dragState.loopId);
     if (!loop) return;
     
     let newStartTime = this.dragState.initialStartTime;
@@ -338,8 +408,8 @@ export class TimelineComponent {
   /**
    * Check for collisions between loops
    */
-  private checkLoopCollision(excludeLoopId: number, startTime: number, endTime: number): boolean {
-    return this.loops.some(loop => 
+  private checkLoopCollision(excludeLoopId: string, startTime: number, endTime: number): boolean {
+    return this.effectiveLoops.some(loop => 
       loop.id !== excludeLoopId &&
       !(endTime <= loop.startTime || startTime >= loop.endTime)
     );

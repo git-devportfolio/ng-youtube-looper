@@ -806,7 +806,7 @@
         "dependencies": [
           25
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -814,7 +814,7 @@
             "description": "Initialiser le composant TimelineComponent avec les inputs/outputs nécessaires et les interfaces pour la gestion des boucles visuelles",
             "dependencies": [],
             "details": "Compléter la structure existante du TimelineComponent en ajoutant les inputs pour les données de boucles (loops[], currentTime, duration), les outputs pour les interactions (loopCreate, loopUpdate, loopSelect), et mettre à jour l'interface Loop pour inclure les propriétés d'affichage visuel (color, name). Intégrer avec LoopManagerFacade via les ViewModels timelineVm.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests unitaires pour vérifier la réception correcte des inputs, l'émission des outputs, et la compatibilité avec l'interface LoopSegment existante"
           },
           {
@@ -884,7 +884,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-01T05:23:21.098Z",
+      "updated": "2025-09-01T05:34:11.061Z",
       "description": "Tasks for master context"
     }
   }
