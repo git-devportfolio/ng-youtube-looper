@@ -825,7 +825,7 @@
               "29.1"
             ],
             "details": "Étendre les méthodes existantes getLoopPosition() et getPositionForTime() pour gérer plusieurs segments simultanément, calculer les positions relatives en pourcentage, gérer les cas limites (durée zéro, segments hors limites), et optimiser les performances pour les mises à jour fréquentes. Ajouter la gestion des collisions entre segments.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests unitaires des calculs de pourcentage avec différentes durées de vidéo, tests des cas limites, validation des positions relatives et tests de performance"
           },
           {
@@ -836,7 +836,7 @@
               "29.2"
             ],
             "details": "Étendre les méthodes onTrackClick(), onTouchStart(), et onTouchEnd() existantes pour gérer la sélection de segments de boucles, implémenter la navigation par clic dans la timeline, ajouter la gestion du focus et des états sélectionnés, et intégrer avec les événements loopSelect et seekTo pour la synchronisation avec le lecteur vidéo.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": "Tests des interactions de clic et touch, validation des événements émis, tests de navigation dans les segments, et tests d'accessibilité"
           },
           {
@@ -884,7 +884,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-01T05:34:11.061Z",
+      "updated": "2025-09-01T05:54:05.718Z",
       "description": "Tasks for master context"
     }
   }

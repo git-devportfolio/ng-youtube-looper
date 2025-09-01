@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TimelineComponent, Loop } from './timeline.component';
+import { TimelineComponent } from './timeline.component';
+import { LoopSegment } from '../../../loop-manager/data-access/loop-manager.facade';
 
 describe('TimelineComponent', () => {
   let component: TimelineComponent;
@@ -137,9 +138,56 @@ describe('TimelineComponent', () => {
       expect(component.getPositionForTime(50)).toBe(0);
     });
 
+    it('should return 0 for negative times', () => {
+      component.duration = 100;
+      expect(component.getPositionForTime(-10)).toBe(0);
+    });
+
     it('should not exceed 100%', () => {
       component.duration = 100;
       expect(component.getPositionForTime(150)).toBe(100);
+    });
+
+    it('should have enhanced precision (3 decimal places)', () => {
+      component.duration = 300;
+      expect(component.getPositionForTime(100)).toBe(33.333); // Precise to 3 decimal places
+    });
+  });
+
+  describe('getPositionsForTimes (Batch Optimization)', () => {
+    beforeEach(() => {
+      component.duration = 120;
+    });
+
+    it('should calculate multiple positions efficiently', () => {
+      const times = [0, 30, 60, 90, 120];
+      const expectedPositions = [0, 25, 50, 75, 100];
+      
+      const results = component.getPositionsForTimes(times);
+      
+      expect(results).toEqual(expectedPositions);
+    });
+
+    it('should handle empty array', () => {
+      const results = component.getPositionsForTimes([]);
+      expect(results).toEqual([]);
+    });
+
+    it('should handle edge cases in batch', () => {
+      const times = [-10, 0, 60, 150, 200];
+      const expectedPositions = [0, 0, 50, 100, 100];
+      
+      const results = component.getPositionsForTimes(times);
+      
+      expect(results).toEqual(expectedPositions);
+    });
+
+    it('should return zeros when duration is 0', () => {
+      component.duration = 0;
+      const times = [10, 20, 30];
+      const results = component.getPositionsForTimes(times);
+      
+      expect(results).toEqual([0, 0, 0]);
     });
   });
 
@@ -729,13 +777,13 @@ describe('TimelineComponent', () => {
   });
 
   describe('Loop Segments Draggable System (Task 15.4)', () => {
-    let testLoops: Loop[];
+    let testLoops: LoopSegment[];
 
     beforeEach(() => {
       testLoops = [
-        { id: 1, startTime: 10, endTime: 30, name: 'Intro' },
-        { id: 2, startTime: 50, endTime: 80, name: 'Solo' },
-        { id: 3, startTime: 90, endTime: 120 }
+        { id: '1', startTime: 10, endTime: 30, name: 'Intro' },
+        { id: '2', startTime: 50, endTime: 80, name: 'Solo' },
+        { id: '3', startTime: 90, endTime: 120, name: 'Bridge' }
       ];
       component.loops = testLoops;
       component.duration = 150;
@@ -743,7 +791,7 @@ describe('TimelineComponent', () => {
 
     describe('Loop Position Calculations', () => {
       it('should calculate correct loop position percentages', () => {
-        const loop = { id: 1, startTime: 30, endTime: 60 };
+        const loop = { id: '1', startTime: 30, endTime: 60, name: 'Test Loop' };
         component.duration = 120;
 
         const position = component.getLoopPosition(loop);
@@ -753,7 +801,7 @@ describe('TimelineComponent', () => {
       });
 
       it('should return zero position when duration is zero', () => {
-        const loop = { id: 1, startTime: 30, endTime: 60 };
+        const loop = { id: '1', startTime: 30, endTime: 60, name: 'Test Loop' };
         component.duration = 0;
 
         const position = component.getLoopPosition(loop);
@@ -770,6 +818,62 @@ describe('TimelineComponent', () => {
 
         expect(position.left).toBe(0);
         expect(position.width).toBe(100); // Constrained to maximum
+      });
+    });
+
+    describe('getMultipleLoopPositions (Performance Optimization)', () => {
+      beforeEach(() => {
+        component.duration = 200;
+      });
+
+      it('should calculate multiple loop positions efficiently', () => {
+        const loops = [
+          { id: '1', startTime: 20, endTime: 60, name: 'Loop 1' },
+          { id: '2', startTime: 80, endTime: 120, name: 'Loop 2' },
+          { id: '3', startTime: 140, endTime: 180, name: 'Loop 3' }
+        ];
+
+        const results = component.getMultipleLoopPositions(loops);
+
+        expect(results).toEqual([
+          { id: '1', left: 10, width: 20 },   // 20/200*100, (60-20)/200*100
+          { id: '2', left: 40, width: 20 },   // 80/200*100, (120-80)/200*100
+          { id: '3', left: 70, width: 20 }    // 140/200*100, (180-140)/200*100
+        ]);
+      });
+
+      it('should handle empty loop array', () => {
+        const results = component.getMultipleLoopPositions([]);
+        expect(results).toEqual([]);
+      });
+
+      it('should return zeros when duration is 0', () => {
+        component.duration = 0;
+        const loops = [
+          { id: '1', startTime: 20, endTime: 60, name: 'Loop 1' },
+          { id: '2', startTime: 80, endTime: 120, name: 'Loop 2' }
+        ];
+
+        const results = component.getMultipleLoopPositions(loops);
+
+        expect(results).toEqual([
+          { id: '1', left: 0, width: 0 },
+          { id: '2', left: 0, width: 0 }
+        ]);
+      });
+
+      it('should constrain out-of-bounds loops', () => {
+        const loops = [
+          { id: '1', startTime: -10, endTime: 50, name: 'Loop 1' },
+          { id: '2', startTime: 150, endTime: 250, name: 'Loop 2' }
+        ];
+
+        const results = component.getMultipleLoopPositions(loops);
+
+        expect(results[0].left).toBe(0);      // Adjusted from negative
+        expect(results[0].width).toBe(25);    // (50-0)/200*100
+        expect(results[1].left).toBe(75);     // 150/200*100
+        expect(results[1].width).toBe(25);    // (200-150)/200*100 (capped at duration)
       });
     });
 
@@ -1096,6 +1200,125 @@ describe('TimelineComponent', () => {
         component.onDocumentMouseMove(mouseMoveEvent);
 
         expect(component.loopMove.emit).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Enhanced Collision Detection (Task 29.2)', () => {
+      beforeEach(() => {
+        component.loops = testLoops;
+        component.duration = 150;
+      });
+
+      it('should provide detailed collision information', () => {
+        // Try to place a segment that overlaps with loop 2 (50-80)
+        const collisionInfo = component.getLoopCollisionInfo('999', 60, 90);
+        
+        expect(collisionInfo.hasCollision).toBe(true);
+        expect(collisionInfo.collidingLoops.length).toBe(1);
+        expect(collisionInfo.collidingLoops[0].id).toBe('2');
+        expect(collisionInfo.overlapDuration).toBe(20); // 80-60 = 20 seconds overlap
+      });
+
+      it('should calculate multiple collision overlaps', () => {
+        // Create a segment that overlaps multiple loops
+        const collisionInfo = component.getLoopCollisionInfo('999', 25, 95);
+        
+        expect(collisionInfo.hasCollision).toBe(true);
+        expect(collisionInfo.collidingLoops.length).toBe(2);
+        
+        // Should overlap with loops 1 (10-30) and 2 (50-80)
+        const overlapLoop1 = Math.max(0, 30 - 25); // 5 seconds
+        const overlapLoop2 = Math.max(0, 80 - 50); // 30 seconds
+        expect(collisionInfo.overlapDuration).toBe(overlapLoop1 + overlapLoop2);
+      });
+
+      it('should provide recommended position when collision exists', () => {
+        const collisionInfo = component.getLoopCollisionInfo('999', 60, 90);
+        
+        expect(collisionInfo.hasCollision).toBe(true);
+        expect(collisionInfo.recommendedPosition).toBeTruthy();
+        
+        // Should suggest placing after the conflicting loop
+        const recommendation = collisionInfo.recommendedPosition!;
+        expect(recommendation.startTime).toBe(80); // After loop 2 ends
+        expect(recommendation.endTime).toBe(110); // 30-second duration maintained
+      });
+
+      it('should not detect collision for adjacent segments', () => {
+        const collisionInfo = component.getLoopCollisionInfo('999', 30, 50);
+        
+        expect(collisionInfo.hasCollision).toBe(false);
+        expect(collisionInfo.collidingLoops.length).toBe(0);
+        expect(collisionInfo.overlapDuration).toBe(0);
+      });
+
+      it('should handle no collision case', () => {
+        const collisionInfo = component.getLoopCollisionInfo('999', 130, 145);
+        
+        expect(collisionInfo.hasCollision).toBe(false);
+        expect(collisionInfo.collidingLoops).toEqual([]);
+        expect(collisionInfo.overlapDuration).toBe(0);
+        expect(collisionInfo.recommendedPosition).toBeUndefined();
+      });
+    });
+
+    describe('validateSegmentBounds (Enhanced Validation)', () => {
+      beforeEach(() => {
+        component.duration = 120;
+      });
+
+      it('should validate correct segment bounds', () => {
+        const validation = component.validateSegmentBounds(10, 50);
+        
+        expect(validation.isValid).toBe(true);
+        expect(validation.errors).toEqual([]);
+        expect(validation.adjustedStartTime).toBeUndefined();
+        expect(validation.adjustedEndTime).toBeUndefined();
+      });
+
+      it('should detect and adjust negative start time', () => {
+        const validation = component.validateSegmentBounds(-10, 40);
+        
+        expect(validation.isValid).toBe(false);
+        expect(validation.errors).toContain('Start time cannot be negative');
+        expect(validation.adjustedStartTime).toBe(0);
+        expect(validation.adjustedEndTime).toBe(40);
+      });
+
+      it('should detect and adjust end time exceeding duration', () => {
+        const validation = component.validateSegmentBounds(80, 150);
+        
+        expect(validation.isValid).toBe(false);
+        expect(validation.errors).toContain('End time cannot exceed video duration');
+        expect(validation.adjustedStartTime).toBe(80);
+        expect(validation.adjustedEndTime).toBe(120);
+      });
+
+      it('should detect and adjust segments with insufficient duration', () => {
+        const validation = component.validateSegmentBounds(50, 50.05);
+        
+        expect(validation.isValid).toBe(false);
+        expect(validation.errors).toContain('Segment duration must be at least 0.1 seconds');
+        expect(validation.adjustedStartTime).toBe(50);
+        expect(validation.adjustedEndTime).toBe(50.1); // Minimum duration applied
+      });
+
+      it('should detect invalid start/end relationship', () => {
+        const validation = component.validateSegmentBounds(60, 50);
+        
+        expect(validation.isValid).toBe(false);
+        expect(validation.errors).toContain('Start time must be less than end time');
+        expect(validation.adjustedStartTime).toBe(60);
+        expect(validation.adjustedEndTime).toBe(60.1); // Fixed with minimum duration
+      });
+
+      it('should handle multiple validation errors', () => {
+        const validation = component.validateSegmentBounds(-5, 130);
+        
+        expect(validation.isValid).toBe(false);
+        expect(validation.errors.length).toBeGreaterThan(1);
+        expect(validation.adjustedStartTime).toBe(0);
+        expect(validation.adjustedEndTime).toBe(120);
       });
     });
 
