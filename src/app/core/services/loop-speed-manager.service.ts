@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { ValidationService } from './validation.service';
-import { StorageService } from './storage.service';
+import { SecureStorageService } from './storage.service';
 
 // Type for tracking speed per loop
 export interface LoopSpeedMapping {
@@ -31,7 +31,7 @@ export interface SpeedOperationResult {
 })
 export class LoopSpeedManagerService {
   private readonly validationService = inject(ValidationService);
-  private readonly storageService = inject(StorageService);
+  private readonly storageService = inject(SecureStorageService);
 
   // Configuration with defaults
   private readonly config: SpeedManagerConfig = {
@@ -122,15 +122,15 @@ export class LoopSpeedManagerService {
   setLoopSpeed(loopId: string, speed: number): SpeedOperationResult {
     try {
       // Validate the speed
-      const validation = this.validationService.validateSpeedInput(speed.toString(), true);
+      const validation = this.validationService.isValidPlaybackSpeed(speed);
       
-      if (!validation.valid || !validation.speed) {
-        const errorMsg = validation.error || 'Invalid speed value';
+      if (!validation) {
+        const errorMsg = 'Invalid speed value';
         this._lastError.set(errorMsg);
         return { success: false, error: errorMsg };
       }
 
-      const validatedSpeed = validation.speed;
+      const validatedSpeed = speed;
       const wasAdjusted = Math.abs(validatedSpeed - speed) > 0.001;
       
       // Update or create mapping
@@ -197,7 +197,7 @@ export class LoopSpeedManagerService {
       
       return { 
         success: true,
-        speed: existed ? undefined : this._globalSpeed()
+        speed: existed ? this._globalSpeed() : this._globalSpeed()
       };
     } catch (error) {
       const errorMsg = `Failed to remove loop speed: ${error}`;
@@ -211,15 +211,15 @@ export class LoopSpeedManagerService {
    */
   setGlobalSpeed(speed: number): SpeedOperationResult {
     try {
-      const validation = this.validationService.validateSpeedInput(speed.toString(), true);
+      const validation = this.validationService.isValidPlaybackSpeed(speed);
       
-      if (!validation.valid || !validation.speed) {
-        const errorMsg = validation.error || 'Invalid global speed value';
+      if (!validation) {
+        const errorMsg = 'Invalid global speed value';
         this._lastError.set(errorMsg);
         return { success: false, error: errorMsg };
       }
 
-      const validatedSpeed = validation.speed;
+      const validatedSpeed = speed;
       const wasAdjusted = Math.abs(validatedSpeed - speed) > 0.001;
       
       this._globalSpeed.set(validatedSpeed);

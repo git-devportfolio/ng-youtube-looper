@@ -508,6 +508,17 @@ export class SecureStorageService {
     return metrics;
   }
 
+  /**
+   * Generic item storage methods for other services
+   */
+  setItem(key: string, data: any): boolean {
+    return this.saveData(key, data);
+  }
+
+  getItem(key: string): any {
+    return this.loadData(key, null);
+  }
+
   // === VIDEO SESSIONS MANAGEMENT ===
 
   /**
