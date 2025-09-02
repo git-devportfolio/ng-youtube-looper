@@ -2094,7 +2094,10 @@ describe('TimelineComponent', () => {
 
       it('should get validation error from facade when useFacade is true', () => {
         component.useFacade = true;
-        mockLoopManagerFacade.error = jasmine.createSpy().and.returnValue('Test error');
+        Object.defineProperty(mockLoopManagerFacade, 'error', {
+          value: jasmine.createSpy().and.returnValue('Test error'),
+          configurable: true
+        });
         
         const hasError = component.hasValidationError;
         const error = component.validationError;
@@ -2132,7 +2135,7 @@ describe('TimelineComponent', () => {
 
       it('should handle facade creation errors', () => {
         mockLoopManagerFacade.createLoop.and.returnValue({ success: false, error: 'Creation failed' });
-        spyOn(component.validationError, 'emit');
+        spyOn(component.validationErrorChange, 'emit');
         
         const mockEvent = new MouseEvent('dblclick');
         const mockElement = document.createElement('div');
@@ -2145,7 +2148,7 @@ describe('TimelineComponent', () => {
         
         component.onTrackDoubleClick(mockEvent);
         
-        expect(component.validationError.emit).toHaveBeenCalledWith('Creation failed');
+        expect(component.validationErrorChange.emit).toHaveBeenCalledWith('Creation failed');
       });
 
       it('should create loop through facade on keyboard shortcut', () => {
@@ -2179,13 +2182,13 @@ describe('TimelineComponent', () => {
 
       it('should handle facade selection errors', () => {
         mockLoopManagerFacade.selectLoop.and.returnValue({ success: false, error: 'Selection failed' });
-        spyOn(component.validationError, 'emit');
+        spyOn(component.validationErrorChange, 'emit');
         const mockEvent = new MouseEvent('click');
         const testLoop = mockTimelineVm.loops[0];
         
         component.onLoopClick(mockEvent, testLoop);
         
-        expect(component.validationError.emit).toHaveBeenCalledWith('Selection failed');
+        expect(component.validationErrorChange.emit).toHaveBeenCalledWith('Selection failed');
       });
 
       it('should delete loop through facade on keyboard shortcut', () => {
@@ -2200,13 +2203,13 @@ describe('TimelineComponent', () => {
 
       it('should handle facade deletion errors', () => {
         mockLoopManagerFacade.deleteLoop.and.returnValue({ success: false, error: 'Deletion failed' });
-        spyOn(component.validationError, 'emit');
+        spyOn(component.validationErrorChange, 'emit');
         component['_selectedLoopId'] = '1';
         
         const keyEvent = new KeyboardEvent('keydown', { key: 'Delete' });
         component.onKeyDown(keyEvent);
         
-        expect(component.validationError.emit).toHaveBeenCalledWith('Deletion failed');
+        expect(component.validationErrorChange.emit).toHaveBeenCalledWith('Deletion failed');
       });
     });
 
@@ -2239,8 +2242,8 @@ describe('TimelineComponent', () => {
 
       it('should get correct container classes with facade states', () => {
         component.useFacade = true;
-        mockLoopManagerFacade.isLooping = jasmine.createSpy().and.returnValue(true);
-        mockLoopManagerFacade.error = jasmine.createSpy().and.returnValue('Test error');
+        (mockLoopManagerFacade.isLooping as jasmine.Spy).and.returnValue(true);
+        (mockLoopManagerFacade.error as jasmine.Spy).and.returnValue('Test error');
         
         const classes = component.getContainerClasses();
         
@@ -2251,7 +2254,7 @@ describe('TimelineComponent', () => {
       it('should apply correct loop classes with facade states', () => {
         const testLoop = mockTimelineVm.loops[0];
         component['_selectedLoopId'] = '1';
-        mockLoopManagerFacade.isLooping = jasmine.createSpy().and.returnValue(true);
+        (mockLoopManagerFacade.isLooping as jasmine.Spy).and.returnValue(true);
         
         const classes = component.getLoopClasses(testLoop);
         
@@ -2262,7 +2265,7 @@ describe('TimelineComponent', () => {
 
       it('should check if loop is playing correctly', () => {
         const testLoop = mockTimelineVm.loops[0];
-        mockLoopManagerFacade.isLooping = jasmine.createSpy().and.returnValue(true);
+        (mockLoopManagerFacade.isLooping as jasmine.Spy).and.returnValue(true);
         
         const isPlaying = component.isLoopPlaying(testLoop);
         
@@ -2288,9 +2291,20 @@ describe('TimelineComponent', () => {
       it('should handle facade validation errors during creation', () => {
         spyOn(component.validationErrorChange, 'emit');
         
-        const isValid = component['handleLoopValidation'](10, 5); // Invalid: end < start
+        // Test direct facade interaction since validation is handled by facade
+        mockLoopManagerFacade.createLoop.and.returnValue({ success: false, error: 'Start time must be less than end time' });
         
-        expect(isValid).toBe(false);
+        const mockEvent = new MouseEvent('dblclick');
+        const mockElement = document.createElement('div');
+        Object.defineProperty(mockEvent, 'currentTarget', { value: mockElement });
+        Object.defineProperty(mockEvent, 'clientX', { value: 50 });
+        
+        spyOn(mockElement, 'getBoundingClientRect').and.returnValue({
+          left: 0, width: 100, top: 0, right: 100, bottom: 40, height: 40, x: 0, y: 0, toJSON: () => ({})
+        } as DOMRect);
+        
+        component.onTrackDoubleClick(mockEvent);
+        
         expect(component.validationErrorChange.emit).toHaveBeenCalledWith(jasmine.stringMatching(/Start time must be less than end time/));
       });
 
@@ -2300,9 +2314,20 @@ describe('TimelineComponent', () => {
         ];
         spyOn(component.validationErrorChange, 'emit');
         
-        const isValid = component['handleLoopValidation'](30, 50); // Overlaps with existing loop
+        // Test collision detection through facade interaction
+        mockLoopManagerFacade.createLoop.and.returnValue({ success: false, error: 'Collision detected. Try position 45-65' });
         
-        expect(isValid).toBe(false);
+        const mockEvent = new MouseEvent('dblclick');
+        const mockElement = document.createElement('div');
+        Object.defineProperty(mockEvent, 'currentTarget', { value: mockElement });
+        Object.defineProperty(mockEvent, 'clientX', { value: 50 });
+        
+        spyOn(mockElement, 'getBoundingClientRect').and.returnValue({
+          left: 0, width: 100, top: 0, right: 100, bottom: 40, height: 40, x: 0, y: 0, toJSON: () => ({})
+        } as DOMRect);
+        
+        component.onTrackDoubleClick(mockEvent);
+        
         expect(component.validationErrorChange.emit).toHaveBeenCalledWith(jasmine.stringMatching(/Collision detected. Try position/));
       });
     });
