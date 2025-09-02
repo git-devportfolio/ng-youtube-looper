@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, inject, OnInit, OnDestroy, effe
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
 import { YouTubeService } from '../../../../core/services/youtube.service';
+import { ValidationService } from '../../../../core/services/validation.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -21,22 +22,23 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
   @Output() decreaseSpeed = new EventEmitter<void>();
 
   private readonly youTubeService = inject(YouTubeService);
+  private readonly validationService = inject(ValidationService);
   private readonly destroy$ = new Subject<void>();
 
-  readonly speedPresets = [
-    { value: 0.25, display: '0.25x', label: 'Quart de vitesse' },
-    { value: 0.5, display: '0.5x', label: 'Demi vitesse' }, // Added missing 0.5x preset
-    { value: 0.75, display: '0.75x', label: 'Trois quarts vitesse' },
-    { value: 1, display: '1x', label: 'Vitesse normale' },
-    { value: 1.25, display: '1.25x', label: 'Vitesse accélérée' },
-    { value: 1.5, display: '1.5x', label: 'Une fois et demie' },
-    { value: 2, display: '2x', label: 'Double vitesse' }
-  ];
+  // Use ValidationService to get consistent presets
+  get speedPresets() {
+    return this.validationService.getValidSpeedPresets();
+  }
 
   readonly manualSpeedControl = new FormControl(1, [
     Validators.required,
-    Validators.min(0.25),
-    Validators.max(2)
+    Validators.min(this.validationService.MIN_PLAYBACK_SPEED),
+    Validators.max(this.validationService.MAX_PLAYBACK_SPEED),
+    (control) => {
+      if (!control.value) return null;
+      const validation = this.validationService.validateSpeedInput(control.value.toString(), false);
+      return validation.valid ? null : { invalidSpeed: { message: validation.error } };
+    }
   ]);
 
   showManualInput = false;
@@ -45,7 +47,7 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
     // Synchronize current rate with YouTube player state
     effect(() => {
       const playerState = this.youTubeService.playerState();
-      if (playerState.isReady && playerState.playbackRate !== this.currentRate) {
+      if (playerState.isReady && !this.validationService.areSpeedsEqual(playerState.playbackRate, this.currentRate)) {
         this.currentRate = playerState.playbackRate;
         this.manualSpeedControl.setValue(this.currentRate, { emitEvent: false });
       }
@@ -62,22 +64,27 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
   }
 
   get canIncrease(): boolean {
-    return this.currentRate < 2;
+    const nextSpeed = this.validationService.getNextValidSpeed(this.currentRate, 'up');
+    return nextSpeed !== null;
   }
 
   get canDecrease(): boolean {
-    return this.currentRate > 0.25;
+    const nextSpeed = this.validationService.getNextValidSpeed(this.currentRate, 'down');
+    return nextSpeed !== null;
   }
 
   setPresetSpeed(rate: number): void {
     if (!this.disabled) {
+      // Validate and round the speed
+      const validatedSpeed = this.validationService.roundToValidStep(rate);
+      
       if (this.useDirectIntegration) {
         // Direct integration with YouTube API
-        this.youTubeService.setPlaybackRate(rate);
-        this.currentRate = rate;
+        this.youTubeService.setPlaybackRate(validatedSpeed);
+        this.currentRate = validatedSpeed;
       } else {
         // Legacy mode: emit event for parent handling
-        this.rateChange.emit(rate);
+        this.rateChange.emit(validatedSpeed);
       }
     }
   }
@@ -92,18 +99,27 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
   }
 
   applyManualSpeed(): void {
-    if (this.manualSpeedControl.valid && !this.disabled) {
-      const value = this.manualSpeedControl.value;
-      if (value !== null) {
-        if (this.useDirectIntegration) {
-          // Direct integration with YouTube API
-          this.youTubeService.setPlaybackRate(value);
-          this.currentRate = value;
-        } else {
-          // Legacy mode: emit event for parent handling
-          this.rateChange.emit(value);
+    if (!this.disabled) {
+      const inputValue = this.manualSpeedControl.value;
+      if (inputValue !== null) {
+        const validation = this.validationService.validateSpeedInput(inputValue.toString(), true);
+        
+        if (validation.valid && validation.speed !== undefined) {
+          const validatedSpeed = validation.speed;
+          
+          if (this.useDirectIntegration) {
+            // Direct integration with YouTube API
+            this.youTubeService.setPlaybackRate(validatedSpeed);
+            this.currentRate = validatedSpeed;
+          } else {
+            // Legacy mode: emit event for parent handling
+            this.rateChange.emit(validatedSpeed);
+          }
+          
+          // Update the form control to show the rounded value
+          this.manualSpeedControl.setValue(validatedSpeed, { emitEvent: false });
+          this.showManualInput = false;
         }
-        this.showManualInput = false;
       }
     }
   }
@@ -113,12 +129,14 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
    */
   increasePlaybackSpeed(): void {
     if (this.canIncrease && !this.disabled) {
-      const newRate = Math.min(2, this.currentRate + 0.25);
-      if (this.useDirectIntegration) {
-        this.youTubeService.setPlaybackRate(newRate);
-        this.currentRate = newRate;
-      } else {
-        this.increaseSpeed.emit();
+      const nextSpeed = this.validationService.getNextValidSpeed(this.currentRate, 'up');
+      if (nextSpeed !== null) {
+        if (this.useDirectIntegration) {
+          this.youTubeService.setPlaybackRate(nextSpeed);
+          this.currentRate = nextSpeed;
+        } else {
+          this.increaseSpeed.emit();
+        }
       }
     }
   }
@@ -128,12 +146,14 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
    */
   decreasePlaybackSpeed(): void {
     if (this.canDecrease && !this.disabled) {
-      const newRate = Math.max(0.25, this.currentRate - 0.25);
-      if (this.useDirectIntegration) {
-        this.youTubeService.setPlaybackRate(newRate);
-        this.currentRate = newRate;
-      } else {
-        this.decreaseSpeed.emit();
+      const nextSpeed = this.validationService.getNextValidSpeed(this.currentRate, 'down');
+      if (nextSpeed !== null) {
+        if (this.useDirectIntegration) {
+          this.youTubeService.setPlaybackRate(nextSpeed);
+          this.currentRate = nextSpeed;
+        } else {
+          this.decreaseSpeed.emit();
+        }
       }
     }
   }
@@ -149,6 +169,34 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
    * Check if component is synchronized with YouTube player
    */
   get isSynchronized(): boolean {
-    return this.actualPlaybackRate === this.currentRate;
+    return this.validationService.areSpeedsEqual(this.actualPlaybackRate, this.currentRate);
+  }
+
+  /**
+   * Get validation errors for manual input
+   */
+  get manualInputError(): string | null {
+    if (this.manualSpeedControl.errors) {
+      if (this.manualSpeedControl.errors['required']) {
+        return 'Vitesse requise';
+      }
+      if (this.manualSpeedControl.errors['min']) {
+        return `Minimum ${this.validationService.MIN_PLAYBACK_SPEED}x`;
+      }
+      if (this.manualSpeedControl.errors['max']) {
+        return `Maximum ${this.validationService.MAX_PLAYBACK_SPEED}x`;
+      }
+      if (this.manualSpeedControl.errors['invalidSpeed']) {
+        return this.manualSpeedControl.errors['invalidSpeed'].message;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Get all valid speeds for debugging/advanced usage
+   */
+  get allValidSpeeds(): number[] {
+    return this.validationService.getAllValidSpeeds();
   }
 }

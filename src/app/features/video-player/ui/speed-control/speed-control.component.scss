@@ -203,6 +203,21 @@
     gap: 4px;
     align-items: center;
   }
+
+  .input-error {
+    font-size: 10px;
+    color: var(--error-color);
+    font-weight: var(--font-weight-medium);
+    margin-top: 2px;
+    padding: 2px 4px;
+    background: var(--error-color-light);
+    border-radius: 2px;
+    border: 1px solid var(--error-color-alpha);
+    
+    @include mobile {
+      font-size: 9px;
+    }
+  }
   
   .speed-input {
     width: 60px;
@@ -219,6 +234,16 @@
       outline: none;
       border-color: var(--accent-color);
       box-shadow: 0 0 0 2px var(--accent-color-alpha);
+    }
+
+    &.error {
+      border-color: var(--error-color);
+      background: var(--error-color-light);
+      
+      &:focus {
+        border-color: var(--error-color);
+        box-shadow: 0 0 0 2px var(--error-color-alpha);
+      }
     }
 
     &:disabled {

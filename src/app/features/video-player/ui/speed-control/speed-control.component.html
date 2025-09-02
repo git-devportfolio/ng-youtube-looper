@@ -52,29 +52,33 @@
 
   <!-- Manual Input -->
   <div class="manual-input" *ngIf="showManualInput">
-    <label class="input-label">Vitesse personnalisée (0.25x - 2x)</label>
+    <label class="input-label">Vitesse personnalisée ({{ validationService.MIN_PLAYBACK_SPEED }}x - {{ validationService.MAX_PLAYBACK_SPEED }}x par pas de {{ validationService.PLAYBACK_SPEED_STEP }}x)</label>
     <div class="input-controls">
       <input
         type="number"
         [formControl]="manualSpeedControl"
         class="speed-input"
+        [class.error]="manualInputError"
         placeholder="1.0"
-        min="0.25"
-        max="2"
-        step="0.1"
+        [min]="validationService.MIN_PLAYBACK_SPEED"
+        [max]="validationService.MAX_PLAYBACK_SPEED"
+        [step]="validationService.PLAYBACK_SPEED_STEP"
         autocomplete="off"
         [disabled]="disabled"
       >
       <button
         type="button"
         class="apply-button"
-        [disabled]="!manualSpeedControl.valid || disabled"
+        [disabled]="disabled || manualInputError !== null"
         (click)="applyManualSpeed()"
-        title="Appliquer la vitesse personnalisée"
+        title="Appliquer la vitesse personnalisée (arrondie automatiquement)"
       >
         ✓
       </button>
     </div>
+    @if (manualInputError) {
+      <div class="input-error">{{ manualInputError }}</div>
+    }
   </div>
 
   <!-- YouTube Integration Status -->

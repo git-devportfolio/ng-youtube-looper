@@ -113,7 +113,7 @@
               "4.1"
             ],
             "details": "Modifier les speedPresets pour inclure 0.5x manquant selon les spécifications. Mettre à jour la validation dans ValidationService.isValidPlaybackSpeed() pour accepter les pas de 0.1x. Ajouter une méthode roundToValidStep() pour arrondir les valeurs manuelles au pas le plus proche.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests unitaires de validation de plage, tests des presets complets, validation des pas de 0.1x, tests de l'arrondi automatique"
           },
           {
@@ -941,7 +941,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-02T05:55:46.582Z",
+      "updated": "2025-09-02T06:00:44.999Z",
       "description": "Tasks for master context"
     }
   }
