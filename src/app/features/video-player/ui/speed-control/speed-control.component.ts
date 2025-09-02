@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter, inject, OnInit, OnDestroy, effect } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnInit, OnDestroy, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
+import { trigger, state, style, transition, animate, keyframes } from '@angular/animations';
 import { YouTubeService } from '../../../../core/services/youtube.service';
 import { ValidationService } from '../../../../core/services/validation.service';
 import { LoopSpeedManagerService } from '../../../../core/services/loop-speed-manager.service';
@@ -11,7 +12,18 @@ import { takeUntil } from 'rxjs/operators';
   selector: 'app-speed-control',
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './speed-control.component.html',
-  styleUrls: ['./speed-control.component.scss']
+  styleUrls: ['./speed-control.component.scss'],
+  animations: [
+    trigger('slideInOut', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateX(-20px) scale(0.95)' }),
+        animate('300ms ease-out', style({ opacity: 1, transform: 'translateX(0) scale(1)' }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-in', style({ opacity: 0, transform: 'translateX(-20px) scale(0.95)' }))
+      ])
+    ])
+  ]
 })
 export class SpeedControlComponent implements OnInit, OnDestroy {
   @Input() currentRate = 1;
@@ -47,6 +59,9 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
   ]);
 
   showManualInput = false;
+  
+  // Enhanced UI feedback signals
+  readonly isTransitioning = signal(false);
   
   constructor() {
     // Synchronize current rate with YouTube player state
@@ -135,6 +150,8 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
 
   setPresetSpeed(rate: number): void {
     if (!this.disabled) {
+      this.isTransitioning.set(true);
+      
       // Validate and round the speed
       const validatedSpeed = this.validationService.roundToValidStep(rate);
       
@@ -154,6 +171,9 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
         // Legacy mode: emit event for parent handling
         this.rateChange.emit(validatedSpeed);
       }
+      
+      // Reset transition state after animation completes
+      setTimeout(() => this.isTransitioning.set(false), 300);
     }
   }
 
@@ -168,6 +188,8 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
 
   applyManualSpeed(): void {
     if (!this.disabled) {
+      this.isTransitioning.set(true);
+      
       const inputValue = this.manualSpeedControl.value;
       if (inputValue !== null) {
         const validation = this.validationService.validateSpeedInput(inputValue.toString(), true);
@@ -194,8 +216,19 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
           
           // Update the form control to show the rounded value
           this.manualSpeedControl.setValue(validatedSpeed, { emitEvent: false });
-          this.showManualInput = false;
+          
+          // Close manual input after successful application
+          setTimeout(() => {
+            this.showManualInput = false;
+            this.isTransitioning.set(false);
+          }, 300);
+        } else {
+          // Reset transition state if validation failed
+          setTimeout(() => this.isTransitioning.set(false), 300);
         }
+      } else {
+        // Reset transition state if no value
+        setTimeout(() => this.isTransitioning.set(false), 300);
       }
     }
   }
@@ -205,6 +238,8 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
    */
   increasePlaybackSpeed(): void {
     if (this.canIncrease && !this.disabled) {
+      this.isTransitioning.set(true);
+      
       const nextSpeed = this.validationService.getNextValidSpeed(this.currentRate, 'up');
       if (nextSpeed !== null) {
         // Save speed for active loop if enabled
@@ -221,6 +256,9 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
         } else {
           this.increaseSpeed.emit();
         }
+        
+        // Reset transition state after animation completes
+        setTimeout(() => this.isTransitioning.set(false), 300);
       }
     }
   }
@@ -230,6 +268,8 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
    */
   decreasePlaybackSpeed(): void {
     if (this.canDecrease && !this.disabled) {
+      this.isTransitioning.set(true);
+      
       const nextSpeed = this.validationService.getNextValidSpeed(this.currentRate, 'down');
       if (nextSpeed !== null) {
         // Save speed for active loop if enabled
@@ -246,6 +286,9 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
         } else {
           this.decreaseSpeed.emit();
         }
+        
+        // Reset transition state after animation completes
+        setTimeout(() => this.isTransitioning.set(false), 300);
       }
     }
   }

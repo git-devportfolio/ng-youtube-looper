@@ -1,94 +1,142 @@
-<div class="speed-control">
+<div class="speed-control" role="group" aria-label="Contrôles de vitesse de lecture">
   <div class="speed-label">
     <span class="label-text">Vitesse</span>
-    <span class="current-speed" [class.synchronized]="isSynchronized">
-      {{ currentRate }}x
+    <span class="current-speed" 
+          [class.synchronized]="isSynchronized"
+          [attr.aria-label]="'Vitesse actuelle: ' + currentRate + 'x' + (isSynchronized ? ', synchronisé' : ', non synchronisé')">
+      <span class="speed-value" [attr.data-speed]="currentRate">{{ currentRate }}x</span>
       @if (!isSynchronized) {
-        <small class="sync-indicator" title="Non synchronisé avec le player YouTube">⚠️</small>
+        <small class="sync-indicator" 
+               title="Non synchronisé avec le player YouTube"
+               aria-label="Non synchronisé">⚠️</small>
+      } @else {
+        <small class="sync-indicator synchronized" 
+               title="Synchronisé avec le player YouTube"
+               aria-label="Synchronisé">✓</small>
       }
     </span>
   </div>
 
   <!-- Preset Speed Buttons -->
-  <div class="speed-presets">
+  <div class="speed-presets" role="group" aria-label="Vitesses prédéfinies">
     @for (preset of speedPresets; track preset.value) {
       <button
         type="button"
         class="speed-preset"
         [class.active]="currentRate === preset.value"
+        [class.transitioning]="isTransitioning"
         [disabled]="disabled"
         (click)="setPresetSpeed(preset.value)"
         [title]="preset.label"
+        [attr.aria-label]="preset.label + (currentRate === preset.value ? ', sélectionné' : '')"
+        [attr.aria-pressed]="currentRate === preset.value"
       >
-        {{ preset.display }}
+        <span class="preset-value">{{ preset.display }}</span>
+        @if (currentRate === preset.value) {
+          <span class="active-indicator" aria-hidden="true">●</span>
+        }
       </button>
     }
   </div>
 
   <!-- Speed Control Buttons -->
-  <div class="speed-buttons">
+  <div class="speed-buttons" role="group" aria-label="Contrôles de vitesse par étapes">
     <button
       type="button"
       class="speed-button decrease"
+      [class.transitioning]="isTransitioning"
       [disabled]="disabled || !canDecrease"
       (click)="decreasePlaybackSpeed()"
-      title="Diminuer la vitesse (-0.25x)"
+      [title]="'Diminuer la vitesse (-' + validationService.PLAYBACK_SPEED_STEP + 'x)'"
+      [attr.aria-label]="'Diminuer la vitesse de ' + validationService.PLAYBACK_SPEED_STEP + 'x, vitesse actuelle: ' + currentRate + 'x'"
     >
-      <span class="speed-icon">🐌</span>
-      <span class="speed-text">-</span>
+      <span class="speed-icon" aria-hidden="true">🐌</span>
+      <span class="speed-text" aria-hidden="true">-</span>
     </button>
 
     <button
       type="button"
       class="speed-button increase"
+      [class.transitioning]="isTransitioning"
       [disabled]="disabled || !canIncrease"
       (click)="increasePlaybackSpeed()"
-      title="Augmenter la vitesse (+0.25x)"
+      [title]="'Augmenter la vitesse (+' + validationService.PLAYBACK_SPEED_STEP + 'x)'"
+      [attr.aria-label]="'Augmenter la vitesse de ' + validationService.PLAYBACK_SPEED_STEP + 'x, vitesse actuelle: ' + currentRate + 'x'"
     >
-      <span class="speed-icon">🐰</span>
-      <span class="speed-text">+</span>
+      <span class="speed-icon" aria-hidden="true">🐰</span>
+      <span class="speed-text" aria-hidden="true">+</span>
     </button>
   </div>
 
   <!-- Manual Input -->
-  <div class="manual-input" *ngIf="showManualInput">
-    <label class="input-label">Vitesse personnalisée ({{ validationService.MIN_PLAYBACK_SPEED }}x - {{ validationService.MAX_PLAYBACK_SPEED }}x par pas de {{ validationService.PLAYBACK_SPEED_STEP }}x)</label>
+  <div class="manual-input" 
+       *ngIf="showManualInput"
+       [@slideInOut]
+       role="group" 
+       aria-label="Saisie manuelle de vitesse">
+    <label class="input-label" for="speed-manual-input">
+      Vitesse personnalisée ({{ validationService.MIN_PLAYBACK_SPEED }}x - {{ validationService.MAX_PLAYBACK_SPEED }}x par pas de {{ validationService.PLAYBACK_SPEED_STEP }}x)
+    </label>
     <div class="input-controls">
       <input
         type="number"
+        id="speed-manual-input"
         [formControl]="manualSpeedControl"
         class="speed-input"
         [class.error]="manualInputError"
+        [class.valid]="manualSpeedControl.valid && manualSpeedControl.value"
         placeholder="1.0"
         [min]="validationService.MIN_PLAYBACK_SPEED"
         [max]="validationService.MAX_PLAYBACK_SPEED"
         [step]="validationService.PLAYBACK_SPEED_STEP"
         autocomplete="off"
         [disabled]="disabled"
+        [attr.aria-describedby]="manualInputError ? 'speed-input-error' : 'speed-input-help'"
+        (keydown.enter)="applyManualSpeed()"
+        (keydown.escape)="toggleManualInput()"
       >
       <button
         type="button"
         class="apply-button"
+        [class.loading]="isTransitioning"
         [disabled]="disabled || manualInputError !== null"
         (click)="applyManualSpeed()"
         title="Appliquer la vitesse personnalisée (arrondie automatiquement)"
+        aria-label="Appliquer la vitesse personnalisée"
       >
-        ✓
+        @if (isTransitioning) {
+          <span class="spinner" aria-hidden="true">⟳</span>
+        } @else {
+          <span aria-hidden="true">✓</span>
+        }
       </button>
     </div>
     @if (manualInputError) {
-      <div class="input-error">{{ manualInputError }}</div>
+      <div class="input-error" 
+           id="speed-input-error" 
+           role="alert" 
+           aria-live="polite">{{ manualInputError }}</div>
     }
+    <div class="input-help" id="speed-input-help" [hidden]="manualInputError">
+      Utilisez Entrée pour appliquer, Échap pour annuler
+    </div>
   </div>
 
   <!-- YouTube Integration Status -->
   @if (useDirectIntegration) {
-    <div class="integration-status" title="Intégration directe avec YouTube">
-      <span class="integration-icon">🔗</span>
+    <div class="integration-status" 
+         [class.synchronized]="isSynchronized"
+         [class.pulsing]="!isSynchronized"
+         title="Intégration directe avec YouTube"
+         role="status"
+         [attr.aria-live]="isSynchronized ? 'off' : 'polite'">
+      <span class="integration-icon" aria-hidden="true">🔗</span>
       @if (isSynchronized) {
         <span class="status-text synchronized">Synchronisé</span>
+        <div class="status-indicator synchronized" aria-hidden="true"></div>
       } @else {
         <span class="status-text not-synchronized">Désynchronisé</span>
+        <div class="status-indicator not-synchronized" aria-hidden="true"></div>
       }
     </div>
   }
@@ -98,10 +146,27 @@
     type="button"
     class="toggle-manual"
     [class.active]="showManualInput"
+    [class.pulse]="showManualInput"
     (click)="toggleManualInput()"
     [disabled]="disabled"
-    title="Saisie manuelle de vitesse"
+    [title]="showManualInput ? 'Fermer la saisie manuelle' : 'Ouvrir la saisie manuelle'"
+    [attr.aria-label]="showManualInput ? 'Fermer la saisie manuelle' : 'Ouvrir la saisie manuelle'"
+    [attr.aria-expanded]="showManualInput"
   >
-    {{ showManualInput ? '⌨️' : '⚙️' }}
+    <span class="toggle-icon" [attr.aria-hidden]="true">
+      {{ showManualInput ? '⌨️' : '⚙️' }}
+    </span>
   </button>
+
+  <!-- Loop Speed Management Status -->
+  @if (enableLoopSpeedManagement && activeLoopId) {
+    <div class="loop-speed-status" 
+         role="status"
+         [title]="'Vitesse spécifique pour la boucle: ' + activeLoopId"
+         aria-label="Gestion de vitesse par boucle active">
+      <span class="loop-icon" aria-hidden="true">🔄</span>
+      <span class="loop-text">Boucle</span>
+      <div class="loop-indicator active" aria-hidden="true"></div>
+    </div>
+  }
 </div>
