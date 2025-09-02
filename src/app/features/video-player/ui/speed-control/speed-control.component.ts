@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
 import { YouTubeService } from '../../../../core/services/youtube.service';
 import { ValidationService } from '../../../../core/services/validation.service';
+import { LoopSpeedManagerService } from '../../../../core/services/loop-speed-manager.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -16,13 +17,17 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
   @Input() currentRate = 1;
   @Input() disabled = false;
   @Input() useDirectIntegration = true; // Enable direct YouTube integration
+  @Input() activeLoopId: string | null = null; // Current loop ID for speed management
+  @Input() enableLoopSpeedManagement = true; // Enable per-loop speed saving
 
   @Output() rateChange = new EventEmitter<number>();
   @Output() increaseSpeed = new EventEmitter<void>();
   @Output() decreaseSpeed = new EventEmitter<void>();
+  @Output() loopSpeedChanged = new EventEmitter<{loopId: string, speed: number}>();
 
   private readonly youTubeService = inject(YouTubeService);
   private readonly validationService = inject(ValidationService);
+  private readonly loopSpeedManager = inject(LoopSpeedManagerService);
   private readonly destroy$ = new Subject<void>();
 
   // Use ValidationService to get consistent presets
@@ -52,15 +57,70 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
         this.manualSpeedControl.setValue(this.currentRate, { emitEvent: false });
       }
     });
+
+    // Synchronize with loop speed manager when active loop changes
+    effect(() => {
+      if (this.enableLoopSpeedManagement && this.activeLoopId) {
+        const loopSpeed = this.loopSpeedManager.getLoopSpeed(this.activeLoopId);
+        if (!this.validationService.areSpeedsEqual(loopSpeed, this.currentRate)) {
+          this.currentRate = loopSpeed;
+          this.manualSpeedControl.setValue(this.currentRate, { emitEvent: false });
+          
+          // Apply the speed if using direct integration
+          if (this.useDirectIntegration) {
+            this.youTubeService.setPlaybackRate(loopSpeed);
+          } else {
+            this.rateChange.emit(loopSpeed);
+          }
+        }
+      }
+    });
   }
 
   ngOnInit(): void {
-    // No additional initialization needed for now
+    // Set up loop speed manager for current active loop
+    if (this.enableLoopSpeedManagement && this.activeLoopId) {
+      this.loopSpeedManager.setActiveLoop(this.activeLoopId);
+    }
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /**
+   * Method called when active loop changes from parent component
+   */
+  onActiveLoopChange(newLoopId: string | null): void {
+    if (this.enableLoopSpeedManagement) {
+      this.activeLoopId = newLoopId;
+      
+      if (newLoopId) {
+        const result = this.loopSpeedManager.setActiveLoop(newLoopId);
+        if (result.success && result.speed !== undefined) {
+          this.currentRate = result.speed;
+          this.manualSpeedControl.setValue(result.speed, { emitEvent: false });
+          
+          if (this.useDirectIntegration) {
+            this.youTubeService.setPlaybackRate(result.speed);
+          } else {
+            this.rateChange.emit(result.speed);
+          }
+        }
+      } else {
+        // No active loop, use global speed
+        const globalSpeed = this.loopSpeedManager.globalSpeed();
+        this.currentRate = globalSpeed;
+        this.manualSpeedControl.setValue(globalSpeed, { emitEvent: false });
+        
+        if (this.useDirectIntegration) {
+          this.youTubeService.setPlaybackRate(globalSpeed);
+        } else {
+          this.rateChange.emit(globalSpeed);
+        }
+      }
+    }
   }
 
   get canIncrease(): boolean {
@@ -77,6 +137,14 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
     if (!this.disabled) {
       // Validate and round the speed
       const validatedSpeed = this.validationService.roundToValidStep(rate);
+      
+      // Save speed for active loop if enabled
+      if (this.enableLoopSpeedManagement && this.activeLoopId) {
+        const result = this.loopSpeedManager.setLoopSpeed(this.activeLoopId, validatedSpeed);
+        if (result.success) {
+          this.loopSpeedChanged.emit({ loopId: this.activeLoopId, speed: validatedSpeed });
+        }
+      }
       
       if (this.useDirectIntegration) {
         // Direct integration with YouTube API
@@ -107,6 +175,14 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
         if (validation.valid && validation.speed !== undefined) {
           const validatedSpeed = validation.speed;
           
+          // Save speed for active loop if enabled
+          if (this.enableLoopSpeedManagement && this.activeLoopId) {
+            const result = this.loopSpeedManager.setLoopSpeed(this.activeLoopId, validatedSpeed);
+            if (result.success) {
+              this.loopSpeedChanged.emit({ loopId: this.activeLoopId, speed: validatedSpeed });
+            }
+          }
+          
           if (this.useDirectIntegration) {
             // Direct integration with YouTube API
             this.youTubeService.setPlaybackRate(validatedSpeed);
@@ -131,6 +207,14 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
     if (this.canIncrease && !this.disabled) {
       const nextSpeed = this.validationService.getNextValidSpeed(this.currentRate, 'up');
       if (nextSpeed !== null) {
+        // Save speed for active loop if enabled
+        if (this.enableLoopSpeedManagement && this.activeLoopId) {
+          const result = this.loopSpeedManager.setLoopSpeed(this.activeLoopId, nextSpeed);
+          if (result.success) {
+            this.loopSpeedChanged.emit({ loopId: this.activeLoopId, speed: nextSpeed });
+          }
+        }
+        
         if (this.useDirectIntegration) {
           this.youTubeService.setPlaybackRate(nextSpeed);
           this.currentRate = nextSpeed;
@@ -148,6 +232,14 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
     if (this.canDecrease && !this.disabled) {
       const nextSpeed = this.validationService.getNextValidSpeed(this.currentRate, 'down');
       if (nextSpeed !== null) {
+        // Save speed for active loop if enabled
+        if (this.enableLoopSpeedManagement && this.activeLoopId) {
+          const result = this.loopSpeedManager.setLoopSpeed(this.activeLoopId, nextSpeed);
+          if (result.success) {
+            this.loopSpeedChanged.emit({ loopId: this.activeLoopId, speed: nextSpeed });
+          }
+        }
+        
         if (this.useDirectIntegration) {
           this.youTubeService.setPlaybackRate(nextSpeed);
           this.currentRate = nextSpeed;
@@ -198,5 +290,39 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
    */
   get allValidSpeeds(): number[] {
     return this.validationService.getAllValidSpeeds();
+  }
+
+  /**
+   * Get loop speed management status
+   */
+  get loopSpeedStatus(): {
+    hasActiveLoop: boolean;
+    activeLoopSpeed?: number;
+    totalMappings: number;
+  } {
+    return {
+      hasActiveLoop: this.loopSpeedManager.hasActiveLoop(),
+      activeLoopSpeed: this.activeLoopId ? this.loopSpeedManager.getLoopSpeed(this.activeLoopId) : undefined,
+      totalMappings: this.loopSpeedManager.totalMappings()
+    };
+  }
+
+  /**
+   * Reset speed for current active loop
+   */
+  resetCurrentLoopSpeed(): void {
+    if (this.activeLoopId && this.enableLoopSpeedManagement) {
+      this.loopSpeedManager.removeLoopSpeed(this.activeLoopId);
+      const globalSpeed = this.loopSpeedManager.globalSpeed();
+      
+      if (this.useDirectIntegration) {
+        this.youTubeService.setPlaybackRate(globalSpeed);
+      } else {
+        this.rateChange.emit(globalSpeed);
+      }
+      
+      this.currentRate = globalSpeed;
+      this.manualSpeedControl.setValue(globalSpeed, { emitEvent: false });
+    }
   }
 }

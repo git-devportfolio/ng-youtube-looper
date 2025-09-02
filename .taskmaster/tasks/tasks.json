@@ -124,7 +124,7 @@
               "4.1"
             ],
             "details": "Utiliser la propriété playbackSpeed existante dans l'interface Loop du LoopService. Créer des signals pour tracker la vitesse active par boucle et implémenter la logique de restauration automatique de vitesse lors du changement de boucle active. Intégrer avec le système de persistence localStorage.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests de sauvegarde par boucle, tests de restoration de vitesse, validation de persistence localStorage, tests de changement de boucle active"
           },
           {
@@ -941,7 +941,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-02T06:00:44.999Z",
+      "updated": "2025-09-02T06:09:05.835Z",
       "description": "Tasks for master context"
     }
   }
