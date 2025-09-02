@@ -1,18 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { ValidationService } from './validation.service';
+import { 
+  LoopSegment as Loop, 
+  LoopValidationError, 
+  LoopValidationResult,
+  LoopStatistics,
+  LoopCollectionValidation,
+  LoopConflictResolution,
+  LoopConflictResult,
+  DEFAULT_LOOP_CONFIGURATION
+} from '@shared/interfaces';
 
-// Types alignés avec les interfaces existantes
-export interface Loop {
-  id: string;
-  name: string;
-  startTime: number;
-  endTime: number;
-  color?: string;
-  playCount: number;
-  isActive: boolean;
-  playbackSpeed?: number;
-  repeatCount?: number;
-}
+// Re-export for backward compatibility
+export { Loop, LoopValidationError, LoopValidationResult };
 
 // Configuration par défaut pour les boucles
 export const DEFAULT_LOOP_CONFIG = {
@@ -22,24 +22,6 @@ export const DEFAULT_LOOP_CONFIG = {
   playCount: 0,
   isActive: false
 };
-
-// Codes d'erreur pour la validation des boucles
-export enum LoopValidationError {
-  INVALID_TIME_RANGE = 'INVALID_TIME_RANGE',
-  OVERLAPPING_LOOPS = 'OVERLAPPING_LOOPS',
-  EXCEEDS_VIDEO_DURATION = 'EXCEEDS_VIDEO_DURATION',
-  INVALID_NAME = 'INVALID_NAME',
-  INVALID_PLAYBACK_SPEED = 'INVALID_PLAYBACK_SPEED',
-  NEGATIVE_TIME = 'NEGATIVE_TIME',
-  ZERO_DURATION = 'ZERO_DURATION'
-}
-
-// Résultat de validation avec détails
-export interface LoopValidationResult {
-  isValid: boolean;
-  errors: LoopValidationError[];
-  warnings: string[];
-}
 
 @Injectable({
   providedIn: 'root'
