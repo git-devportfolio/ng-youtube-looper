@@ -1,7 +1,12 @@
 <div class="speed-control">
   <div class="speed-label">
     <span class="label-text">Vitesse</span>
-    <span class="current-speed">{{ currentRate }}x</span>
+    <span class="current-speed" [class.synchronized]="isSynchronized">
+      {{ currentRate }}x
+      @if (!isSynchronized) {
+        <small class="sync-indicator" title="Non synchronisé avec le player YouTube">⚠️</small>
+      }
+    </span>
   </div>
 
   <!-- Preset Speed Buttons -->
@@ -26,8 +31,8 @@
       type="button"
       class="speed-button decrease"
       [disabled]="disabled || !canDecrease"
-      (click)="decreaseSpeed.emit()"
-      title="Diminuer la vitesse"
+      (click)="decreasePlaybackSpeed()"
+      title="Diminuer la vitesse (-0.25x)"
     >
       <span class="speed-icon">🐌</span>
       <span class="speed-text">-</span>
@@ -37,8 +42,8 @@
       type="button"
       class="speed-button increase"
       [disabled]="disabled || !canIncrease"
-      (click)="increaseSpeed.emit()"
-      title="Augmenter la vitesse"
+      (click)="increasePlaybackSpeed()"
+      title="Augmenter la vitesse (+0.25x)"
     >
       <span class="speed-icon">🐰</span>
       <span class="speed-text">+</span>
@@ -47,31 +52,48 @@
 
   <!-- Manual Input -->
   <div class="manual-input" *ngIf="showManualInput">
-    <input
-      type="number"
-      [formControl]="manualSpeedControl"
-      class="speed-input"
-      placeholder="1.0"
-      min="0.25"
-      max="2"
-      step="0.1"
-      [disabled]="disabled"
-    >
-    <button
-      type="button"
-      class="apply-button"
-      [disabled]="!manualSpeedControl.valid || disabled"
-      (click)="applyManualSpeed()"
-      title="Appliquer la vitesse personnalisée"
-    >
-      ✓
-    </button>
+    <label class="input-label">Vitesse personnalisée (0.25x - 2x)</label>
+    <div class="input-controls">
+      <input
+        type="number"
+        [formControl]="manualSpeedControl"
+        class="speed-input"
+        placeholder="1.0"
+        min="0.25"
+        max="2"
+        step="0.1"
+        autocomplete="off"
+        [disabled]="disabled"
+      >
+      <button
+        type="button"
+        class="apply-button"
+        [disabled]="!manualSpeedControl.valid || disabled"
+        (click)="applyManualSpeed()"
+        title="Appliquer la vitesse personnalisée"
+      >
+        ✓
+      </button>
+    </div>
   </div>
+
+  <!-- YouTube Integration Status -->
+  @if (useDirectIntegration) {
+    <div class="integration-status" title="Intégration directe avec YouTube">
+      <span class="integration-icon">🔗</span>
+      @if (isSynchronized) {
+        <span class="status-text synchronized">Synchronisé</span>
+      } @else {
+        <span class="status-text not-synchronized">Désynchronisé</span>
+      }
+    </div>
+  }
 
   <!-- Toggle Manual Input -->
   <button
     type="button"
     class="toggle-manual"
+    [class.active]="showManualInput"
     (click)="toggleManualInput()"
     [disabled]="disabled"
     title="Saisie manuelle de vitesse"

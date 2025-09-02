@@ -35,6 +35,17 @@
     color: var(--text-primary);
     font-weight: var(--font-weight-bold);
     font-family: 'Courier New', monospace;
+    position: relative;
+
+    &.synchronized {
+      color: var(--success-color);
+    }
+
+    .sync-indicator {
+      font-size: 10px;
+      margin-left: 4px;
+      animation: pulse 2s infinite;
+    }
   }
 
   @include mobile {
@@ -176,8 +187,22 @@
 
 .manual-input {
   display: flex;
+  flex-direction: column;
   gap: 4px;
-  align-items: center;
+  align-items: flex-start;
+
+  .input-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: 2px;
+  }
+
+  .input-controls {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
   
   .speed-input {
     width: 60px;
@@ -236,6 +261,42 @@
   }
 }
 
+.integration-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+
+  .integration-icon {
+    font-size: 12px;
+  }
+
+  .status-text {
+    font-weight: var(--font-weight-medium);
+
+    &.synchronized {
+      color: var(--success-color);
+    }
+
+    &.not-synchronized {
+      color: var(--warning-color);
+    }
+  }
+
+  @include mobile {
+    padding: 3px 6px;
+    font-size: 10px;
+
+    .integration-icon {
+      font-size: 10px;
+    }
+  }
+}
+
 .toggle-manual {
   padding: var(--spacing-xs);
   background: var(--bg-secondary);
@@ -254,6 +315,12 @@
     background: var(--accent-color-light);
     border-color: var(--accent-color);
     transform: translateY(-1px);
+  }
+
+  &.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
   }
 
   &:disabled {
@@ -283,5 +350,14 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }

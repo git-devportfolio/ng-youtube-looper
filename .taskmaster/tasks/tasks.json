@@ -94,8 +94,65 @@
         "dependencies": [
           3
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Intégrer le contrôle de vitesse avec l'API YouTube Player",
+            "description": "Modifier speed-control.component.ts pour intégrer avec YouTubeService et appeler setPlaybackRate() pour synchroniser la vitesse avec le player YouTube",
+            "dependencies": [],
+            "details": "Injecter YouTubeService dans SpeedControlComponent et remplacer les EventEmitter actuels par des appels directs à setPlaybackRate(). Écouter les changements d'état du player pour maintenir la synchronisation de la vitesse affichée avec la vitesse réelle du player YouTube.",
+            "status": "done",
+            "testStrategy": "Tests d'intégration avec mock de YouTubeService, vérification des appels setPlaybackRate(), validation de la synchronisation bidirectionnelle entre UI et player"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter la validation avancée des vitesses avec plage complète",
+            "description": "Étendre la validation pour supporter la plage 0.25x à 2x par pas de 0.1x et ajouter la validation des presets manquants (0.5x)",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Modifier les speedPresets pour inclure 0.5x manquant selon les spécifications. Mettre à jour la validation dans ValidationService.isValidPlaybackSpeed() pour accepter les pas de 0.1x. Ajouter une méthode roundToValidStep() pour arrondir les valeurs manuelles au pas le plus proche.",
+            "status": "pending",
+            "testStrategy": "Tests unitaires de validation de plage, tests des presets complets, validation des pas de 0.1x, tests de l'arrondi automatique"
+          },
+          {
+            "id": 3,
+            "title": "Développer la logique de sauvegarde de vitesse par boucle",
+            "description": "Implémenter la sauvegarde et récupération de la vitesse spécifique à chaque boucle en utilisant les signals et l'interface Loop existante",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Utiliser la propriété playbackSpeed existante dans l'interface Loop du LoopService. Créer des signals pour tracker la vitesse active par boucle et implémenter la logique de restauration automatique de vitesse lors du changement de boucle active. Intégrer avec le système de persistence localStorage.",
+            "status": "pending",
+            "testStrategy": "Tests de sauvegarde par boucle, tests de restoration de vitesse, validation de persistence localStorage, tests de changement de boucle active"
+          },
+          {
+            "id": 4,
+            "title": "Améliorer l'interface utilisateur avec feedback visuel avancé",
+            "description": "Enrichir speed-control.component.html avec indicateurs visuels, animations de transition et améliorations d'accessibilité",
+            "dependencies": [
+              "4.2"
+            ],
+            "details": "Ajouter des animations CSS pour les transitions de vitesse, des indicateurs visuels pour la vitesse active, des tooltips informatifs et des améliorations d'accessibilité (aria-labels, keyboard navigation). Implémenter un indicateur de synchronisation avec le player YouTube.",
+            "status": "pending",
+            "testStrategy": "Tests d'accessibilité ARIA, tests de navigation clavier, validation des animations CSS, tests visuels de feedback utilisateur"
+          },
+          {
+            "id": 5,
+            "title": "Créer les tests d'intégration et validation du système complet",
+            "description": "Développer une suite de tests complète pour valider l'ensemble du système de contrôle de vitesse avec tous ses composants",
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3",
+              "4.4"
+            ],
+            "details": "Créer des tests d'intégration end-to-end couvrant l'interaction complète entre SpeedControlComponent, YouTubeService, LoopService et ValidationService. Inclure des tests de performance, de gestion d'erreurs et de cas limites. Valider la persistence des données et la synchronisation multi-composants.",
+            "status": "pending",
+            "testStrategy": "Tests e2e avec Cypress, tests de performance de changement de vitesse, tests de gestion d'erreurs réseau, validation complète des user stories"
+          }
+        ]
       },
       {
         "id": 5,
@@ -884,7 +941,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-02T05:39:25.584Z",
+      "updated": "2025-09-02T05:55:46.582Z",
       "description": "Tasks for master context"
     }
   }
