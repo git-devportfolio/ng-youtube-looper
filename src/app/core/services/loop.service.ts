@@ -1,18 +1,17 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { ValidationService } from './validation.service';
+import { SecureStorageService } from './storage.service';
 import { 
   LoopSegment as Loop, 
   LoopValidationError, 
   LoopValidationResult,
-  LoopStatistics,
-  LoopCollectionValidation,
-  LoopConflictResolution,
-  LoopConflictResult,
-  DEFAULT_LOOP_CONFIGURATION
+  CreateLoopRequest,
+  UpdateLoopRequest,
+  LoopOperationResult
 } from '@shared/interfaces';
 
 // Re-export for backward compatibility
-export { Loop, LoopValidationError, LoopValidationResult };
+export type { Loop, LoopValidationError, LoopValidationResult };
 
 // Configuration par défaut pour les boucles
 export const DEFAULT_LOOP_CONFIG = {
@@ -28,6 +27,319 @@ export const DEFAULT_LOOP_CONFIG = {
 })
 export class LoopService {
   private readonly validationService = inject(ValidationService);
+  private readonly storageService = inject(SecureStorageService);
+  
+  // Storage key for loops persistence
+  private readonly LOOPS_STORAGE_KEY = 'ng-youtube-looper-loops';
+  
+  // Reactive state using signals
+  private readonly _loops = signal<Loop[]>([]);
+  private readonly _activeLoopId = signal<string | null>(null);
+  private readonly _currentVideoId = signal<string | null>(null);
+  private readonly _lastError = signal<string | null>(null);
+  
+  // Public readonly signals
+  readonly loops = this._loops.asReadonly();
+  readonly activeLoopId = this._activeLoopId.asReadonly();
+  readonly currentVideoId = this._currentVideoId.asReadonly();
+  readonly lastError = this._lastError.asReadonly();
+  
+  // Computed signals for derived state
+  readonly activeLoop = computed(() => {
+    const activeId = this._activeLoopId();
+    if (!activeId) return null;
+    return this._loops().find(loop => loop.id === activeId) || null;
+  });
+  
+  readonly loopCount = computed(() => this._loops().length);
+  
+  readonly hasActiveLoop = computed(() => this._activeLoopId() !== null);
+  
+  readonly totalDuration = computed(() => {
+    return this._loops().reduce((total, loop) => {
+      return total + (loop.endTime - loop.startTime);
+    }, 0);
+  });
+
+  constructor() {
+    // Load loops from storage on initialization
+    this.loadFromStorage();
+  }
+
+  // === CRUD Operations ===
+
+  /**
+   * Get all loops for the current video
+   */
+  getLoops(): Loop[] {
+    return this._loops();
+  }
+
+  /**
+   * Get loop by ID
+   */
+  getLoopById(id: string): Loop | null {
+    return this._loops().find(loop => loop.id === id) || null;
+  }
+
+  /**
+   * Create a new loop with validation
+   */
+  createLoopFromRequest(request: CreateLoopRequest): LoopOperationResult {
+    try {
+      this._lastError.set(null);
+      
+      const loop = this.createLoop(
+        request.name,
+        request.startTime,
+        request.endTime,
+        {
+          ...(request.playbackSpeed !== undefined && { playbackSpeed: request.playbackSpeed }),
+          ...(request.repeatCount !== undefined && { repeatCount: request.repeatCount }),
+          ...(request.color !== undefined && { color: request.color })
+        }
+      );
+
+      const validation = this.validateLoop(loop, undefined, this._loops());
+      
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: `Validation failed: ${validation.errors.join(', ')}`,
+          validation
+        };
+      }
+
+      // Add to loops collection
+      const currentLoops = this._loops();
+      this._loops.set([...currentLoops, loop]);
+      
+      // Persist to storage
+      this.saveToStorage();
+      
+      return {
+        success: true,
+        loop,
+        validation
+      };
+    } catch (error) {
+      const errorMsg = `Failed to create loop: ${error}`;
+      this._lastError.set(errorMsg);
+      return {
+        success: false,
+        error: errorMsg
+      };
+    }
+  }
+
+  /**
+   * Update an existing loop
+   */
+  updateLoop(request: UpdateLoopRequest): LoopOperationResult {
+    try {
+      this._lastError.set(null);
+      
+      const currentLoops = this._loops();
+      const existingLoop = currentLoops.find(loop => loop.id === request.id);
+      
+      if (!existingLoop) {
+        return {
+          success: false,
+          error: `Loop with ID ${request.id} not found`
+        };
+      }
+
+      // Create updated loop
+      const updatedLoop: Loop = {
+        ...existingLoop,
+        ...(request.name !== undefined && { name: request.name }),
+        ...(request.startTime !== undefined && { startTime: request.startTime }),
+        ...(request.endTime !== undefined && { endTime: request.endTime }),
+        ...(request.playbackSpeed !== undefined && { playbackSpeed: request.playbackSpeed }),
+        ...(request.repeatCount !== undefined && { repeatCount: request.repeatCount }),
+        ...(request.color !== undefined && { color: request.color }),
+        ...(request.isActive !== undefined && { isActive: request.isActive }),
+        updatedAt: new Date()
+      };
+
+      // Validate updated loop
+      const otherLoops = currentLoops.filter(loop => loop.id !== request.id);
+      const validation = this.validateLoop(updatedLoop, undefined, otherLoops);
+      
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: `Validation failed: ${validation.errors.join(', ')}`,
+          validation
+        };
+      }
+
+      // Update loops collection
+      const updatedLoops = currentLoops.map(loop => 
+        loop.id === request.id ? updatedLoop : loop
+      );
+      this._loops.set(updatedLoops);
+      
+      // Persist to storage
+      this.saveToStorage();
+      
+      return {
+        success: true,
+        loop: updatedLoop,
+        validation
+      };
+    } catch (error) {
+      const errorMsg = `Failed to update loop: ${error}`;
+      this._lastError.set(errorMsg);
+      return {
+        success: false,
+        error: errorMsg
+      };
+    }
+  }
+
+  /**
+   * Delete a loop by ID
+   */
+  deleteLoop(id: string): LoopOperationResult {
+    try {
+      this._lastError.set(null);
+      
+      const currentLoops = this._loops();
+      const loopToDelete = currentLoops.find(loop => loop.id === id);
+      
+      if (!loopToDelete) {
+        return {
+          success: false,
+          error: `Loop with ID ${id} not found`
+        };
+      }
+
+      // Remove from loops collection
+      const updatedLoops = currentLoops.filter(loop => loop.id !== id);
+      this._loops.set(updatedLoops);
+      
+      // Clear active loop if it was the deleted one
+      if (this._activeLoopId() === id) {
+        this._activeLoopId.set(null);
+      }
+      
+      // Persist to storage
+      this.saveToStorage();
+      
+      return {
+        success: true,
+        loop: loopToDelete
+      };
+    } catch (error) {
+      const errorMsg = `Failed to delete loop: ${error}`;
+      this._lastError.set(errorMsg);
+      return {
+        success: false,
+        error: errorMsg
+      };
+    }
+  }
+
+  /**
+   * Set the active loop
+   */
+  setActiveLoop(id: string | null): boolean {
+    try {
+      if (id && !this.getLoopById(id)) {
+        this._lastError.set(`Loop with ID ${id} not found`);
+        return false;
+      }
+      
+      this._activeLoopId.set(id);
+      this._lastError.set(null);
+      return true;
+    } catch (error) {
+      this._lastError.set(`Failed to set active loop: ${error}`);
+      return false;
+    }
+  }
+
+  /**
+   * Set current video ID for context
+   */
+  setCurrentVideoId(videoId: string): void {
+    this._currentVideoId.set(videoId);
+    
+    // Load loops for this video
+    this.loadFromStorage();
+  }
+
+  // === Storage Operations ===
+
+  /**
+   * Save loops to localStorage
+   */
+  private saveToStorage(): void {
+    try {
+      const currentVideoId = this._currentVideoId();
+      if (!currentVideoId) return;
+      
+      const storageKey = `${this.LOOPS_STORAGE_KEY}-${currentVideoId}`;
+      const loopsData = {
+        videoId: currentVideoId,
+        loops: this._loops(),
+        activeLoopId: this._activeLoopId(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      this.storageService.setItem(storageKey, loopsData);
+    } catch (error) {
+      console.warn('Failed to save loops to storage:', error);
+    }
+  }
+
+  /**
+   * Load loops from localStorage
+   */
+  private loadFromStorage(): void {
+    try {
+      const currentVideoId = this._currentVideoId();
+      if (!currentVideoId) {
+        this._loops.set([]);
+        this._activeLoopId.set(null);
+        return;
+      }
+      
+      const storageKey = `${this.LOOPS_STORAGE_KEY}-${currentVideoId}`;
+      const data = this.storageService.getItem(storageKey);
+      
+      if (data && data.loops && Array.isArray(data.loops)) {
+        // Validate and filter stored loops
+        const validLoops = data.loops.filter((loop: any) => 
+          loop && 
+          typeof loop.id === 'string' &&
+          typeof loop.name === 'string' &&
+          typeof loop.startTime === 'number' &&
+          typeof loop.endTime === 'number'
+        );
+        
+        this._loops.set(validLoops);
+        this._activeLoopId.set(data.activeLoopId || null);
+      } else {
+        this._loops.set([]);
+        this._activeLoopId.set(null);
+      }
+    } catch (error) {
+      console.warn('Failed to load loops from storage:', error);
+      this._loops.set([]);
+      this._activeLoopId.set(null);
+    }
+  }
+
+  /**
+   * Clear all loops for current video
+   */
+  clearAllLoops(): void {
+    this._loops.set([]);
+    this._activeLoopId.set(null);
+    this.saveToStorage();
+  }
 
   /**
    * Generate a unique ID for a new loop
@@ -396,6 +708,7 @@ export class LoopService {
       name: 'temp',
       startTime: desiredStart,
       endTime: desiredEnd,
+      playbackSpeed: DEFAULT_LOOP_CONFIG.playbackSpeed,
       playCount: 0,
       isActive: false
     };
