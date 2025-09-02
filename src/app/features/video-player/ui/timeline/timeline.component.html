@@ -16,7 +16,7 @@
        [attr.aria-valuemin]="0"
        [attr.aria-valuemax]="duration"
        [attr.aria-valuenow]="currentTime"
-       [attr.aria-label]="'Timeline scrubber - Current time: ' + formatDuration(currentTime) + ' of ' + formatDuration(duration) + (canCreateLoops ? '. Double-click or drag to create loop, Ctrl+L to create at current time' : '')"
+       [attr.aria-label]="'Timeline scrubber - Current time: ' + formatDuration(currentTime) + ' of ' + formatDuration(duration) + (canCreateLoops ? '. Double-click or drag to create loop, Ctrl+L to create at current time' : '')">
     
     <!-- Background Track -->
     <div class="track-background"></div>
@@ -107,7 +107,7 @@
       }
     </div>
   </div>
-  
+
   <!-- Timeline Labels (optional) -->
   <div class="timeline-labels" *ngIf="isReady">
     <span class="time-label start">0:00</span>
