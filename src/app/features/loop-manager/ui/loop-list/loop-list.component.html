@@ -1,0 +1,123 @@
+<div class="loop-list">
+  <div class="list-header">
+    <h3 class="list-title">Boucles ({{ vm().totalLoops }})</h3>
+    @if (vm().hasLoops) {
+      <span class="list-summary">
+        {{ vm().totalLoops }} boucle{{ vm().totalLoops > 1 ? 's' : '' }}
+        @if (vm().activeLoop) {
+          • <span class="active-indicator">{{ vm().activeLoop.name }} active</span>
+        }
+      </span>
+    }
+  </div>
+
+  @if (vm().hasLoops) {
+    <div class="loops-grid">
+      @for (loop of sortedLoops(); track loop.id) {
+        <div 
+          class="loop-card"
+          [class.active]="isActiveLoop(loop)"
+          [class.playing]="isActiveLoop(loop) && vm().isLooping"
+          (click)="onSelectLoop(loop)"
+        >
+          <!-- Indicateur de couleur -->
+          <div 
+            class="loop-color-indicator"
+            [style.background-color]="loop.color || '#3B82F6'"
+          ></div>
+
+          <!-- Contenu principal -->
+          <div class="loop-content">
+            <div class="loop-main-info">
+              <h4 class="loop-name">{{ loop.name }}</h4>
+              <div class="loop-time-info">
+                <span class="time-range">{{ formatTimeRange(loop) }}</span>
+                <span class="duration">{{ formatDuration(calculateDuration(loop)) }}</span>
+              </div>
+            </div>
+
+            <div class="loop-meta">
+              <div class="loop-properties">
+                <span class="property speed">
+                  <span class="property-icon">⚡</span>
+                  {{ getSpeedLabel(loop.playbackSpeed) }}
+                </span>
+                <span class="property repeats">
+                  <span class="property-icon">🔄</span>
+                  {{ getRepeatLabel(loop.repeatCount) }}
+                </span>
+                @if (loop.playCount > 0) {
+                  <span class="property plays">
+                    <span class="property-icon">▶️</span>
+                    {{ loop.playCount }} lecture{{ loop.playCount > 1 ? 's' : '' }}
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions (affichées au hover) -->
+          <div class="loop-actions">
+            <button 
+              class="action-btn play-btn"
+              [class.active]="isActiveLoop(loop) && vm().isLooping"
+              (click)="onPlayLoop(loop); $event.stopPropagation()"
+              [attr.aria-label]="isActiveLoop(loop) && vm().isLooping ? 'Arrêter la boucle' : 'Lire la boucle'"
+            >
+              @if (isActiveLoop(loop) && vm().isLooping) {
+                <span class="icon">⏸️</span>
+              } @else {
+                <span class="icon">▶️</span>
+              }
+            </button>
+
+            <button 
+              class="action-btn edit-btn"
+              (click)="onEditLoop(loop); $event.stopPropagation()"
+              aria-label="Modifier la boucle"
+            >
+              <span class="icon">✏️</span>
+            </button>
+
+            <button 
+              class="action-btn duplicate-btn"
+              (click)="onDuplicateLoop(loop); $event.stopPropagation()"
+              aria-label="Dupliquer la boucle"
+            >
+              <span class="icon">📋</span>
+            </button>
+
+            <button 
+              class="action-btn delete-btn"
+              (click)="onDeleteLoop(loop); $event.stopPropagation()"
+              aria-label="Supprimer la boucle"
+            >
+              <span class="icon">🗑️</span>
+            </button>
+          </div>
+
+          <!-- Indicateur de statut actif -->
+          @if (isActiveLoop(loop)) {
+            <div class="active-status">
+              @if (vm().isLooping) {
+                <span class="status-icon playing">🔊</span>
+                <span class="status-text">En cours</span>
+              } @else {
+                <span class="status-icon selected">✓</span>
+                <span class="status-text">Sélectionnée</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <div class="empty-icon">🎵</div>
+      <h3 class="empty-title">Aucune boucle</h3>
+      <p class="empty-description">
+        Créez votre première boucle pour commencer à pratiquer des segments spécifiques.
+      </p>
+    </div>
+  }
+</div>
