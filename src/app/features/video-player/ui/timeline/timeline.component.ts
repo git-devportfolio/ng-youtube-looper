@@ -1088,33 +1088,6 @@ export class TimelineComponent implements OnInit, OnDestroy {
     return `${index * 0.05}s`; // 50ms stagger between loops
   }
 
-  /**
-   * Handle validation and provide user feedback
-   */
-  private handleLoopValidation(startTime: number, endTime: number, excludeLoopId?: string): boolean {
-    // Check basic bounds
-    const boundsValidation = this.validateSegmentBounds(startTime, endTime);
-    if (!boundsValidation.isValid) {
-      this.validationErrorChange.emit(boundsValidation.errors.join(', '));
-      return false;
-    }
-    
-    // Check collisions
-    if (this.checkLoopCollision(excludeLoopId || '', startTime, endTime)) {
-      const collisionInfo = this.getLoopCollisionInfo(excludeLoopId || '', startTime, endTime);
-      if (collisionInfo.recommendedPosition) {
-        const suggestion = collisionInfo.recommendedPosition;
-        this.validationErrorChange.emit(
-          `Collision detected. Try position ${this.formatDuration(suggestion.startTime)} - ${this.formatDuration(suggestion.endTime)}`
-        );
-      } else {
-        this.validationErrorChange.emit('Collision detected with existing loops');
-      }
-      return false;
-    }
-    
-    return true;
-  }
 
   /**
    * Start visual loop creation with drag

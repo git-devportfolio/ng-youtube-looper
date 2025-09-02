@@ -1,5 +1,4 @@
 import { Injectable, computed, signal, inject, effect } from '@angular/core';
-import { ValidationService } from '@core/services/validation.service';
 import { LoopService, Loop } from '@core/services/loop.service';
 
 // Harmonized interface compatible with LoopService
@@ -69,7 +68,6 @@ export interface LoopCreationOptions {
   providedIn: 'root'
 })
 export class LoopManagerFacade {
-  private readonly validationService = inject(ValidationService);
   private readonly loopService = inject(LoopService);
 
   // Private signals for internal state management
@@ -144,12 +142,12 @@ export class LoopManagerFacade {
   constructor() {
     // Effect for automatic loop repetition
     effect(() => {
-      const activeLoop = this._activeLoop();
-      const isLooping = this._isLooping();
-      const repeatCount = this._repeatCount();
-      
       // This effect will be triggered when loop reaches end
       // Actual repeat logic will be implemented in integration with VideoPlayerFacade
+      // Access signals to track dependencies without storing in variables
+      this._activeLoop();
+      this._isLooping();
+      this._repeatCount();
     });
 
     // Effect for loop validation
@@ -178,7 +176,7 @@ export class LoopManagerFacade {
         end,
         {
           playbackSpeed: options.playbackSpeed || 1,
-          color: options.color,
+          ...(options.color && { color: options.color }),
           repeatCount: options.repeatCount || 1
         },
         undefined, // videoDuration will be provided by VideoPlayerFacade integration
@@ -340,7 +338,7 @@ export class LoopManagerFacade {
       this._repeatCount.set(0);
       this._error.set(null);
       
-      return { success: true, loop: activeLoop || undefined };
+      return activeLoop ? { success: true, loop: activeLoop } : { success: true };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Erreur lors de l\'arrêt';
       this._error.set(errorMsg);
@@ -461,7 +459,7 @@ export class LoopManagerFacade {
       const editingLoop = this._editingLoop();
       this._editingLoop.set(null);
       this._error.set(null);
-      return { success: true, loop: editingLoop || undefined };
+      return editingLoop ? { success: true, loop: editingLoop } : { success: true };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Erreur lors de l\'annulation';
       this._error.set(errorMsg);
@@ -493,7 +491,6 @@ export class LoopManagerFacade {
   // Batch operations
   clearAllLoops(): LoopCommandResult {
     try {
-      const loopsCount = this._loops().length;
       this._loops.set([]);
       this._activeLoop.set(null);
       this._editingLoop.set(null);
@@ -501,7 +498,7 @@ export class LoopManagerFacade {
       this.stopLoop();
       this._error.set(null);
       
-      return { success: true, error: undefined };
+      return { success: true };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Erreur lors du nettoyage';
       this._error.set(errorMsg);
@@ -572,7 +569,4 @@ export class LoopManagerFacade {
     return currentRepeats >= maxRepeats && this.vm().canNavigateNext;
   }
 
-  private generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }
 }
