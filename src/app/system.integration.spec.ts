@@ -2,13 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 
 import { YouTubeService } from '@core/services/youtube.service';
-import { LoopService } from '@core/services/loop.service';
 import { LoopSpeedManagerService } from '@core/services/loop-speed-manager.service';
 import { VideoPlayerFacade } from '@features/video-player/data-access/video-player.facade';
 
 describe('System Integration - Speed Control Validation', () => {
   let youTubeService: YouTubeService;
-  let loopService: LoopService;
   let speedManager: LoopSpeedManagerService;
   let facade: VideoPlayerFacade;
 
@@ -28,14 +26,12 @@ describe('System Integration - Speed Control Validation', () => {
       providers: [
         { provide: PLATFORM_ID, useValue: 'browser' },
         YouTubeService,
-        LoopService,
         LoopSpeedManagerService,
         VideoPlayerFacade
       ]
     });
 
     youTubeService = TestBed.inject(YouTubeService);
-    loopService = TestBed.inject(LoopService);
     speedManager = TestBed.inject(LoopSpeedManagerService);
     facade = TestBed.inject(VideoPlayerFacade);
   });

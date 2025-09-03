@@ -11,7 +11,8 @@ import {
 } from '@shared/interfaces';
 
 // Re-export for backward compatibility
-export type { Loop, LoopValidationError, LoopValidationResult };
+export type { Loop, LoopValidationResult };
+export { LoopValidationError };
 
 // Configuration par défaut pour les boucles
 export const DEFAULT_LOOP_CONFIG = {

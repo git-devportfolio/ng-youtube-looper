@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { LoopService, Loop, LoopValidationError, DEFAULT_LOOP_CONFIG } from './loop.service';
 import { ValidationService } from './validation.service';
+import { SecureStorageService } from './storage.service';
+import { CreateLoopRequest, UpdateLoopRequest } from '@shared/interfaces';
 
 describe('LoopService', () => {
   let service: LoopService;
   let validationService: jasmine.SpyObj<ValidationService>;
+  let storageService: jasmine.SpyObj<SecureStorageService>;
 
   const mockValidationService = {
     isValidLoopName: jasmine.createSpy('isValidLoopName'),
@@ -12,6 +15,11 @@ describe('LoopService', () => {
     isValidTimeRange: jasmine.createSpy('isValidTimeRange'),
     formatTime: jasmine.createSpy('formatTime').and.returnValue('1:30'),
     parseTime: jasmine.createSpy('parseTime').and.returnValue(90)
+  };
+
+  const mockStorageService = {
+    setItem: jasmine.createSpy('setItem').and.returnValue(true),
+    getItem: jasmine.createSpy('getItem').and.returnValue(null)
   };
 
   beforeEach(() => {
@@ -24,11 +32,13 @@ describe('LoopService', () => {
     TestBed.configureTestingModule({
       providers: [
         LoopService,
-        { provide: ValidationService, useValue: mockValidationService }
+        { provide: ValidationService, useValue: mockValidationService },
+        { provide: SecureStorageService, useValue: mockStorageService }
       ]
     });
     service = TestBed.inject(LoopService);
     validationService = TestBed.inject(ValidationService) as jasmine.SpyObj<ValidationService>;
+    storageService = TestBed.inject(SecureStorageService) as jasmine.SpyObj<SecureStorageService>;
   });
 
   afterEach(() => {
@@ -1227,6 +1237,297 @@ describe('LoopService', () => {
         const resolved = service.resolveLoopConflicts(problematicLoops, 100);
         expect(resolved.resolvedLoops.length).toBeLessThanOrEqual(problematicLoops.length);
         expect(resolved.modifications).toBeDefined();
+      });
+    });
+  });
+
+  // === Tests for Enhanced CRUD Operations ===
+
+  describe('Enhanced CRUD Operations', () => {
+    beforeEach(() => {
+      // Setup video context
+      service.setCurrentVideoId('test-video-123');
+    });
+
+    describe('Reactive State Management', () => {
+      it('should initialize with empty state', () => {
+        expect(service.loops()).toEqual([]);
+        expect(service.activeLoopId()).toBe(null);
+        expect(service.loopCount()).toBe(0);
+        expect(service.hasActiveLoop()).toBe(false);
+        expect(service.totalDuration()).toBe(0);
+      });
+
+      it('should update computed signals when loops change', () => {
+        const request: CreateLoopRequest = {
+          name: 'Test Loop',
+          startTime: 30,
+          endTime: 60,
+          playbackSpeed: 0.75
+        };
+
+        const result = service.createLoopFromRequest(request);
+        expect(result.success).toBe(true);
+
+        expect(service.loopCount()).toBe(1);
+        expect(service.totalDuration()).toBe(30); // 60-30
+        
+        if (result.loop) {
+          service.setActiveLoop(result.loop.id);
+          expect(service.hasActiveLoop()).toBe(true);
+          expect(service.activeLoop()).toEqual(result.loop);
+        }
+      });
+    });
+
+    describe('createLoopFromRequest', () => {
+      it('should create loop successfully with valid data', () => {
+        const request: CreateLoopRequest = {
+          name: 'Guitar Solo',
+          startTime: 45,
+          endTime: 90,
+          playbackSpeed: 0.5,
+          repeatCount: 3,
+          color: '#ff5733'
+        };
+
+        const result = service.createLoopFromRequest(request);
+
+        expect(result.success).toBe(true);
+        expect(result.loop).toBeDefined();
+        expect(result.loop!.name).toBe('Guitar Solo');
+        expect(result.loop!.startTime).toBe(45);
+        expect(result.loop!.endTime).toBe(90);
+        expect(result.loop!.playbackSpeed).toBe(0.5);
+        expect(result.loop!.repeatCount).toBe(3);
+        expect(result.loop!.color).toBe('#ff5733');
+        expect(storageService.setItem).toHaveBeenCalled();
+      });
+
+      it('should fail validation for invalid loop data', () => {
+        mockValidationService.isValidLoopName.and.returnValue(false);
+
+        const request: CreateLoopRequest = {
+          name: '', // Invalid name
+          startTime: 60,
+          endTime: 30 // Invalid time range
+        };
+
+        const result = service.createLoopFromRequest(request);
+
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('Validation failed');
+        expect(result.validation).toBeDefined();
+      });
+    });
+
+    describe('updateLoop', () => {
+      it('should update existing loop successfully', () => {
+        // First create a loop
+        const createRequest: CreateLoopRequest = {
+          name: 'Original Loop',
+          startTime: 30,
+          endTime: 60
+        };
+
+        const createResult = service.createLoopFromRequest(createRequest);
+        expect(createResult.success).toBe(true);
+
+        const loopId = createResult.loop!.id;
+
+        // Update the loop
+        const updateRequest: UpdateLoopRequest = {
+          id: loopId,
+          name: 'Updated Loop',
+          playbackSpeed: 0.75
+        };
+
+        const updateResult = service.updateLoop(updateRequest);
+
+        expect(updateResult.success).toBe(true);
+        expect(updateResult.loop!.name).toBe('Updated Loop');
+        expect(updateResult.loop!.playbackSpeed).toBe(0.75);
+        expect(updateResult.loop!.startTime).toBe(30); // Should remain unchanged
+        expect(storageService.setItem).toHaveBeenCalledTimes(2); // Create + Update
+      });
+
+      it('should fail to update non-existent loop', () => {
+        const request: UpdateLoopRequest = {
+          id: 'non-existent-id',
+          name: 'Updated Name'
+        };
+
+        const result = service.updateLoop(request);
+
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('not found');
+      });
+    });
+
+    describe('deleteLoop', () => {
+      it('should delete existing loop successfully', () => {
+        // Create a loop first
+        const createRequest: CreateLoopRequest = {
+          name: 'To Delete',
+          startTime: 20,
+          endTime: 40
+        };
+
+        const createResult = service.createLoopFromRequest(createRequest);
+        expect(createResult.success).toBe(true);
+
+        const loopId = createResult.loop!.id;
+        service.setActiveLoop(loopId);
+
+        // Delete the loop
+        const deleteResult = service.deleteLoop(loopId);
+
+        expect(deleteResult.success).toBe(true);
+        expect(deleteResult.loop!.name).toBe('To Delete');
+        expect(service.loopCount()).toBe(0);
+        expect(service.hasActiveLoop()).toBe(false); // Should clear active
+        expect(storageService.setItem).toHaveBeenCalledTimes(3); // Create + SetActive + Delete
+      });
+
+      it('should fail to delete non-existent loop', () => {
+        const result = service.deleteLoop('non-existent-id');
+
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('not found');
+      });
+    });
+
+    describe('Active Loop Management', () => {
+      it('should set and clear active loop', () => {
+        // Create a loop
+        const createRequest: CreateLoopRequest = {
+          name: 'Active Test',
+          startTime: 15,
+          endTime: 45
+        };
+
+        const result = service.createLoopFromRequest(createRequest);
+        expect(result.success).toBe(true);
+
+        const loopId = result.loop!.id;
+
+        // Set as active
+        const setActiveResult = service.setActiveLoop(loopId);
+        expect(setActiveResult).toBe(true);
+        expect(service.activeLoopId()).toBe(loopId);
+        expect(service.hasActiveLoop()).toBe(true);
+        expect(service.activeLoop() ?? null).toEqual(result.loop ?? null);
+
+        // Clear active
+        const clearActiveResult = service.setActiveLoop(null);
+        expect(clearActiveResult).toBe(true);
+        expect(service.activeLoopId()).toBe(null);
+        expect(service.hasActiveLoop()).toBe(false);
+        expect(service.activeLoop()).toBe(null);
+      });
+
+      it('should fail to set non-existent loop as active', () => {
+        const result = service.setActiveLoop('non-existent-id');
+        expect(result).toBe(false);
+        expect(service.lastError()).toContain('not found');
+      });
+    });
+
+    describe('Storage Integration', () => {
+      it('should persist loops to storage with correct key', () => {
+        const videoId = 'test-video-456';
+        service.setCurrentVideoId(videoId);
+
+        const request: CreateLoopRequest = {
+          name: 'Storage Test',
+          startTime: 10,
+          endTime: 30
+        };
+
+        service.createLoopFromRequest(request);
+
+        expect(storageService.setItem).toHaveBeenCalledWith(
+          `ng-youtube-looper-loops-${videoId}`,
+          jasmine.objectContaining({
+            videoId: videoId,
+            loops: jasmine.any(Array),
+            updatedAt: jasmine.any(String)
+          })
+        );
+      });
+
+      it('should load loops from storage on video ID change', () => {
+        const videoId = 'stored-video-789';
+        const storedData = {
+          videoId: videoId,
+          loops: [
+            {
+              id: 'stored-loop-1',
+              name: 'Stored Loop',
+              startTime: 20,
+              endTime: 50,
+              playCount: 0,
+              isActive: false
+            }
+          ],
+          activeLoopId: 'stored-loop-1',
+          updatedAt: new Date().toISOString()
+        };
+
+        mockStorageService.getItem.and.returnValue(storedData);
+
+        service.setCurrentVideoId(videoId);
+
+        expect(storageService.getItem).toHaveBeenCalledWith(`ng-youtube-looper-loops-${videoId}`);
+        expect(service.loopCount()).toBe(1);
+        expect(service.loops()[0].name).toBe('Stored Loop');
+        expect(service.activeLoopId()).toBe('stored-loop-1');
+      });
+
+      it('should clear loops when storage is empty', () => {
+        // First add some loops
+        const request: CreateLoopRequest = {
+          name: 'Temp Loop',
+          startTime: 5,
+          endTime: 15
+        };
+        service.createLoopFromRequest(request);
+        expect(service.loopCount()).toBe(1);
+
+        // Change to video with no stored loops
+        mockStorageService.getItem.and.returnValue(null);
+        service.setCurrentVideoId('empty-video');
+
+        expect(service.loopCount()).toBe(0);
+        expect(service.hasActiveLoop()).toBe(false);
+      });
+    });
+
+    describe('Bulk Operations', () => {
+      it('should clear all loops', () => {
+        // Create multiple loops
+        ['Loop A', 'Loop B', 'Loop C'].forEach((name, index) => {
+          const request: CreateLoopRequest = {
+            name,
+            startTime: index * 20,
+            endTime: (index * 20) + 15
+          };
+          service.createLoopFromRequest(request);
+        });
+
+        expect(service.loopCount()).toBe(3);
+
+        // Clear all
+        service.clearAllLoops();
+
+        expect(service.loopCount()).toBe(0);
+        expect(service.hasActiveLoop()).toBe(false);
+        expect(storageService.setItem).toHaveBeenCalledWith(
+          jasmine.stringMatching(/ng-youtube-looper-loops-/),
+          jasmine.objectContaining({
+            loops: []
+          })
+        );
       });
     });
   });

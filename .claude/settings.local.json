@@ -9,7 +9,8 @@
       "Bash(task-master:*)",
       "Bash(npm run build:*)",
       "Bash(ng build:*)",
-      "Bash(ng test:*)"
+      "Bash(ng test:*)",
+      "Bash(git diff:*)"
     ],
     "deny": [],
     "ask": []

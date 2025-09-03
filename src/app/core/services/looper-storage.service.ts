@@ -43,10 +43,9 @@ export class LooperStorageService {
         this.updateSessionsMetadata(sanitizedSessions);
       }
 
-      return {
+      const result: StorageOperationResult = {
         success,
         data: sanitizedSessions,
-        error: success ? undefined : 'Échec de la sauvegarde des sessions',
         metadata: {
           operation: 'saveSessions',
           key: LOOPER_STORAGE_KEYS.SESSIONS,
@@ -54,6 +53,10 @@ export class LooperStorageService {
           timestamp: new Date()
         }
       };
+      if (!success) {
+        result.error = 'Échec de la sauvegarde des sessions';
+      }
+      return result;
     } catch (error) {
       return {
         success: false,
@@ -166,11 +169,14 @@ export class LooperStorageService {
       const sessions = sessionsResult.data as LooperSession[];
       const session = sessions.find(s => s.id === sessionId);
 
-      return {
+      const result: StorageOperationResult = {
         success: !!session,
-        data: session,
-        error: session ? undefined : `Session ${sessionId} introuvable`
+        data: session
       };
+      if (!session) {
+        result.error = `Session ${sessionId} introuvable`;
+      }
+      return result;
     } catch (error) {
       return {
         success: false,
@@ -222,11 +228,14 @@ export class LooperStorageService {
       const sanitizedState = this.sanitizeCurrentState(state);
       const success = this.secureStorage.saveData(LOOPER_STORAGE_KEYS.CURRENT, sanitizedState);
 
-      return {
+      const result: StorageOperationResult = {
         success,
-        data: sanitizedState,
-        error: success ? undefined : 'Échec de la sauvegarde de l\'état actuel'
+        data: sanitizedState
       };
+      if (!success) {
+        result.error = 'Échec de la sauvegarde de l\'état actuel';
+      }
+      return result;
     } catch (error) {
       return {
         success: false,
@@ -291,11 +300,14 @@ export class LooperStorageService {
       const sanitizedSettings = this.sanitizeSessionSettings(settings);
       const success = this.secureStorage.saveData(LOOPER_STORAGE_KEYS.SETTINGS, sanitizedSettings);
 
-      return {
+      const result: StorageOperationResult = {
         success,
-        data: sanitizedSettings,
-        error: success ? undefined : 'Échec de la sauvegarde des paramètres'
+        data: sanitizedSettings
       };
+      if (!success) {
+        result.error = 'Échec de la sauvegarde des paramètres';
+      }
+      return result;
     } catch (error) {
       return {
         success: false,
@@ -360,11 +372,14 @@ export class LooperStorageService {
 
       const success = this.secureStorage.saveData(LOOPER_STORAGE_KEYS.HISTORY, limitedHistory);
 
-      return {
+      const result: StorageOperationResult = {
         success,
-        data: limitedHistory,
-        error: success ? undefined : 'Échec de l\'ajout à l\'historique'
+        data: limitedHistory
       };
+      if (!success) {
+        result.error = 'Échec de l\'ajout à l\'historique';
+      }
+      return result;
     } catch (error) {
       return {
         success: false,
@@ -417,11 +432,14 @@ export class LooperStorageService {
 
       const success = this.secureStorage.saveData(LOOPER_STORAGE_KEYS.HISTORY, recentHistory);
 
-      return {
+      const result: StorageOperationResult = {
         success,
-        data: recentHistory,
-        error: success ? undefined : 'Échec du nettoyage de l\'historique'
+        data: recentHistory
       };
+      if (!success) {
+        result.error = 'Échec du nettoyage de l\'historique';
+      }
+      return result;
     } catch (error) {
       return {
         success: false,
@@ -432,77 +450,7 @@ export class LooperStorageService {
 
   // === COMPRESSION & SERIALIZATION ===
 
-  /**
-   * Compresse une session si elle dépasse le seuil
-   */
-  private compressSessionIfNeeded(session: LooperSession): string | CompressedSessionData {
-    try {
-      const serialized = JSON.stringify(session);
-      
-      if (!this.config.enableCompression || serialized.length < this.config.compressionThreshold) {
-        return serialized;
-      }
 
-      // Simulation de compression simple (dans une vraie app, utiliser une vraie lib de compression)
-      const compressed = this.simpleCompress(serialized);
-      
-      return {
-        version: '1.0',
-        compressed: true,
-        data: compressed,
-        metadata: {
-          originalSize: serialized.length,
-          compressedSize: compressed.length,
-          compressionRatio: compressed.length / serialized.length,
-          timestamp: new Date()
-        }
-      };
-    } catch (error) {
-      console.error('Erreur de compression:', error);
-      return JSON.stringify(session);
-    }
-  }
-
-  /**
-   * Décompresse une session si nécessaire
-   */
-  private decompressSessionIfNeeded(data: string | CompressedSessionData): LooperSession | null {
-    try {
-      if (typeof data === 'string') {
-        return JSON.parse(data);
-      }
-
-      if (data.compressed && typeof data.data === 'string') {
-        const decompressed = this.simpleDecompress(data.data);
-        return JSON.parse(decompressed);
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Erreur de décompression:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Compression simple (à remplacer par une vraie lib en production)
-   */
-  private simpleCompress(text: string): string {
-    // Implémentation basique - en production, utiliser LZ-string ou similaire
-    return btoa(encodeURIComponent(text));
-  }
-
-  /**
-   * Décompression simple
-   */
-  private simpleDecompress(compressed: string): string {
-    try {
-      return decodeURIComponent(atob(compressed));
-    } catch (error) {
-      console.error('Échec de la décompression simple:', error);
-      throw error;
-    }
-  }
 
   // === METADATA MANAGEMENT ===
 
@@ -572,11 +520,14 @@ export class LooperStorageService {
 
       const success = this.secureStorage.saveData(LOOPER_STORAGE_KEYS.BACKUP, backupData);
 
-      return {
+      const result: StorageOperationResult = {
         success,
-        data: backupData,
-        error: success ? undefined : 'Échec de la création de la sauvegarde'
+        data: backupData
       };
+      if (!success) {
+        result.error = 'Échec de la création de la sauvegarde';
+      }
+      return result;
     } catch (error) {
       return {
         success: false,
@@ -610,11 +561,14 @@ export class LooperStorageService {
         this.saveCurrentState(backup.currentState);
       }
 
-      return {
+      const result: StorageOperationResult = {
         success: sessionsRestored.success,
-        data: backup,
-        error: sessionsRestored.success ? undefined : 'Échec de la restauration'
+        data: backup
       };
+      if (!sessionsRestored.success) {
+        result.error = 'Échec de la restauration';
+      }
+      return result;
     } catch (error) {
       return {
         success: false,
@@ -783,10 +737,13 @@ export class LooperStorageService {
         }
       });
 
-      return {
-        success: allSuccess,
-        error: errors.length > 0 ? errors.join(', ') : undefined
+      const result: StorageOperationResult = {
+        success: allSuccess
       };
+      if (errors.length > 0) {
+        result.error = errors.join(', ');
+      }
+      return result;
     } catch (error) {
       return {
         success: false,

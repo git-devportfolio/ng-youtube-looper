@@ -94,7 +94,7 @@
         "dependencies": [
           3
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -149,7 +149,7 @@
               "4.4"
             ],
             "details": "Créer des tests d'intégration end-to-end couvrant l'interaction complète entre SpeedControlComponent, YouTubeService, LoopService et ValidationService. Inclure des tests de performance, de gestion d'erreurs et de cas limites. Valider la persistence des données et la synchronisation multi-composants.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests e2e avec Cypress, tests de performance de changement de vitesse, tests de gestion d'erreurs réseau, validation complète des user stories"
           }
         ]
@@ -164,8 +164,62 @@
         "dependencies": [
           4
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer les interfaces et types pour les segments de boucle",
+            "description": "Définir les interfaces TypeScript pour LoopSegment avec toutes les propriétés nécessaires",
+            "dependencies": [],
+            "details": "Créer le fichier loop.types.ts dans src/app/shared/interfaces/ avec l'interface LoopSegment contenant id (string), name (string), startTime (number en secondes), endTime (number en secondes), playbackSpeed (number entre 0.25 et 2), repeatCount (number optionnel). Ajouter également les types LoopStatus ('active' | 'inactive') et CreateLoopRequest pour la création.",
+            "status": "done",
+            "testStrategy": "Tests de validation des types TypeScript et vérification de la cohérence des propriétés"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter le service de gestion des boucles",
+            "description": "Créer loop.service.ts avec toute la logique métier pour gérer les segments de boucle",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Créer loop.service.ts dans src/app/core/services/ utilisant les signals pour l'état réactif. Implémenter les méthodes CRUD (createLoop, updateLoop, deleteLoop, getLoops), validation des temps (validateTimeRange), formatage des temps (formatTime), calcul de durée, et gestion de la répétition. Utiliser localStorage pour la persistance avec clés préfixées 'ng-youtube-looper-loops'.",
+            "status": "done",
+            "testStrategy": "Tests unitaires pour chaque méthode CRUD, tests de validation des temps, tests de persistance localStorage"
+          },
+          {
+            "id": 3,
+            "title": "Développer la façade de gestion des boucles",
+            "description": "Créer loop-manager.facade.ts pour orchestrer l'état global des boucles",
+            "dependencies": [
+              "5.2"
+            ],
+            "details": "Créer loop-manager.facade.ts dans src/app/features/loop-manager/services/ utilisant l'architecture Signal. Implémenter des signals privés pour les boucles, boucle active, état de lecture, erreurs. Créer un ViewModel computed pour l'interface. Intégrer avec LoopService et exposer des commandes publiques (selectLoop, playLoop, stopLoop, createLoop, editLoop, deleteLoop).",
+            "status": "done",
+            "testStrategy": "Tests d'intégration avec LoopService, tests de réactivité des signals, tests des commandes publiques"
+          },
+          {
+            "id": 4,
+            "title": "Créer le composant de formulaire de boucle",
+            "description": "Implémenter loop-form.component.ts pour la création et édition des boucles",
+            "dependencies": [
+              "5.3"
+            ],
+            "details": "Créer loop-form.component.ts dans src/app/features/loop-manager/ui/loop-form/ avec template HTML et styles SCSS. Utiliser Reactive Forms avec validation personnalisée pour les temps au format mm:ss.d. Implémenter la conversion temps texte/secondes, validation startTime < endTime, sélection de vitesse (0.25x à 2x), et compteur de répétitions. Intégrer avec LoopManagerFacade via @Input() pour édition et @Output() pour soumission.",
+            "status": "done",
+            "testStrategy": "Tests de validation des formulaires, tests de conversion des temps, tests d'intégration avec la façade"
+          },
+          {
+            "id": 5,
+            "title": "Développer le composant de liste des boucles",
+            "description": "Implémenter loop-list.component.ts pour l'affichage et la navigation entre les boucles",
+            "dependencies": [
+              "5.3"
+            ],
+            "details": "Créer loop-list.component.ts dans src/app/features/loop-manager/ui/loop-list/ avec design responsive (liste verticale mobile, grille tablet+). Affichage des propriétés de chaque boucle (nom, temps, durée calculée), actions hover (lecture, édition, suppression, duplication), indication visuelle de la boucle active. Utiliser le control flow Angular moderne (@if, @for) et intégrer avec LoopManagerFacade pour les actions.",
+            "status": "done",
+            "testStrategy": "Tests d'affichage des boucles, tests des actions utilisateur, tests responsive, tests de navigation"
+          }
+        ]
       },
       {
         "id": 6,
@@ -190,7 +244,7 @@
         "dependencies": [
           5
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -941,7 +995,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-02T06:13:52.369Z",
+      "updated": "2025-09-02T17:56:49.971Z",
       "description": "Tasks for master context"
     }
   }
