@@ -328,21 +328,116 @@ export class SessionFacade {
     return this.sessionManager.getStorageInfo();
   }
 
+  // === EXPORT FUNCTIONALITY ===
+
   /**
-   * Export sessions data
+   * Export all sessions as JSON file download
    */
-  async exportSessions(): Promise<StorageOperationResult> {
+  async exportAllSessions(filename?: string): Promise<StorageOperationResult> {
     this._isLoading.set(true);
     
     try {
-      return this.sessionManager.exportSessions();
+      const result = this.sessionManager.exportSessions();
+      if (result.success && result.data) {
+        const defaultFilename = `looper-sessions-${this.formatDateForFilename(new Date())}.json`;
+        this.downloadJsonFile(result.data, filename || defaultFilename);
+      }
+      return result;
     } finally {
       this._isLoading.set(false);
     }
   }
 
   /**
-   * Import sessions data
+   * Export single session as JSON file download
+   */
+  async exportSession(sessionId: string, filename?: string): Promise<StorageOperationResult> {
+    this._isLoading.set(true);
+    
+    try {
+      const session = this._sessionList().find(s => s.id === sessionId);
+      if (!session) {
+        return { success: false, error: 'Session introuvable' };
+      }
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        version: '1.0',
+        type: 'single-session',
+        session: session
+      };
+
+      const defaultFilename = `session-${this.sanitizeFilename(session.name)}-${this.formatDateForFilename(new Date())}.json`;
+      this.downloadJsonFile(exportData, filename || defaultFilename);
+      
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: `Erreur d'export: ${(error as Error).message}` };
+    } finally {
+      this._isLoading.set(false);
+    }
+  }
+
+  /**
+   * Export selected sessions as JSON file download
+   */
+  async exportSelectedSessions(sessionIds: string[], filename?: string): Promise<StorageOperationResult> {
+    this._isLoading.set(true);
+    
+    try {
+      const sessions = this._sessionList().filter(s => sessionIds.includes(s.id));
+      if (sessions.length === 0) {
+        return { success: false, error: 'Aucune session sélectionnée' };
+      }
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        version: '1.0',
+        type: 'multiple-sessions',
+        sessionsCount: sessions.length,
+        sessions: sessions
+      };
+
+      const defaultFilename = `sessions-${sessions.length}-${this.formatDateForFilename(new Date())}.json`;
+      this.downloadJsonFile(exportData, filename || defaultFilename);
+      
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: `Erreur d'export: ${(error as Error).message}` };
+    } finally {
+      this._isLoading.set(false);
+    }
+  }
+
+  // === IMPORT FUNCTIONALITY ===
+
+  /**
+   * Import sessions from JSON file
+   */
+  async importSessionsFromFile(file: File): Promise<StorageOperationResult> {
+    this._isLoading.set(true);
+    
+    try {
+      const fileContent = await this.readFileAsText(file);
+      const importData = await this.validateAndParseImportData(fileContent);
+      
+      if (importData.type === 'single-session') {
+        return await this.importSingleSession(importData.session);
+      } else if (importData.type === 'multiple-sessions') {
+        return await this.importMultipleSessions(importData.sessions);
+      } else {
+        // Legacy format - full export
+        return this.sessionManager.importSessions(importData);
+      }
+    } catch (error) {
+      return { success: false, error: `Erreur d'import: ${(error as Error).message}` };
+    } finally {
+      this._isLoading.set(false);
+    }
+  }
+
+  /**
+   * Import sessions from JSON data
    */
   async importSessions(data: any): Promise<StorageOperationResult> {
     this._isLoading.set(true);
@@ -352,5 +447,155 @@ export class SessionFacade {
     } finally {
       this._isLoading.set(false);
     }
+  }
+
+  // === IMPORT HELPERS ===
+
+  private async importSingleSession(sessionData: LooperSession): Promise<StorageOperationResult> {
+    // Generate new ID to avoid conflicts
+    const newSession: LooperSession = {
+      ...sessionData,
+      id: this.generateUniqueSessionId(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isActive: false
+    };
+
+    return this.sessionManager.updateSession(newSession.id, newSession);
+  }
+
+  private async importMultipleSessions(sessionsData: LooperSession[]): Promise<StorageOperationResult> {
+    try {
+      let successCount = 0;
+      const errors: string[] = [];
+
+      for (const sessionData of sessionsData) {
+        const result = await this.importSingleSession(sessionData);
+        if (result.success) {
+          successCount++;
+        } else {
+          errors.push(`${sessionData.name}: ${result.error}`);
+        }
+      }
+
+      if (errors.length === 0) {
+        return { success: true, data: `${successCount} sessions importées avec succès` };
+      } else if (successCount > 0) {
+        return { 
+          success: true, 
+          data: `${successCount} sessions importées, ${errors.length} échecs: ${errors.join(', ')}` 
+        };
+      } else {
+        return { success: false, error: `Toutes les importations ont échoué: ${errors.join(', ')}` };
+      }
+    } catch (error) {
+      return { success: false, error: `Erreur d'import multiple: ${(error as Error).message}` };
+    }
+  }
+
+  // === FILE UTILITIES ===
+
+  private downloadJsonFile(data: any, filename: string): void {
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up object URL
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  }
+
+  private async readFileAsText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (event) => {
+        const result = event.target?.result;
+        if (typeof result === 'string') {
+          resolve(result);
+        } else {
+          reject(new Error('Échec de lecture du fichier'));
+        }
+      };
+      
+      reader.onerror = () => {
+        reject(new Error('Erreur de lecture du fichier'));
+      };
+      
+      reader.readAsText(file);
+    });
+  }
+
+  private async validateAndParseImportData(jsonContent: string): Promise<any> {
+    try {
+      const data = JSON.parse(jsonContent);
+      
+      // Validate basic structure
+      if (!data || typeof data !== 'object') {
+        throw new Error('Format JSON invalide');
+      }
+
+      // Check for new export format
+      if (data.version && data.type) {
+        if (data.type === 'single-session' && !data.session) {
+          throw new Error('Données de session manquantes');
+        }
+        if (data.type === 'multiple-sessions' && (!data.sessions || !Array.isArray(data.sessions))) {
+          throw new Error('Données de sessions manquantes ou invalides');
+        }
+        return data;
+      }
+      
+      // Legacy format validation
+      if (!Array.isArray(data) && !data.sessions) {
+        throw new Error('Format de données non reconnu');
+      }
+      
+      return data;
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error('Fichier JSON invalide');
+      }
+      throw error;
+    }
+  }
+
+  // === UTILITY HELPERS ===
+
+  private generateUniqueSessionId(): string {
+    let id: string;
+    const existing = this._sessionList().map(s => s.id);
+    
+    do {
+      id = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    } while (existing.includes(id));
+    
+    return id;
+  }
+
+  private sanitizeFilename(filename: string): string {
+    return filename
+      .replace(/[^a-zA-Z0-9\-_\s]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .toLowerCase()
+      .substr(0, 30); // Limit length
+  }
+
+  private formatDateForFilename(date: Date): string {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${year}${month}${day}-${hours}${minutes}`;
   }
 }

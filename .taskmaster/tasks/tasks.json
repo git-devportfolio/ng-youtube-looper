@@ -316,7 +316,64 @@
           7
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer le SessionFacade pour la gestion d'état des sessions",
+            "description": "Implémenter la façade de gestion d'état des sessions avec signals pour l'orchestration des opérations CRUD",
+            "dependencies": [],
+            "details": "Créer session.facade.ts avec signals pour currentSession, sessionList, isLoading. Implémenter les méthodes createSession(), saveSession(), loadSession(), deleteSession() et updateSession(). Utiliser computed signals pour les sessions filtrées et l'état de sauvegarde. Intégrer avec le localStorage pour la persistance.",
+            "status": "done",
+            "testStrategy": "Tests unitaires des méthodes CRUD, tests des signals et computed, tests de persistance localStorage"
+          },
+          {
+            "id": 2,
+            "title": "Développer le SessionFormComponent pour création/édition",
+            "description": "Créer le formulaire de création et édition de sessions avec validation et Reactive Forms",
+            "dependencies": [
+              "8.1"
+            ],
+            "details": "Implémenter session-form.component.ts avec ReactiveFormsModule. Formulaire avec champs nom, description, tags. Validation obligatoire pour le nom, longueur maximale description. Boutons Sauvegarder/Annuler. @Input() pour session existante, @Output() pour événements save/cancel. Gestion des états loading/error.",
+            "status": "done",
+            "testStrategy": "Tests de validation des formulaires, tests de création/édition, tests des émissions d'événements, tests d'état loading"
+          },
+          {
+            "id": 3,
+            "title": "Implémenter le SessionListComponent pour l'affichage",
+            "description": "Créer le composant d'affichage de la liste des sessions sauvegardées avec actions CRUD",
+            "dependencies": [
+              "8.1"
+            ],
+            "details": "Développer session-list.component.ts avec affichage en grille responsive. Chaque session-item avec nom, date modification, nombre de boucles, actions (charger, éditer, supprimer, dupliquer). Intégrer recherche/filtrage par nom. Confirmer suppression avec dialog. Indicateur session active.",
+            "status": "done",
+            "testStrategy": "Tests d'affichage des sessions, tests des actions CRUD, tests de recherche/filtrage, tests responsive"
+          },
+          {
+            "id": 4,
+            "title": "Créer les fonctionnalités d'export/import JSON",
+            "description": "Implémenter l'export et import des sessions au format JSON avec gestion des erreurs",
+            "dependencies": [
+              "8.2",
+              "8.3"
+            ],
+            "details": "Ajouter méthodes exportSession() et importSession() au SessionFacade. Export via downloadFile() avec nom personnalisé. Import avec validation du format JSON, gestion erreurs parsing. Interface ImportExportComponent avec boutons et file input. Support export multiple sessions. Feedback utilisateur success/error.",
+            "status": "done",
+            "testStrategy": "Tests export/import JSON, tests validation format, tests gestion erreurs, tests téléchargement fichier"
+          },
+          {
+            "id": 5,
+            "title": "Développer le SessionManagerComponent principal avec historique",
+            "description": "Assembler le composant principal intégrant tous les sous-composants avec historique des vidéos récentes",
+            "dependencies": [
+              "8.2",
+              "8.3",
+              "8.4"
+            ],
+            "details": "Créer session-manager.component.ts orchestrant SessionFormComponent, SessionListComponent et fonctionnalités import/export. Implémenter historique des 10 dernières vidéos YouTube avec timestamps. Onglets Sessions/Historique. Routing interne avec états create/edit/list. Integration complète avec SessionFacade.",
+            "status": "pending",
+            "testStrategy": "Tests d'intégration des composants, tests de l'historique vidéo, tests navigation interne, tests orchestration complète"
+          }
+        ]
       },
       {
         "id": 9,
@@ -1053,7 +1110,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-03T17:56:04.666Z",
+      "updated": "2025-09-03T18:14:52.881Z",
       "description": "Tasks for master context"
     }
   }

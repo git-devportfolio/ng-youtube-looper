@@ -1,0 +1,244 @@
+<div class="import-export-container">
+  
+  <!-- Export Section -->
+  <div class="section export-section">
+    <div class="section-header">
+      <h3 class="section-title">
+        <span class="section-icon">📤</span>
+        Exporter des sessions
+      </h3>
+      <div class="section-description">
+        Sauvegardez vos sessions au format JSON
+      </div>
+    </div>
+
+    <div class="export-options">
+      
+      <!-- Export All Sessions -->
+      <div class="option-card">
+        <div class="option-header">
+          <h4 class="option-title">Exporter toutes les sessions</h4>
+          <div class="option-meta">
+            {{ sessionCount() }} session{{ sessionCount() !== 1 ? 's' : '' }} disponible{{ sessionCount() !== 1 ? 's' : '' }}
+          </div>
+        </div>
+        
+        <button 
+          class="export-btn primary"
+          [disabled]="!canExportAll()"
+          (click)="exportAllSessions()"
+          [attr.aria-label]="'Exporter toutes les ' + sessionCount() + ' sessions'">
+          @if (isExporting() && lastOperation() === 'export-all') {
+            <span class="btn-spinner"></span>
+            Export en cours...
+          } @else {
+            <span class="btn-icon">📦</span>
+            Exporter tout
+          }
+        </button>
+      </div>
+
+      <!-- Export Selected Sessions -->
+      @if (showBulkExport && hasSelectedSessions()) {
+        <div class="option-card">
+          <div class="option-header">
+            <h4 class="option-title">Exporter les sessions sélectionnées</h4>
+            <div class="option-meta">
+              {{ getSelectedSessionsText() }}
+            </div>
+          </div>
+          
+          <button 
+            class="export-btn secondary"
+            [disabled]="!canExportSelected()"
+            (click)="exportSelectedSessions()"
+            [attr.aria-label]="'Exporter ' + getSelectedSessionsText()">
+            @if (isExporting() && lastOperation() === 'export-selected') {
+              <span class="btn-spinner"></span>
+              Export en cours...
+            } @else {
+              <span class="btn-icon">📋</span>
+              Exporter la sélection
+            }
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Import Section -->
+  @if (showImport) {
+    <div class="section import-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <span class="section-icon">📥</span>
+          Importer des sessions
+        </h3>
+        <div class="section-description">
+          Chargez des sessions depuis un fichier JSON
+        </div>
+      </div>
+
+      <!-- File Input (Hidden) -->
+      <input 
+        #fileInput
+        type="file"
+        accept=".json"
+        (change)="onFileSelected($event)"
+        style="display: none"
+        aria-label="Sélectionner un fichier JSON à importer">
+
+      <!-- Import Options -->
+      <div class="import-options">
+        
+        <!-- Import Button -->
+        <div class="option-card">
+          <div class="option-header">
+            <h4 class="option-title">Importer depuis un fichier</h4>
+            <div class="option-meta">
+              Formats supportés : JSON (max 10MB)
+            </div>
+          </div>
+          
+          <button 
+            class="import-btn primary"
+            [disabled]="!canImport()"
+            (click)="triggerImport()"
+            [attr.aria-label]="'Sélectionner un fichier JSON à importer'">
+            @if (isImporting()) {
+              <span class="btn-spinner"></span>
+              Import en cours...
+            } @else {
+              <span class="btn-icon">📁</span>
+              Choisir un fichier
+            }
+          </button>
+        </div>
+
+        <!-- Drag & Drop Zone -->
+        <div class="drop-zone"
+             [class.processing]="isImporting()"
+             (dragover)="onDragOver($event)"
+             (dragleave)="onDragLeave($event)"
+             (drop)="onDrop($event)"
+             [attr.aria-label]="'Zone de dépôt pour fichiers JSON'">
+          
+          <div class="drop-zone-content">
+            @if (isImporting()) {
+              <div class="drop-zone-spinner"></div>
+              <div class="drop-zone-text">Import en cours...</div>
+            } @else {
+              <div class="drop-zone-icon">📎</div>
+              <div class="drop-zone-text">
+                <strong>Glissez-déposez un fichier JSON ici</strong>
+              </div>
+              <div class="drop-zone-hint">
+                ou utilisez le bouton "Choisir un fichier"
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Operation Result -->
+  @if (operationResult(); as result) {
+    <div class="result-section">
+      <div class="result-card"
+           [class]="getOperationStatusClass()"
+           role="alert">
+        <div class="result-header">
+          <span class="result-icon">{{ getOperationStatusIcon() }}</span>
+          <span class="result-title">
+            @if (result.success) {
+              Opération réussie
+            } @else {
+              Erreur d'opération
+            }
+          </span>
+          <button 
+            class="result-close"
+            (click)="clearResult()"
+            aria-label="Fermer le message"
+            type="button">
+            ✕
+          </button>
+        </div>
+        
+        <div class="result-message">
+          {{ result.message }}
+        </div>
+        
+        <!-- Additional Success Info -->
+        @if (result.success && lastOperation() === 'import') {
+          <div class="import-success-info">
+            <div class="success-tip">
+              💡 Les sessions importées sont maintenant disponibles dans votre liste.
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Storage Information -->
+  <div class="storage-info-section">
+    <div class="storage-info">
+      <h4 class="storage-title">
+        <span class="storage-icon">💾</span>
+        Informations de stockage
+      </h4>
+      
+      @if (sessionFacade.getStorageInfo(); as info) {
+        <div class="storage-stats">
+          <div class="storage-stat">
+            <span class="stat-label">Sessions :</span>
+            <span class="stat-value">{{ sessionCount() }}</span>
+          </div>
+          <div class="storage-stat">
+            <span class="stat-label">Espace utilisé :</span>
+            <span class="stat-value">{{ getFormattedFileSize(info.totalSize || 0) }}</span>
+          </div>
+          @if (info.sessionSize) {
+            <div class="storage-stat">
+              <span class="stat-label">Sessions :</span>
+              <span class="stat-value">{{ getFormattedFileSize(info.sessionSize) }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Help Section -->
+  <div class="help-section">
+    <details class="help-details">
+      <summary class="help-summary">
+        <span class="help-icon">❓</span>
+        Aide sur l'export/import
+      </summary>
+      
+      <div class="help-content">
+        <div class="help-item">
+          <h5 class="help-item-title">Export :</h5>
+          <ul class="help-list">
+            <li>Les fichiers exportés contiennent toutes les données de vos sessions</li>
+            <li>Format JSON standard compatible avec d'autres instances de l'application</li>
+            <li>Les exports incluent les boucles, paramètres et métadonnées</li>
+          </ul>
+        </div>
+        
+        <div class="help-item">
+          <h5 class="help-item-title">Import :</h5>
+          <ul class="help-list">
+            <li>Supporte les fichiers JSON exportés depuis cette application</li>
+            <li>Les sessions importées reçoivent de nouveaux identifiants uniques</li>
+            <li>Glissez-déposez ou utilisez le bouton pour sélectionner un fichier</li>
+            <li>Taille maximale : 10MB</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </div>
+</div>
