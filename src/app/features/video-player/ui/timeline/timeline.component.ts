@@ -872,6 +872,15 @@ export class TimelineComponent implements OnInit, OnDestroy {
    */
   private _sortedLoopsCache: {loops: LoopSegment[], timestamp: number} | null = null;
   
+  // Enhanced precision and caching system for timeline calculations
+  private readonly PRECISION_DECIMALS = 0.1; // 0.1 second precision
+  private readonly POSITION_CACHE_SIZE = 1000;
+  private readonly POSITION_CACHE_TTL = 5000; // 5 seconds cache TTL
+  
+  // Position calculation cache for performance optimization
+  private _positionCache = new Map<string, {position: number, timestamp: number}>();
+  private _timeCache = new Map<string, {time: number, timestamp: number}>();
+  
   get sortedLoops(): LoopSegment[] {
     const currentLoops = this.effectiveLoops;
     const now = Date.now();
@@ -1236,5 +1245,183 @@ export class TimelineComponent implements OnInit, OnDestroy {
   get creationHasCollision(): boolean {
     if (!this._creationPreview) return false;
     return this.checkLoopCollision('', this._creationPreview.startTime, this._creationPreview.endTime);
+  }
+
+  // === ENHANCED PRECISION METHODS FOR TASK 6.1 ===
+
+  /**
+   * Round time to specified precision (default: 0.1 second)
+   * Key method for task 6.1 - ensures consistent temporal precision
+   */
+  private roundToPrecision(value: number, precision: number): number {
+    const factor = 1 / precision;
+    return Math.round(value * factor) / factor;
+  }
+
+  /**
+   * Cache position calculation result with TTL management
+   */
+  private cachePositionResult(key: string, position: number, timestamp: number): void {
+    // Clean old entries if cache is getting large
+    if (this._positionCache.size >= this.POSITION_CACHE_SIZE) {
+      this.cleanupPositionCache();
+    }
+    
+    this._positionCache.set(key, { position, timestamp });
+  }
+
+  /**
+   * Cache time calculation result with TTL management
+   */
+  private cacheTimeResult(key: string, time: number, timestamp: number): void {
+    // Clean old entries if cache is getting large
+    if (this._timeCache.size >= this.POSITION_CACHE_SIZE) {
+      this.cleanupTimeCache();
+    }
+    
+    this._timeCache.set(key, { time, timestamp });
+  }
+
+  /**
+   * Clean up expired cache entries for position calculations
+   */
+  private cleanupPositionCache(): void {
+    const now = Date.now();
+    const expiredKeys: string[] = [];
+    
+    for (const [key, value] of this._positionCache.entries()) {
+      if (now - value.timestamp > this.POSITION_CACHE_TTL) {
+        expiredKeys.push(key);
+      }
+    }
+    
+    expiredKeys.forEach(key => this._positionCache.delete(key));
+    
+    // If still too large, remove oldest entries
+    if (this._positionCache.size >= this.POSITION_CACHE_SIZE) {
+      const sortedEntries = Array.from(this._positionCache.entries())
+        .sort((a, b) => a[1].timestamp - b[1].timestamp);
+      
+      const toRemove = sortedEntries.slice(0, Math.floor(this.POSITION_CACHE_SIZE / 2));
+      toRemove.forEach(([key]) => this._positionCache.delete(key));
+    }
+  }
+
+  /**
+   * Clean up expired cache entries for time calculations
+   */
+  private cleanupTimeCache(): void {
+    const now = Date.now();
+    const expiredKeys: string[] = [];
+    
+    for (const [key, value] of this._timeCache.entries()) {
+      if (now - value.timestamp > this.POSITION_CACHE_TTL) {
+        expiredKeys.push(key);
+      }
+    }
+    
+    expiredKeys.forEach(key => this._timeCache.delete(key));
+    
+    // If still too large, remove oldest entries
+    if (this._timeCache.size >= this.POSITION_CACHE_SIZE) {
+      const sortedEntries = Array.from(this._timeCache.entries())
+        .sort((a, b) => a[1].timestamp - b[1].timestamp);
+      
+      const toRemove = sortedEntries.slice(0, Math.floor(this.POSITION_CACHE_SIZE / 2));
+      toRemove.forEach(([key]) => this._timeCache.delete(key));
+    }
+  }
+
+  /**
+   * Batch process multiple times with precision rounding
+   * Enhanced version of getPositionsForTimes with precision support
+   */
+  getBatchTimesWithPrecision(times: number[]): number[] {
+    return times.map(time => this.roundToPrecision(time, this.PRECISION_DECIMALS));
+  }
+
+  /**
+   * Batch process multiple positions with precision and caching
+   * Performance-optimized version for multiple position calculations
+   */
+  getBatchPositionsWithPrecision(times: number[]): number[] {
+    if (this.duration === 0) return times.map(() => 0);
+    
+    const now = Date.now();
+    const results: number[] = [];
+    const uncachedTimes: Array<{time: number, index: number}> = [];
+    
+    // Check cache first for all times
+    times.forEach((time, index) => {
+      const preciseTime = this.roundToPrecision(time, this.PRECISION_DECIMALS);
+      const cacheKey = `${preciseTime}_${this.duration}`;
+      const cached = this._positionCache.get(cacheKey);
+      
+      if (cached && (now - cached.timestamp) < this.POSITION_CACHE_TTL) {
+        results[index] = cached.position;
+      } else {
+        results[index] = 0; // placeholder
+        uncachedTimes.push({ time: preciseTime, index });
+      }
+    });
+    
+    // Calculate uncached positions in batch
+    if (uncachedTimes.length > 0) {
+      const durationReciprocal = 100 / this.duration;
+      
+      uncachedTimes.forEach(({ time, index }) => {
+        if (time < 0) {
+          results[index] = 0;
+        } else if (time >= this.duration) {
+          results[index] = 100;
+        } else {
+          const rawPosition = time * durationReciprocal;
+          const precisePosition = Math.round(rawPosition * 10000) / 10000; // 4 decimal precision
+          const boundedPosition = Math.max(0, Math.min(precisePosition, 100));
+          
+          results[index] = boundedPosition;
+          
+          // Cache the result
+          const cacheKey = `${time}_${this.duration}`;
+          this.cachePositionResult(cacheKey, boundedPosition, now);
+        }
+      });
+    }
+    
+    return results;
+  }
+
+  /**
+   * Get enhanced precision information for debugging/testing
+   */
+  getPrecisionInfo(): {
+    precision: number;
+    cacheSize: {positions: number, times: number};
+    cacheHitRatio: number;
+  } {
+    return {
+      precision: this.PRECISION_DECIMALS,
+      cacheSize: {
+        positions: this._positionCache.size,
+        times: this._timeCache.size
+      },
+      cacheHitRatio: 0 // Would need to track hits/misses for accurate calculation
+    };
+  }
+
+  /**
+   * Clear all precision caches (useful for testing or memory management)
+   */
+  clearPrecisionCaches(): void {
+    this._positionCache.clear();
+    this._timeCache.clear();
+  }
+
+  /**
+   * Validate if a time value meets precision requirements
+   */
+  isTimePrecisionValid(time: number): boolean {
+    const rounded = this.roundToPrecision(time, this.PRECISION_DECIMALS);
+    return Math.abs(time - rounded) < 0.001; // 1ms tolerance
   }
 }
