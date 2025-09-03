@@ -1,0 +1,282 @@
+<div class="session-list-container">
+  
+  <!-- Search and Filters Header -->
+  @if (showSearch) {
+    <div class="list-header">
+      <div class="search-section">
+        <div class="search-input-wrapper">
+          <input 
+            type="text"
+            class="search-input"
+            placeholder="Rechercher une session..."
+            [value]="searchQuery()"
+            (input)="onSearchChange($any($event.target).value)"
+            [attr.aria-label]="'Rechercher parmi ' + sessionCount() + ' sessions'">
+          
+          @if (searchQuery().length > 0) {
+            <button 
+              class="search-clear-btn"
+              (click)="clearSearch()"
+              aria-label="Effacer la recherche"
+              type="button">
+              ✕
+            </button>
+          }
+        </div>
+        
+        <!-- Session count and status -->
+        <div class="session-count">
+          {{ sessionCount() }} session{{ sessionCount() !== 1 ? 's' : '' }}
+          @if (hasMoreSessions()) {
+            <span class="more-indicator">
+              ({{ displaySessions().length }} affichée{{ displaySessions().length !== 1 ? 's' : '' }})
+            </span>
+          }
+        </div>
+      </div>
+      
+      <!-- Sorting Controls -->
+      <div class="sort-controls">
+        <span class="sort-label">Trier par :</span>
+        <button 
+          class="sort-button"
+          [class.active]="sortBy() === 'date'"
+          (click)="setSortBy('date')"
+          [attr.aria-label]="getSortAriaLabel('date')"
+          type="button">
+          Date {{ getSortIcon('date') }}
+        </button>
+        <button 
+          class="sort-button"
+          [class.active]="sortBy() === 'name'"
+          (click)="setSortBy('name')"
+          [attr.aria-label]="getSortAriaLabel('name')"
+          type="button">
+          Nom {{ getSortIcon('name') }}
+        </button>
+        <button 
+          class="sort-button"
+          [class.active]="sortBy() === 'duration'"
+          (click)="setSortBy('duration')"
+          [attr.aria-label]="getSortAriaLabel('duration')"
+          type="button">
+          Durée {{ getSortIcon('duration') }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <span class="loading-text">Chargement des sessions...</span>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (lastError(); as error) {
+    <div class="error-container" role="alert">
+      <div class="error-icon">⚠</div>
+      <div class="error-message">{{ error }}</div>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (isEmpty() && !isLoading()) {
+    <div class="empty-state">
+      <div class="empty-icon">📁</div>
+      <h3 class="empty-title">Aucune session sauvegardée</h3>
+      <p class="empty-description">
+        Créez votre première session pour commencer à sauvegarder vos boucles d'entraînement.
+      </p>
+    </div>
+  }
+
+  <!-- No Search Results State -->
+  @if (hasSearchResults() && !isLoading()) {
+    <div class="no-results-state">
+      <div class="no-results-icon">🔍</div>
+      <h3 class="no-results-title">Aucun résultat trouvé</h3>
+      <p class="no-results-description">
+        Aucune session ne correspond à "{{ searchQuery() }}".
+      </p>
+      <button 
+        class="clear-search-btn"
+        (click)="clearSearch()"
+        type="button">
+        Effacer la recherche
+      </button>
+    </div>
+  }
+
+  <!-- Session List -->
+  @if (displaySessions().length > 0 && !isLoading()) {
+    <div class="sessions-grid" role="list">
+      @for (session of displaySessions(); track trackSessionById($index, session)) {
+        <div class="session-card"
+             [class.active]="isSessionActive(session)"
+             [class.selected]="isSessionSelected(session)"
+             [class.confirming-delete]="isConfirmingDelete(session)"
+             (click)="onSessionSelect(session)"
+             role="listitem"
+             tabindex="0"
+             [attr.aria-label]="'Session ' + session.name + ', modifiée le ' + formatDate(session.updatedAt)">
+          
+          <!-- Session Header -->
+          <div class="session-header">
+            <div class="session-title-section">
+              <h3 class="session-name">{{ session.name }}</h3>
+              @if (isSessionActive(session)) {
+                <div class="active-indicator" aria-label="Session active">
+                  <span class="active-dot"></span>
+                  Active
+                </div>
+              }
+            </div>
+            
+            <!-- Session Stats -->
+            <div class="session-stats">
+              @if (getSessionStats(session); as stats) {
+                <div class="stat-item">
+                  <span class="stat-icon">🔄</span>
+                  <span class="stat-value">{{ stats.loopsCount }}</span>
+                  <span class="stat-label">boucle{{ stats.loopsCount !== 1 ? 's' : '' }}</span>
+                </div>
+                
+                @if (stats.totalDuration !== '0:00') {
+                  <div class="stat-item">
+                    <span class="stat-icon">⏱️</span>
+                    <span class="stat-value">{{ stats.totalDuration }}</span>
+                    <span class="stat-label">boucles</span>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+
+          <!-- Video Information -->
+          <div class="video-info">
+            <div class="video-title">{{ session.videoTitle }}</div>
+            <div class="video-meta">
+              <span class="video-duration">{{ formatDuration(session.videoDuration) }}</span>
+              @if (session.tags && session.tags.length > 0) {
+                <div class="session-tags">
+                  @for (tag of session.tags.slice(0, 3); track tag) {
+                    <span class="tag">{{ tag }}</span>
+                  }
+                  @if (session.tags.length > 3) {
+                    <span class="tag-more">+{{ session.tags.length - 3 }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Session Description -->
+          @if (session.description) {
+            <div class="session-description">
+              {{ session.description }}
+            </div>
+          }
+
+          <!-- Session Meta -->
+          <div class="session-meta">
+            <span class="modified-date">
+              Modifiée le {{ formatDate(session.updatedAt) }}
+            </span>
+            @if (session.playCount > 0) {
+              <span class="play-count">
+                {{ session.playCount }} lecture{{ session.playCount !== 1 ? 's' : '' }}
+              </span>
+            }
+          </div>
+
+          <!-- Session Actions -->
+          <div class="session-actions" (click)="$event.stopPropagation()">
+            
+            <!-- Normal Actions -->
+            @if (!isConfirmingDelete(session)) {
+              <button 
+                class="action-btn load-btn"
+                (click)="onSessionLoad(session, $event)"
+                [attr.aria-label]="'Charger la session ' + session.name"
+                type="button">
+                <span class="action-icon">▶️</span>
+                <span class="action-text">Charger</span>
+              </button>
+              
+              <button 
+                class="action-btn edit-btn"
+                (click)="onSessionEdit(session, $event)"
+                [attr.aria-label]="'Modifier la session ' + session.name"
+                type="button">
+                <span class="action-icon">✏️</span>
+                <span class="action-text">Modifier</span>
+              </button>
+              
+              <button 
+                class="action-btn duplicate-btn"
+                (click)="onSessionDuplicate(session, $event)"
+                [attr.aria-label]="'Dupliquer la session ' + session.name"
+                type="button">
+                <span class="action-icon">📋</span>
+                <span class="action-text">Dupliquer</span>
+              </button>
+              
+              <button 
+                class="action-btn delete-btn"
+                (click)="onSessionDelete(session, $event)"
+                [attr.aria-label]="'Supprimer la session ' + session.name"
+                type="button">
+                <span class="action-icon">🗑️</span>
+                <span class="action-text">Supprimer</span>
+              </button>
+            }
+
+            <!-- Delete Confirmation -->
+            @if (isConfirmingDelete(session)) {
+              <div class="delete-confirmation">
+                <div class="delete-warning">
+                  <span class="warning-icon">⚠️</span>
+                  <span class="warning-text">Supprimer définitivement ?</span>
+                </div>
+                <div class="delete-actions">
+                  <button 
+                    class="confirm-btn delete-confirm"
+                    (click)="confirmDelete(session)"
+                    aria-label="Confirmer la suppression"
+                    type="button">
+                    Supprimer
+                  </button>
+                  <button 
+                    class="confirm-btn delete-cancel"
+                    (click)="cancelDelete()"
+                    aria-label="Annuler la suppression"
+                    type="button">
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Load More Button -->
+  @if (hasMoreSessions() && !isLoading()) {
+    <div class="load-more-container">
+      <button 
+        class="load-more-btn"
+        (click)="maxDisplayCount = maxDisplayCount + 20"
+        type="button">
+        Afficher plus de sessions
+        <span class="remaining-count">
+          ({{ sessionCount() - displaySessions().length }} restantes)
+        </span>
+      </button>
+    </div>
+  }
+</div>
