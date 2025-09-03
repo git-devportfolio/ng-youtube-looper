@@ -22,7 +22,7 @@
     <div class="track-background">
       <!-- Magnetic guides visualization -->
       @if (shouldShowMagneticGuides) {
-        @for (guidePosition of getMagneticGuidePositions(); track $index) {
+        @for (guidePosition of getMagneticGuidePositions(); track trackGuideByPosition($index, guidePosition)) {
           <div class="magnetic-guide"
                [style.left.%]="guidePosition"
                [class.active]="activeMagneticGuide !== null && getPositionForTime(activeMagneticGuide!) === guidePosition"
@@ -34,7 +34,7 @@
       <!-- Progress indicators for video sections -->
       <div class="section-indicators">
         @if (duration > 60) {
-          @for (marker of getTimeMarkers(); track $index) {
+          @for (marker of getTimeMarkers(); track trackMarkerByPosition($index, marker)) {
             <div class="time-marker"
                  [style.left.%]="marker.position"
                  [attr.title]="marker.label">
@@ -79,7 +79,7 @@
     
     <!-- Loop Segments Container -->
     <div class="loop-segments-container">
-      @for (loop of effectiveLoops; track loop.id; let i = $index) {
+      @for (loop of effectiveLoops; track trackLoopById($index, loop); let i = $index) {
         <div [class]="getEnhancedLoopClasses(loop)"
              [attr.data-loop-id]="loop.id"
              [style.left.%]="getLoopPosition(loop).left"
@@ -228,7 +228,7 @@
          (click)="onMinimapClick($event)">
       <div class="minimap-track">
         <!-- Minimap segments -->
-        @for (loop of effectiveLoops; track loop.id) {
+        @for (loop of effectiveLoops; track trackLoopById($index, loop)) {
           <div class="minimap-segment"
                [style.left.%]="getLoopPosition(loop).left"
                [style.width.%]="getLoopPosition(loop).width"

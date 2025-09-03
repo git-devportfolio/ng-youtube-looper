@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostListener, inject, OnInit, OnDestroy, effect } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, inject, OnInit, OnDestroy, effect, ChangeDetectionStrategy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TimelineViewModel, LoopSegment, LoopManagerFacade } from '../../../loop-manager/data-access/loop-manager.facade';
 import { Subject } from 'rxjs';
@@ -7,7 +7,8 @@ import { Subject } from 'rxjs';
   selector: 'app-timeline',
   imports: [CommonModule],
   templateUrl: './timeline.component.html',
-  styleUrl: './timeline.component.scss'
+  styleUrl: './timeline.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TimelineComponent implements OnInit, OnDestroy {
   private readonly loopManagerFacade = inject(LoopManagerFacade);
@@ -82,7 +83,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     focusedElement: null as HTMLElement | null
   };
   
-  // Drag & drop state for loop segments - updated to use string IDs
+  // Legacy drag state for compatibility (will be migrated to signals gradually)
   private dragState: {
     isDragging: boolean;
     dragType: 'move' | 'resize-left' | 'resize-right' | 'create' | null;
@@ -104,8 +105,20 @@ export class TimelineComponent implements OnInit, OnDestroy {
     initialEndTime: 0
   };
   
-  // Selected loop for editing - updated to use string ID
-  private _selectedLoopId: string | null = null;
+  // Signal-based state management for OnPush optimization
+  private readonly _selectedLoopId = signal<string | null>(null);
+  private readonly _currentTime = signal<number>(0);
+  private readonly _duration = signal<number>(0);
+  private readonly _isPlaying = signal<boolean>(false);
+  private readonly _loops = signal<LoopSegment[]>([]);
+  private readonly _dragState = signal({
+    isDragging: false,
+    dragType: null as 'move' | 'resize-left' | 'resize-right' | 'create' | null,
+    loopId: null as string | null,
+    startX: 0,
+    initialStartTime: 0,
+    initialEndTime: 0
+  });
   
   // Visual creation preview state
   private _creationPreview: {
@@ -128,8 +141,29 @@ export class TimelineComponent implements OnInit, OnDestroy {
    * Get selected loop ID for template binding
    */
   get selectedLoopId(): string | null {
-    return this._selectedLoopId;
+    return this._selectedLoopId();
   }
+
+  /**
+   * Computed signals for optimized calculations
+   */
+  private readonly currentTimePercentageSignal = computed(() => {
+    const duration = this._duration();
+    const currentTime = this._currentTime();
+    if (duration === 0) return 0;
+    return Math.min((currentTime / duration) * 100, 100);
+  });
+
+  private readonly effectiveLoopsSignal = computed(() => {
+    if (this.useFacade) {
+      return this.loopManagerFacade.timelineVm().loops;
+    }
+    return this.timelineVm?.loops || this._loops();
+  });
+
+  private readonly sortedLoopsSignal = computed(() => {
+    return [...this.effectiveLoopsSignal()].sort((a, b) => a.startTime - b.startTime);
+  });
   
   /**
    * Get creation preview state for template binding
@@ -152,13 +186,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
   }
   
   /**
-   * Get effective loops from input, ViewModel, or Facade
+   * Get effective loops from input, ViewModel, or Facade (optimized with signals)
    */
   get effectiveLoops(): LoopSegment[] {
-    if (this.useFacade) {
-      return this.loopManagerFacade.timelineVm().loops;
-    }
-    return this.timelineVm?.loops || this.loops;
+    return this.effectiveLoopsSignal();
   }
 
   /**
@@ -218,11 +249,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Calculate the current time position as percentage
+   * Calculate the current time position as percentage (optimized with computed signal)
    */
   get currentTimePercentage(): number {
-    if (this.duration === 0) return 0;
-    return Math.min((this.currentTime / this.duration) * 100, 100);
+    return this.currentTimePercentageSignal();
   }
 
   /**
@@ -258,6 +288,22 @@ export class TimelineComponent implements OnInit, OnDestroy {
     if (this.useFacade) {
       this.setupFacadeIntegration();
     }
+    
+    // Initialize signal-based state synchronization
+    this.initializeSignalSync();
+  }
+
+  /**
+   * Initialize signal synchronization with inputs for OnPush optimization
+   */
+  private initializeSignalSync(): void {
+    // Sync input properties with signals for better change detection
+    effect(() => {
+      this._currentTime.set(this.currentTime);
+      this._duration.set(this.duration);
+      this._isPlaying.set(this.isPlaying);
+      this._loops.set(this.loops);
+    });
   }
 
   ngOnDestroy(): void {
@@ -272,8 +318,8 @@ export class TimelineComponent implements OnInit, OnDestroy {
     // Sync selected loop with facade
     effect(() => {
       const facadeSelectedId = this.loopManagerFacade.timelineVm().selectedLoopId;
-      if (facadeSelectedId !== this._selectedLoopId) {
-        this._selectedLoopId = facadeSelectedId || null;
+      if (facadeSelectedId !== this._selectedLoopId()) {
+        this._selectedLoopId.set(facadeSelectedId || null);
       }
     });
 
@@ -475,19 +521,17 @@ export class TimelineComponent implements OnInit, OnDestroy {
     this.startSeeking();
     
     if (clickedLoop && !isDoubleClick) {
-      // If clicking within a loop, select it first
-      if (this._selectedLoopId !== clickedLoop.id) {
-        this._selectedLoopId = clickedLoop.id;
-        this.loopSelect.emit(clickedLoop.id);
+      // If clicking within a loop, select it first (batch optimized)
+      if (this._selectedLoopId() !== clickedLoop.id) {
+        this.updateSelectedLoopBatch(clickedLoop.id);
         
         // Focus management for accessibility
         this.updateFocusState(event.target as HTMLElement);
       }
     } else if (!clickedLoop) {
-      // If clicking outside loops, deselect any selected loop
-      if (this._selectedLoopId !== null) {
-        this._selectedLoopId = null;
-        this.loopDeselect.emit();
+      // If clicking outside loops, deselect any selected loop (batch optimized)
+      if (this._selectedLoopId() !== null) {
+        this.updateSelectedLoopBatch(null);
       }
     }
     
@@ -572,10 +616,11 @@ export class TimelineComponent implements OnInit, OnDestroy {
     }
     
     // Delete key to delete selected loop
-    if (event.key === 'Delete' && this._selectedLoopId) {
+    const selectedId = this._selectedLoopId();
+    if (event.key === 'Delete' && selectedId) {
       event.preventDefault();
-      this.loopDelete.emit(this._selectedLoopId);
-      this._selectedLoopId = null;
+      this.loopDelete.emit(selectedId);
+      this.updateSelectedLoopBatch(null);
     }
   }
 
@@ -633,7 +678,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
   getLoopClasses(loop: LoopSegment): string {
     const classes: string[] = ['loop-segment'];
     
-    if (this._selectedLoopId === loop.id) {
+    if (this._selectedLoopId() === loop.id) {
       classes.push('selected');
     }
     
@@ -662,8 +707,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
       initialEndTime: loop.endTime
     };
     
-    this._selectedLoopId = loop.id;
-    this.loopSelect.emit(loop.id);
+    this.updateSelectedLoopBatch(loop.id);
   }
 
   /**
@@ -675,12 +719,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     
-    if (this._selectedLoopId === loop.id) {
-      this._selectedLoopId = null;
-      this.loopDeselect.emit();
+    if (this._selectedLoopId() === loop.id) {
+      this.updateSelectedLoopBatch(null);
     } else {
-      this._selectedLoopId = loop.id;
-      this.loopSelect.emit(loop.id);
+      this.updateSelectedLoopBatch(loop.id);
     }
   }
 
@@ -1003,47 +1045,33 @@ export class TimelineComponent implements OnInit, OnDestroy {
     };
   }
 
-  /**
-   * Performance-optimized getter for sorted loops by start time
-   */
-  private _sortedLoopsCache: {loops: LoopSegment[], timestamp: number} | null = null;
-  
   // Enhanced precision and caching system for timeline calculations
   private readonly PRECISION_DECIMALS = 0.1; // 0.1 second precision
   private readonly MAGNETIC_GUIDE_INTERVAL = 0.5; // Magnetic guides every 0.5 seconds
   private readonly POSITION_CACHE_SIZE = 1000;
   private readonly POSITION_CACHE_TTL = 5000; // 5 seconds cache TTL
   
-  // Visual feedback state for drag operations
-  private _dragFeedback: {
+  // Visual feedback state for drag operations (signal-based)
+  private readonly _dragFeedback = signal<{
     currentTime: number;
     magneticGuideTime: number | null;
     isNearGuide: boolean;
     visualElement?: HTMLElement;
-  } | null = null;
+  } | null>(null);
+  
+  // Optimized memoization cache for expensive calculations
+  private readonly _memoCache = new Map<string, {result: any, timestamp: number, inputs: string}>();
+  private readonly MEMO_CACHE_TTL = 3000; // 3 seconds for memoization
   
   // Position calculation cache for performance optimization
   private _positionCache = new Map<string, {position: number, timestamp: number}>();
   private _timeCache = new Map<string, {time: number, timestamp: number}>();
   
+  /**
+   * Get sorted loops (optimized with computed signal)
+   */
   get sortedLoops(): LoopSegment[] {
-    const currentLoops = this.effectiveLoops;
-    const now = Date.now();
-    
-    // Use cache if loops haven't changed and cache is fresh (< 1 second)
-    if (this._sortedLoopsCache && 
-        this._sortedLoopsCache.loops === currentLoops && 
-        now - this._sortedLoopsCache.timestamp < 1000) {
-      return this._sortedLoopsCache.loops;
-    }
-    
-    const sorted = [...currentLoops].sort((a, b) => a.startTime - b.startTime);
-    this._sortedLoopsCache = {
-      loops: sorted,
-      timestamp: now
-    };
-    
-    return sorted;
+    return this.sortedLoopsSignal();
   }
   
   /**
@@ -1066,9 +1094,8 @@ export class TimelineComponent implements OnInit, OnDestroy {
     
     const loop = this.effectiveLoops.find(l => l.id === loopId);
     if (loop) {
-      // Select the loop
-      this._selectedLoopId = loopId;
-      this.loopSelect.emit(loopId);
+      // Select the loop (batch optimized)
+      this.updateSelectedLoopBatch(loopId);
       
       // Navigate to loop start
       this.seekTo.emit(loop.startTime);
@@ -1665,9 +1692,8 @@ export class TimelineComponent implements OnInit, OnDestroy {
       initialEndTime: loop.endTime
     };
     
-    // Select the loop
-    this._selectedLoopId = loop.id;
-    this.loopSelect.emit(loop.id);
+    // Select the loop (batch optimized)
+    this.updateSelectedLoopBatch(loop.id);
   }
   
   /**
@@ -1787,10 +1813,89 @@ export class TimelineComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Check if currently showing drag feedback
+   * Check if currently showing drag feedback (signal-based)
    */
   get isDraggingWithFeedback(): boolean {
-    return this._dragFeedback !== null && this.dragState.isDragging;
+    return this._dragFeedback() !== null && this.dragState.isDragging;
+  }
+
+  /**
+   * TrackBy function for loop segments to optimize *ngFor performance
+   */
+  trackLoopById(index: number, loop: LoopSegment): string {
+    return loop.id;
+  }
+
+  /**
+   * TrackBy function for magnetic guides
+   */
+  trackGuideByPosition(index: number, position: number): number {
+    return position;
+  }
+
+  /**
+   * TrackBy function for time markers
+   */
+  trackMarkerByPosition(index: number, marker: {position: number, label: string, shortLabel: string}): number {
+    return marker.position;
+  }
+
+  /**
+   * Generic memoization helper for expensive calculations
+   */
+  private memoize<T>(key: string, fn: () => T, dependencies: any[]): T {
+    const now = Date.now();
+    const depString = dependencies.join('|');
+    const cached = this._memoCache.get(key);
+    
+    // Check if cached result is valid and fresh
+    if (cached && 
+        cached.inputs === depString && 
+        (now - cached.timestamp) < this.MEMO_CACHE_TTL) {
+      return cached.result;
+    }
+    
+    // Calculate new result
+    const result = fn();
+    
+    // Cache management - clean up if cache is getting large
+    if (this._memoCache.size >= 500) {
+      this.cleanupMemoCache();
+    }
+    
+    // Store result
+    this._memoCache.set(key, {
+      result,
+      timestamp: now,
+      inputs: depString
+    });
+    
+    return result;
+  }
+
+  /**
+   * Clean up expired memoization cache entries
+   */
+  private cleanupMemoCache(): void {
+    const now = Date.now();
+    const expiredKeys: string[] = [];
+    
+    for (const [key, value] of this._memoCache.entries()) {
+      if (now - value.timestamp > this.MEMO_CACHE_TTL) {
+        expiredKeys.push(key);
+      }
+    }
+    
+    expiredKeys.forEach(key => this._memoCache.delete(key));
+    
+    // If still too large, remove oldest entries
+    if (this._memoCache.size >= 500) {
+      const sortedEntries = Array.from(this._memoCache.entries())
+        .sort((a, b) => a[1].timestamp - b[1].timestamp);
+      
+      const toRemove = sortedEntries.slice(0, Math.floor(500 / 2));
+      toRemove.forEach(([key]) => this._memoCache.delete(key));
+    }
   }
 
   /**
@@ -2033,8 +2138,8 @@ export class TimelineComponent implements OnInit, OnDestroy {
   getEnhancedLoopClasses(loop: LoopSegment): string {
     const classes: string[] = ['loop-segment'];
     
-    // Basic states
-    if (this._selectedLoopId === loop.id) {
+    // Basic states (signal-based)
+    if (this._selectedLoopId() === loop.id) {
       classes.push('selected');
     }
     
@@ -2077,7 +2182,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
    */
   shouldShowTooltip(loop: LoopSegment): boolean {
     return this.animationStates.hoveredLoopId === loop.id || 
-           this._selectedLoopId === loop.id ||
+           this._selectedLoopId() === loop.id ||
            this.dragState.loopId === loop.id;
   }
 
