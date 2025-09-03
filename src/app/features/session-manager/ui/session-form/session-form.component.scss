@@ -1,0 +1,394 @@
+@use '../../../../../styles/variables';
+@use '../../../../../styles/mixins';
+
+.session-form {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: var(--card-background);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-medium);
+
+  @include mixins.mobile {
+    margin: 0;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+}
+
+// === FORM HEADER ===
+
+.form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.form-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border-color);
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// === FORM FIELDS ===
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  
+  &.required::after {
+    content: ' *';
+    color: var(--error-color);
+  }
+}
+
+.field-optional {
+  font-weight: 400;
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+}
+
+.field-input,
+.field-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: var(--input-background);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+  }
+
+  &.invalid {
+    border-color: var(--error-color);
+    
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(var(--error-rgb), 0.1);
+    }
+  }
+
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  &:disabled {
+    background: var(--disabled-background);
+    color: var(--text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+.field-textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.field-error {
+  font-size: 0.75rem;
+  color: var(--error-color);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  
+  &::before {
+    content: '⚠';
+    font-size: 0.875rem;
+  }
+}
+
+.field-help {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.character-count {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  text-align: right;
+  
+  &.near-limit {
+    color: var(--warning-color);
+  }
+  
+  &.at-limit {
+    color: var(--error-color);
+    font-weight: 500;
+  }
+}
+
+// === VIDEO INFO DISPLAY ===
+
+.video-info {
+  padding: 1rem;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.video-info-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.video-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.video-title {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.video-duration {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono, 'Courier New', monospace);
+}
+
+// === FORM ACTIONS ===
+
+.form-actions {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.submit-error {
+  padding: 0.75rem;
+  background: var(--error-background);
+  border: 1px solid var(--error-color);
+  border-radius: 6px;
+  color: var(--error-color);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &::before {
+    content: '❌';
+    font-size: 1rem;
+  }
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+
+  @include mixins.mobile {
+    flex-direction: column;
+    
+    .btn {
+      width: 100%;
+    }
+  }
+}
+
+// === BUTTONS ===
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px; // Accessibility touch target
+  
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--focus-color);
+  }
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: var(--primary-text);
+  
+  &:hover:not(:disabled) {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  &.loading {
+    pointer-events: none;
+  }
+}
+
+.btn-secondary {
+  background: var(--background-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  
+  &:hover:not(:disabled) {
+    background: var(--background-tertiary);
+    border-color: var(--border-hover);
+  }
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+// === FORM STATUS ===
+
+.form-status {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-valid {
+  color: var(--success-color);
+  
+  &::before {
+    content: '✓';
+    font-weight: bold;
+  }
+}
+
+.status-invalid {
+  color: var(--warning-color);
+  
+  &::before {
+    content: '⚠';
+    font-weight: bold;
+  }
+}
+
+// === RESPONSIVE DESIGN ===
+
+@include mixins.tablet {
+  .session-form {
+    padding: 2rem;
+  }
+  
+  .form-fields {
+    gap: 1.5rem;
+  }
+  
+  .action-buttons {
+    justify-content: flex-start;
+  }
+}
+
+// === ACCESSIBILITY ENHANCEMENTS ===
+
+.session-form {
+  // Ensure proper focus management
+  &:focus-within {
+    .form-header {
+      border-bottom-color: var(--primary-color);
+    }
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .field-input,
+  .field-textarea {
+    border-width: 3px;
+  }
+  
+  .btn {
+    border-width: 2px;
+    border-style: solid;
+  }
+  
+  .btn-primary {
+    border-color: var(--primary-color);
+  }
+  
+  .btn-secondary {
+    border-color: var(--text-secondary);
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .spinner,
+  .btn-spinner {
+    animation: none;
+  }
+  
+  .btn {
+    transition: none;
+  }
+}

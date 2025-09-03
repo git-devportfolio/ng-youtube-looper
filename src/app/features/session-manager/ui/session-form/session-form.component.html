@@ -1,0 +1,149 @@
+<form [formGroup]="sessionForm" (ngSubmit)="onSubmit()" class="session-form">
+  
+  <!-- Form Header -->
+  <div class="form-header">
+    <h2 class="form-title">{{ formTitle() }}</h2>
+    @if (isLoading()) {
+      <div class="loading-indicator" aria-label="Chargement en cours">
+        <div class="spinner"></div>
+      </div>
+    }
+  </div>
+
+  <!-- Form Fields -->
+  <div class="form-fields">
+    
+    <!-- Session Name Field -->
+    <div class="field-group">
+      <label for="session-name" class="field-label required">
+        Nom de la session
+      </label>
+      <input 
+        id="session-name"
+        type="text" 
+        formControlName="name"
+        class="field-input"
+        [class.invalid]="isFieldInvalid('name')"
+        placeholder="Ex: Solo guitare - Stairway to Heaven"
+        autocomplete="off"
+        [attr.aria-describedby]="getFieldError('name') ? 'name-error' : null">
+      
+      @if (getFieldError('name'); as error) {
+        <div id="name-error" class="field-error" role="alert">
+          {{ error }}
+        </div>
+      }
+    </div>
+
+    <!-- Session Description Field -->
+    <div class="field-group">
+      <label for="session-description" class="field-label">
+        Description
+        <span class="field-optional">(optionnel)</span>
+      </label>
+      <textarea 
+        id="session-description"
+        formControlName="description"
+        class="field-textarea"
+        [class.invalid]="isFieldInvalid('description')"
+        placeholder="Décrivez cette session d'entraînement..."
+        rows="3"
+        maxlength="200"
+        [attr.aria-describedby]="getFieldError('description') ? 'description-error' : null"></textarea>
+      
+      @if (getFieldError('description'); as error) {
+        <div id="description-error" class="field-error" role="alert">
+          {{ error }}
+        </div>
+      }
+      
+      <!-- Character count for description -->
+      @if (sessionForm.get('description')?.value; as desc) {
+        <div class="character-count" 
+             [class.near-limit]="desc.length > 150"
+             [class.at-limit]="desc.length >= 200">
+          {{ desc.length }}/200 caractères
+        </div>
+      }
+    </div>
+
+    <!-- Tags Field -->
+    <div class="field-group">
+      <label for="session-tags" class="field-label">
+        Tags
+        <span class="field-optional">(optionnel)</span>
+      </label>
+      <input 
+        id="session-tags"
+        type="text" 
+        formControlName="tags"
+        class="field-input"
+        placeholder="guitare, solo, pratique (séparés par des virgules)"
+        [attr.aria-describedby]="'tags-help'">
+      
+      <div id="tags-help" class="field-help">
+        Séparez les tags par des virgules. Ex: guitare, solo, débutant
+      </div>
+    </div>
+
+    <!-- Video Information Display (Create Mode) -->
+    @if (!isEditMode() && videoTitle) {
+      <div class="video-info">
+        <h3 class="video-info-title">Vidéo sélectionnée</h3>
+        <div class="video-details">
+          <div class="video-title">{{ videoTitle }}</div>
+          @if (videoDuration) {
+            <div class="video-duration">
+              Durée: {{ formatDuration(videoDuration) }}
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Form Actions -->
+  <div class="form-actions">
+    <!-- Submit Error Display -->
+    @if (getSubmitError(); as submitError) {
+      <div class="submit-error" role="alert">
+        {{ submitError }}
+      </div>
+    }
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button 
+        type="button" 
+        class="btn btn-secondary"
+        (click)="onCancel()"
+        [disabled]="isSubmitting()">
+        Annuler
+      </button>
+      
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="!canSubmit()"
+        [class.loading]="isSubmitting()">
+        @if (isSubmitting()) {
+          <span class="btn-spinner" aria-hidden="true"></span>
+          Sauvegarde...
+        } @else {
+          {{ submitButtonText() }}
+        }
+      </button>
+    </div>
+  </div>
+
+  <!-- Form Status Indicator -->
+  @if (sessionForm.dirty && !isSubmitting()) {
+    <div class="form-status" aria-live="polite">
+      @if (sessionForm.valid) {
+        <span class="status-valid">✓ Formulaire valide</span>
+      } @else {
+        <span class="status-invalid">⚠ Veuillez corriger les erreurs</span>
+      }
+    </div>
+  }
+</form>
