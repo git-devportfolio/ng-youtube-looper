@@ -47,8 +47,33 @@ export class TimelineComponent implements OnInit, OnDestroy {
   // Internal state for seeking animation
   private isSeeking = false;
   
-  // Touch interaction state
+  // Enhanced touch interaction state for mobile gestures
   private touchStartTime: number | null = null;
+  private touchState: {
+    startX: number;
+    startY: number;
+    startTime: number;
+    currentX: number;
+    currentY: number;
+    touchStartTimePosition: number;
+    isDragging: boolean;
+    dragThreshold: number;
+    swipeVelocityThreshold: number;
+    initialTouchCount: number;
+    gestureType: 'none' | 'tap' | 'drag' | 'swipe' | 'pinch' | null;
+  } = {
+    startX: 0,
+    startY: 0,
+    startTime: 0,
+    currentX: 0,
+    currentY: 0,
+    touchStartTimePosition: 0,
+    isDragging: false,
+    dragThreshold: 10, // pixels to start drag
+    swipeVelocityThreshold: 0.5, // pixels per ms
+    initialTouchCount: 0,
+    gestureType: null
+  };
   
   // Interaction state for enhanced selection
   private interactionState = {
@@ -325,79 +350,102 @@ export class TimelineComponent implements OnInit, OnDestroy {
   
 
   /**
-   * Handle touch start for mobile navigation with enhanced interaction
+   * Enhanced touch start handler with precise gesture detection and drag support
    */
   onTouchStart(event: TouchEvent): void {
     if (!this.isReady) return;
     
     event.preventDefault();
-    this.touchStartTime = Date.now();
-    this.interactionState.isNavigating = true;
-    this.startSeeking();
     
-    // Store touch position for enhanced handling in touch end
     const touch = event.touches[0];
     const track = event.currentTarget as HTMLElement;
     const rect = track.getBoundingClientRect();
     const touchX = touch.clientX - rect.left;
+    const touchY = touch.clientY - rect.top;
     const percentage = Math.min(Math.max(touchX / rect.width, 0), 1);
-    const touchTime = percentage * this.duration;
+    const touchTime = this.applyMagneticGuides(percentage * this.duration);
     
-    // Pre-identify touched loop for smoother interaction
+    // Initialize enhanced touch state
+    this.touchStartTime = Date.now();
+    this.touchState = {
+      startX: touchX,
+      startY: touchY,
+      startTime: this.touchStartTime,
+      currentX: touchX,
+      currentY: touchY,
+      touchStartTimePosition: touchTime,
+      isDragging: false,
+      dragThreshold: this.getMobileDragThreshold(),
+      swipeVelocityThreshold: 0.5,
+      initialTouchCount: event.touches.length,
+      gestureType: 'none'
+    };
+    
+    this.interactionState.isNavigating = true;
+    this.startSeeking();
+    
+    // Pre-identify touched loop for enhanced interaction
     const touchedLoop = this.getLoopAtTime(touchTime);
-    if (touchedLoop) {
-      // Pre-select visual feedback (can be enhanced with CSS)
+    if (touchedLoop && event.touches.length === 1) {
+      // Check if touch is on a draggable area (loop segment)
+      this.initializeTouchDrag(touchedLoop, touchX, touchTime);
       this.interactionState.focusedElement = event.target as HTMLElement;
+    }
+    
+    // Handle multi-touch gestures
+    if (event.touches.length > 1) {
+      this.handleMultiTouchStart(event);
     }
   }
 
   /**
-   * Handle touch end for mobile navigation with loop segment awareness
+   * Enhanced touch end handler with gesture recognition and precise interactions
    */
   onTouchEnd(event: TouchEvent): void {
     if (!this.isReady || this.touchStartTime === null) return;
     
     event.preventDefault();
     
-    // Only process as tap if touch was brief (< 300ms)
     const touchDuration = Date.now() - this.touchStartTime;
-    if (touchDuration < 300) {
-      const touch = event.changedTouches[0];
-      const track = event.currentTarget as HTMLElement;
-      const rect = track.getBoundingClientRect();
-      const touchX = touch.clientX - rect.left;
-      const percentage = Math.min(Math.max(touchX / rect.width, 0), 1);
-      const targetTime = percentage * this.duration;
-      
-      // Check for loop segment at touch position
-      const touchedLoop = this.getLoopAtTime(targetTime);
-      
-      if (touchedLoop) {
-        // If touching within a loop, select it
-        if (this._selectedLoopId !== touchedLoop.id) {
-          this._selectedLoopId = touchedLoop.id;
-          this.loopSelect.emit(touchedLoop.id);
-          
-          // Update focus for accessibility
-          this.updateFocusState(event.target as HTMLElement);
-        }
-      } else if (this._selectedLoopId !== null) {
-        // If touching outside loops, deselect
-        this._selectedLoopId = null;
-        this.loopDeselect.emit();
-      }
-      
-      // Always perform navigation
-      this.seekTo.emit(targetTime);
-      this.timelineClick.emit(targetTime);
+    const touch = event.changedTouches[0];
+    const track = event.currentTarget as HTMLElement;
+    const rect = track.getBoundingClientRect();
+    const touchX = touch.clientX - rect.left;
+    const touchY = touch.clientY - rect.top;
+    
+    // Update current touch position
+    this.touchState.currentX = touchX;
+    this.touchState.currentY = touchY;
+    
+    // Calculate touch movement and velocity
+    const deltaX = Math.abs(touchX - this.touchState.startX);
+    const deltaY = Math.abs(touchY - this.touchState.startY);
+    const velocity = deltaX / touchDuration;
+    
+    // Determine gesture type
+    this.determineGestureType(deltaX, deltaY, velocity, touchDuration);
+    
+    // Handle different gesture types
+    switch (this.touchState.gestureType) {
+      case 'tap':
+        this.handleTouchTap(touchX, touchY);
+        break;
+      case 'drag':
+        this.handleTouchDragEnd();
+        break;
+      case 'swipe':
+        this.handleTouchSwipe(deltaX, touchX > this.touchState.startX);
+        break;
+      case 'pinch':
+        this.handleMultiTouchEnd(event);
+        break;
+      default:
+        // Fallback to basic navigation
+        this.handleTouchNavigation(touchX);
     }
     
-    this.touchStartTime = null;
-    this.interactionState.isNavigating = false;
-    this.interactionState.focusedElement = null;
-    
-    // End seeking state after a short delay
-    setTimeout(() => this.endSeeking(), 200);
+    // Cleanup touch state
+    this.cleanupTouchState();
   }
 
   /**
@@ -681,10 +729,18 @@ export class TimelineComponent implements OnInit, OnDestroy {
         break;
     }
     
-    // Apply magnetic guide snapping
-    newStartTime = this.applyMagneticGuides(newStartTime);
-    if (this.dragState.dragType !== 'resize-left') {
-      newEndTime = this.applyMagneticGuides(newEndTime);
+    // Apply magnetic guide snapping (mobile-adapted if touch device)
+    const isTouchDrag = this.touchState.isDragging;
+    if (isTouchDrag) {
+      newStartTime = this.applyMobileMagneticGuides(newStartTime);
+      if (this.dragState.dragType !== 'resize-left') {
+        newEndTime = this.applyMobileMagneticGuides(newEndTime);
+      }
+    } else {
+      newStartTime = this.applyMagneticGuides(newStartTime);
+      if (this.dragState.dragType !== 'resize-left') {
+        newEndTime = this.applyMagneticGuides(newEndTime);
+      }
     }
     
     // Update drag feedback for visual indicators
@@ -693,6 +749,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
     // Check for collisions with other loops
     if (this.checkLoopCollision(this.dragState.loopId!, newStartTime, newEndTime)) {
       this.markDragCollision(true);
+      // Trigger haptic feedback for collision on touch devices
+      if (this.touchState.isDragging) {
+        this.triggerHapticFeedback('collision');
+      }
       return; // Prevent collision
     } else {
       this.markDragCollision(false);
@@ -1356,6 +1416,259 @@ export class TimelineComponent implements OnInit, OnDestroy {
     }
     return this._dragFeedback.magneticGuideTime;
   }
+
+  /**
+   * Get mobile-optimized drag threshold based on device capabilities
+   */
+  private getMobileDragThreshold(): number {
+    // Larger threshold for touch devices to prevent accidental drags
+    if ('ontouchstart' in window) {
+      return 15; // pixels
+    }
+    return 10; // smaller threshold for mouse/pen devices
+  }
+
+  /**
+   * Initialize touch drag operation for loop segments
+   */
+  private initializeTouchDrag(loop: LoopSegment, touchX: number, touchTime: number): void {
+    // Check if touching near loop boundaries for resize operations
+    const loopPosition = this.getLoopPosition(loop);
+    const track = document.querySelector('.timeline-track') as HTMLElement;
+    if (!track) return;
+    
+    const rect = track.getBoundingClientRect();
+    const loopStartX = (loopPosition.left / 100) * rect.width;
+    const loopEndX = ((loopPosition.left + loopPosition.width) / 100) * rect.width;
+    
+    // Mobile-friendly resize zones (larger touch targets)
+    const resizeZoneWidth = Math.max(20, rect.width * 0.05); // 5% of track width, min 20px
+    
+    let dragType: 'move' | 'resize-left' | 'resize-right' = 'move';
+    
+    if (touchX <= loopStartX + resizeZoneWidth) {
+      dragType = 'resize-left';
+    } else if (touchX >= loopEndX - resizeZoneWidth) {
+      dragType = 'resize-right';
+    }
+    
+    // Pre-configure drag state for potential drag operation
+    this.touchState.gestureType = 'drag';
+    this.touchState.isDragging = false; // Will be set to true if movement exceeds threshold
+  }
+
+  /**
+   * Determine gesture type based on touch movement and timing
+   */
+  private determineGestureType(deltaX: number, deltaY: number, velocity: number, duration: number): void {
+    // Multi-touch gestures
+    if (this.touchState.initialTouchCount > 1) {
+      this.touchState.gestureType = 'pinch';
+      return;
+    }
+    
+    // Quick tap detection (< 200ms and minimal movement)
+    if (duration < 200 && deltaX < this.touchState.dragThreshold && deltaY < this.touchState.dragThreshold) {
+      this.touchState.gestureType = 'tap';
+      return;
+    }
+    
+    // Swipe gesture (fast horizontal movement)
+    if (velocity > this.touchState.swipeVelocityThreshold && deltaX > deltaY * 2 && deltaX > 30) {
+      this.touchState.gestureType = 'swipe';
+      return;
+    }
+    
+    // Drag gesture (slower movement with sufficient delta)
+    if (deltaX > this.touchState.dragThreshold || deltaY > this.touchState.dragThreshold) {
+      this.touchState.gestureType = 'drag';
+      return;
+    }
+    
+    // Default to tap for unclear gestures
+    this.touchState.gestureType = 'tap';
+  }
+
+  /**
+   * Handle touch tap gesture
+   */
+  private handleTouchTap(touchX: number, touchY: number): void {
+    const percentage = Math.min(Math.max(touchX / document.querySelector('.timeline-track')!.getBoundingClientRect().width, 0), 1);
+    const targetTime = this.applyMagneticGuides(percentage * this.duration);
+    
+    // Check for loop segment at touch position
+    const touchedLoop = this.getLoopAtTime(targetTime);
+    
+    if (touchedLoop) {
+      // Select/deselect loop
+      if (this._selectedLoopId !== touchedLoop.id) {
+        this._selectedLoopId = touchedLoop.id;
+        this.loopSelect.emit(touchedLoop.id);
+        this.triggerHapticFeedback('selection');
+      } else {
+        this._selectedLoopId = null;
+        this.loopDeselect.emit();
+      }
+    } else {
+      // Navigate to position
+      this.seekTo.emit(targetTime);
+      this.timelineClick.emit(targetTime);
+      
+      // Deselect any selected loop
+      if (this._selectedLoopId !== null) {
+        this._selectedLoopId = null;
+        this.loopDeselect.emit();
+      }
+    }
+  }
+
+  /**
+   * Handle touch drag end with precision
+   */
+  private handleTouchDragEnd(): void {
+    if (this.touchState.isDragging && this.dragState.isDragging) {
+      // Touch drag was active, let the existing mouse up handler complete it
+      this.onDocumentMouseUp();
+      this.triggerHapticFeedback('drag-end');
+    }
+  }
+
+  /**
+   * Handle touch swipe gesture for timeline navigation
+   */
+  private handleTouchSwipe(deltaX: number, isRightSwipe: boolean): void {
+    if (isRightSwipe) {
+      // Swipe right - navigate to next loop
+      this.navigateToNextLoop();
+    } else {
+      // Swipe left - navigate to previous loop
+      this.navigateToPrevLoop();
+    }
+    
+    this.triggerHapticFeedback('navigation');
+  }
+
+  /**
+   * Handle basic touch navigation (fallback)
+   */
+  private handleTouchNavigation(touchX: number): void {
+    const track = document.querySelector('.timeline-track') as HTMLElement;
+    if (!track) return;
+    
+    const rect = track.getBoundingClientRect();
+    const percentage = Math.min(Math.max(touchX / rect.width, 0), 1);
+    const targetTime = this.applyMagneticGuides(percentage * this.duration);
+    
+    this.seekTo.emit(targetTime);
+    this.timelineClick.emit(targetTime);
+  }
+
+  /**
+   * Cleanup touch state after gesture completion
+   */
+  private cleanupTouchState(): void {
+    this.touchStartTime = null;
+    this.touchState.gestureType = null;
+    this.touchState.isDragging = false;
+    this.interactionState.isNavigating = false;
+    this.interactionState.focusedElement = null;
+    
+    // End seeking state after a short delay
+    setTimeout(() => this.endSeeking(), 200);
+  }
+
+  /**
+   * Enhanced touch move handler for precise drag operations
+   */
+  @HostListener('document:touchmove', ['$event'])
+  onDocumentTouchMove(event: TouchEvent): void {
+    if (!this.isReady || this.touchStartTime === null || event.touches.length === 0) return;
+    
+    const touch = event.touches[0];
+    const deltaX = Math.abs(touch.clientX - this.touchState.startX);
+    const deltaY = Math.abs(touch.clientY - this.touchState.startY);
+    
+    // Update current position
+    this.touchState.currentX = touch.clientX;
+    this.touchState.currentY = touch.clientY;
+    
+    // Check if movement exceeds drag threshold
+    if (!this.touchState.isDragging && deltaX > this.touchState.dragThreshold) {
+      this.touchState.isDragging = true;
+      this.touchState.gestureType = 'drag';
+      
+      // Start drag operation if touching a loop
+      const track = document.querySelector('.timeline-track') as HTMLElement;
+      if (track) {
+        const rect = track.getBoundingClientRect();
+        const touchX = touch.clientX - rect.left;
+        const percentage = Math.min(Math.max(touchX / rect.width, 0), 1);
+        const touchTime = this.applyMagneticGuides(percentage * this.duration);
+        const touchedLoop = this.getLoopAtTime(touchTime);
+        
+        if (touchedLoop) {
+          // Initialize mouse-style drag for touch
+          this.startTouchLoopDrag(touch, touchedLoop, touchTime);
+          this.triggerHapticFeedback('drag-start');
+        }
+      }
+    }
+    
+    // Handle ongoing drag operations
+    if (this.touchState.isDragging && this.dragState.isDragging) {
+      // Convert touch move to mouse move for existing drag system
+      const mouseEvent = new MouseEvent('mousemove', {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        bubbles: true,
+        cancelable: true
+      });
+      this.onDocumentMouseMove(mouseEvent);
+    }
+    
+    // Handle multi-touch gestures
+    if (event.touches.length > 1) {
+      this.handleMultiTouchMove(event);
+    }
+  }
+
+  /**
+   * Start touch-based loop drag operation
+   */
+  private startTouchLoopDrag(touch: Touch, loop: LoopSegment, touchTime: number): void {
+    const track = document.querySelector('.timeline-track') as HTMLElement;
+    if (!track) return;
+    
+    const rect = track.getBoundingClientRect();
+    const touchX = touch.clientX - rect.left;
+    const loopPosition = this.getLoopPosition(loop);
+    const loopStartX = (loopPosition.left / 100) * rect.width;
+    const loopEndX = ((loopPosition.left + loopPosition.width) / 100) * rect.width;
+    
+    // Determine drag type based on touch position with mobile-friendly zones
+    const resizeZoneWidth = Math.max(20, rect.width * 0.05);
+    let dragType: 'move' | 'resize-left' | 'resize-right' = 'move';
+    
+    if (touchX <= loopStartX + resizeZoneWidth) {
+      dragType = 'resize-left';
+    } else if (touchX >= loopEndX - resizeZoneWidth) {
+      dragType = 'resize-right';
+    }
+    
+    // Initialize drag state
+    this.dragState = {
+      isDragging: true,
+      dragType,
+      loopId: loop.id,
+      startX: touch.clientX,
+      initialStartTime: loop.startTime,
+      initialEndTime: loop.endTime
+    };
+    
+    // Select the loop
+    this._selectedLoopId = loop.id;
+    this.loopSelect.emit(loop.id);
+  }
   
   /**
    * Get creation preview position for template
@@ -1503,6 +1816,158 @@ export class TimelineComponent implements OnInit, OnDestroy {
       severity: collisionInfo.collisionSeverity,
       nearestSafePosition: collisionInfo.recommendedPosition
     };
+  }
+
+  /**
+   * Handle multi-touch start for zoom/pan gestures
+   */
+  private handleMultiTouchStart(event: TouchEvent): void {
+    if (event.touches.length === 2) {
+      // Two-finger gesture for zoom/pan
+      const touch1 = event.touches[0];
+      const touch2 = event.touches[1];
+      
+      // Store initial pinch distance and center point
+      const initialDistance = this.getTouchDistance(touch1, touch2);
+      const centerX = (touch1.clientX + touch2.clientX) / 2;
+      
+      this.touchState.gestureType = 'pinch';
+      // Could store additional pinch state here for zoom implementation
+    }
+  }
+
+  /**
+   * Handle multi-touch move for zoom/pan operations
+   */
+  private handleMultiTouchMove(event: TouchEvent): void {
+    if (event.touches.length === 2 && this.touchState.gestureType === 'pinch') {
+      event.preventDefault();
+      
+      const touch1 = event.touches[0];
+      const touch2 = event.touches[1];
+      
+      // Calculate current pinch distance and scale
+      const currentDistance = this.getTouchDistance(touch1, touch2);
+      const centerX = (touch1.clientX + touch2.clientX) / 2;
+      
+      // Zoom/pan could be implemented here
+      // For now, just prevent default scrolling behavior
+    }
+  }
+
+  /**
+   * Calculate distance between two touch points
+   */
+  private getTouchDistance(touch1: Touch, touch2: Touch): number {
+    const deltaX = touch1.clientX - touch2.clientX;
+    const deltaY = touch1.clientY - touch2.clientY;
+    return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  }
+
+  /**
+   * Trigger haptic feedback for supported devices
+   */
+  private triggerHapticFeedback(type: 'selection' | 'navigation' | 'drag-start' | 'drag-end' | 'collision'): void {
+    if ('vibrate' in navigator) {
+      let pattern: number | number[];
+      
+      switch (type) {
+        case 'selection':
+          pattern = 50; // Short pulse for selection
+          break;
+        case 'navigation':
+          pattern = [30, 20, 30]; // Double pulse for navigation
+          break;
+        case 'drag-start':
+          pattern = 100; // Longer pulse for drag start
+          break;
+        case 'drag-end':
+          pattern = [50, 30, 50]; // Success pattern
+          break;
+        case 'collision':
+          pattern = [100, 50, 100, 50, 100]; // Warning pattern
+          break;
+        default:
+          pattern = 50;
+      }
+      
+      navigator.vibrate(pattern);
+    }
+  }
+
+  /**
+   * Handle multi-touch end gestures
+   */
+  private handleMultiTouchEnd(event: TouchEvent): void {
+    // End multi-touch gesture
+    if (event.touches.length === 0) {
+      // All fingers lifted - complete gesture
+      this.touchState.gestureType = null;
+      this.triggerHapticFeedback('navigation');
+    }
+  }
+
+  /**
+   * Get mobile-adapted precision threshold for touch interactions
+   */
+  private getMobilePrecisionThreshold(): number {
+    // Larger precision threshold for mobile devices due to finger size
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isMobile) {
+      return 0.2; // 200ms precision for mobile
+    }
+    return this.PRECISION_DECIMALS; // Standard 100ms precision
+  }
+
+  /**
+   * Get mobile-adapted magnetic guide threshold
+   */
+  private getMobileMagneticThreshold(): number {
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isMobile) {
+      return 0.25; // Larger snap zone for mobile (250ms)
+    }
+    return 0.15; // Standard snap zone (150ms)
+  }
+
+  /**
+   * Apply mobile-adapted magnetic guides with larger snap zones
+   */
+  private applyMobileMagneticGuides(time: number): number {
+    const threshold = this.getMobileMagneticThreshold();
+    return this.applyMagneticGuides(time, threshold);
+  }
+
+  /**
+   * Check if device supports haptic feedback
+   */
+  get supportsHapticFeedback(): boolean {
+    return 'vibrate' in navigator;
+  }
+
+  /**
+   * Get touch-optimized classes for timeline container
+   */
+  getTouchOptimizedClasses(): string {
+    const classes: string[] = [];
+    
+    if ('ontouchstart' in window) {
+      classes.push('touch-device');
+    }
+    
+    if (this.touchState.isDragging) {
+      classes.push('touch-dragging');
+    }
+    
+    if (this.touchState.gestureType === 'swipe') {
+      classes.push('touch-swiping');
+    }
+    
+    if (this.touchState.gestureType === 'pinch') {
+      classes.push('touch-pinching');
+    }
+    
+    return classes.join(' ');
   }
 
   /**
