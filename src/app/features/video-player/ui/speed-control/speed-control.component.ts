@@ -1,12 +1,11 @@
 import { Component, Input, Output, EventEmitter, inject, OnInit, OnDestroy, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
-import { trigger, state, style, transition, animate, keyframes } from '@angular/animations';
+import { trigger, style, transition, animate } from '@angular/animations';
 import { YouTubeService } from '../../../../core/services/youtube.service';
 import { ValidationService } from '../../../../core/services/validation.service';
 import { LoopSpeedManagerService } from '../../../../core/services/loop-speed-manager.service';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-speed-control',
@@ -54,7 +53,7 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
     (control) => {
       if (!control.value) return null;
       const validation = this.validationService.validateSpeedInput(control.value.toString(), false);
-      return validation.valid ? null : { invalidSpeed: { message: validation.error } };
+      return validation.isValid ? null : { invalidSpeed: { message: validation.error } };
     }
   ]);
 
@@ -194,8 +193,8 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
       if (inputValue !== null) {
         const validation = this.validationService.validateSpeedInput(inputValue.toString(), true);
         
-        if (validation.valid && validation.speed !== undefined) {
-          const validatedSpeed = validation.speed;
+        if (validation.isValid && validation.value !== undefined) {
+          const validatedSpeed = validation.value;
           
           // Save speed for active loop if enabled
           if (this.enableLoopSpeedManagement && this.activeLoopId) {
@@ -343,11 +342,23 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
     activeLoopSpeed?: number;
     totalMappings: number;
   } {
-    return {
-      hasActiveLoop: this.loopSpeedManager.hasActiveLoop(),
-      activeLoopSpeed: this.activeLoopId ? this.loopSpeedManager.getLoopSpeed(this.activeLoopId) : undefined,
+    const hasActiveLoop = this.loopSpeedManager.hasActiveLoop();
+    const activeLoopSpeed = this.activeLoopId ? this.loopSpeedManager.getLoopSpeed(this.activeLoopId) : undefined;
+    
+    const result = {
+      hasActiveLoop,
       totalMappings: this.loopSpeedManager.totalMappings()
+    } as {
+      hasActiveLoop: boolean;
+      activeLoopSpeed?: number;
+      totalMappings: number;
     };
+    
+    if (activeLoopSpeed !== undefined) {
+      result.activeLoopSpeed = activeLoopSpeed;
+    }
+    
+    return result;
   }
 
   /**

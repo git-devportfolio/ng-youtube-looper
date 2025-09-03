@@ -3,8 +3,6 @@ import { SessionManagerService } from './session-manager.service';
 import { LooperStorageService } from './looper-storage.service';
 import { 
   LooperSession,
-  CurrentState,
-  SessionSettings,
   DEFAULT_SESSION_SETTINGS,
   StorageOperationResult
 } from './looper-storage.types';

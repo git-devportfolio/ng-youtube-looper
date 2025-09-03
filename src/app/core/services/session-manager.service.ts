@@ -384,7 +384,7 @@ export class SessionManagerService {
   private stopAutoSave(): void {
     if (this.autoSaveInterval) {
       clearInterval(this.autoSaveInterval);
-      this.autoSaveInterval = undefined;
+      this.autoSaveInterval = undefined as any;
     }
   }
 

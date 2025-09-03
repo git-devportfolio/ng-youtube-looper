@@ -115,12 +115,22 @@ export class ValidationService {
     
     const correctedSpeed = this.roundToValidStep(currentSpeed);
     
-    return {
+    const result = {
       isValid: errors.length === 0,
-      correctedSpeed: correctedSpeed !== currentSpeed ? correctedSpeed : undefined,
       warnings,
       errors
+    } as {
+      isValid: boolean;
+      correctedSpeed?: number;
+      warnings: string[];
+      errors: string[];
     };
+    
+    if (correctedSpeed !== currentSpeed) {
+      result.correctedSpeed = correctedSpeed;
+    }
+    
+    return result;
   }
 
   /**

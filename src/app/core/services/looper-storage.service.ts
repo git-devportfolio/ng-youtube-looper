@@ -6,7 +6,6 @@ import {
   CurrentState,
   SessionHistoryEntry,
   SessionMetadata,
-  CompressedSessionData,
   StorageOperationResult,
   DEFAULT_SESSION_SETTINGS,
   DEFAULT_LOOPER_STORAGE_CONFIG,
@@ -19,7 +18,6 @@ import { LoopSegment } from '@shared/interfaces';
 })
 export class LooperStorageService {
   private readonly secureStorage = inject(SecureStorageService);
-  private readonly config = DEFAULT_LOOPER_STORAGE_CONFIG;
 
   // === SESSION MANAGEMENT ===
 
@@ -468,7 +466,7 @@ export class LooperStorageService {
         totalDuration: session.loops.reduce((sum, loop) => sum + (loop.endTime - loop.startTime), 0),
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
-        lastAccessed: session.lastPlayed,
+        lastAccessed: session.lastPlayed || new Date(),
         tags: session.tags || [],
         isStarred: false
       }));
@@ -633,8 +631,7 @@ export class LooperStorageService {
   // === SANITIZATION METHODS ===
 
   private sanitizeSession(session: LooperSession): LooperSession {
-    return {
-      ...session,
+    const sanitized: LooperSession = {
       id: String(session.id).trim(),
       name: String(session.name).trim(),
       videoId: String(session.videoId).trim(),
@@ -647,12 +644,21 @@ export class LooperStorageService {
       isActive: Boolean(session.isActive),
       createdAt: new Date(session.createdAt),
       updatedAt: new Date(),
-      lastPlayed: session.lastPlayed ? new Date(session.lastPlayed) : undefined,
       totalPlayTime: Math.max(0, Number(session.totalPlayTime) || 0),
-      playCount: Math.max(0, Number(session.playCount) || 0),
-      tags: Array.isArray(session.tags) ? session.tags.filter(tag => typeof tag === 'string').slice(0, 10) : undefined,
-      description: session.description ? String(session.description).trim() : undefined
+      playCount: Math.max(0, Number(session.playCount) || 0)
     };
+    
+    if (session.lastPlayed) {
+      sanitized.lastPlayed = new Date(session.lastPlayed);
+    }
+    if (Array.isArray(session.tags) && session.tags.length > 0) {
+      sanitized.tags = session.tags.filter(tag => typeof tag === 'string').slice(0, 10);
+    }
+    if (session.description) {
+      sanitized.description = String(session.description).trim();
+    }
+    
+    return sanitized;
   }
 
   private sanitizeCurrentState(state: CurrentState): CurrentState {
