@@ -1945,6 +1945,194 @@ export class TimelineComponent implements OnInit, OnDestroy {
     return 'vibrate' in navigator;
   }
 
+  // === ENHANCED VISUALIZATION METHODS FOR TASK 6.4 ===
+
+  // Minimap state for long video navigation
+  private _isMinimapExpanded = false;
+  
+  // Color palette for automatic segment coloring
+  private readonly COLOR_PALETTE = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', 
+    '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+    '#F8C471', '#82E0AA', '#F1948A', '#AED6F1'
+  ];
+
+  /**
+   * Get active loop information for display
+   */
+  getActiveLoopInfo(): LoopSegment | null {
+    if (!this.activeLoopId) return null;
+    return this.effectiveLoops.find(loop => loop.id === this.activeLoopId) || null;
+  }
+
+  /**
+   * Calculate total duration of all loop segments
+   */
+  getTotalLoopsDuration(): number {
+    return this.effectiveLoops.reduce((total, loop) => {
+      return total + (loop.endTime - loop.startTime);
+    }, 0);
+  }
+
+  /**
+   * Check if minimap should be displayed for long videos
+   */
+  shouldShowMinimap(): boolean {
+    return this.duration > 120 && this.effectiveLoops.length > 0; // 2+ minutes with loops
+  }
+
+  /**
+   * Get minimap expansion state
+   */
+  get isMinimapExpanded(): boolean {
+    return this._isMinimapExpanded;
+  }
+
+  /**
+   * Toggle minimap expansion
+   */
+  toggleMinimap(event: Event): void {
+    event.stopPropagation();
+    this._isMinimapExpanded = !this._isMinimapExpanded;
+  }
+
+  /**
+   * Handle minimap click for navigation
+   */
+  onMinimapClick(event: MouseEvent): void {
+    if (!this.isReady) return;
+    
+    const minimap = event.currentTarget as HTMLElement;
+    const rect = minimap.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percentage = Math.min(Math.max(clickX / rect.width, 0), 1);
+    const targetTime = this.applyMagneticGuides(percentage * this.duration);
+    
+    this.seekTo.emit(targetTime);
+    this.timelineClick.emit(targetTime);
+  }
+
+  /**
+   * Get automatic color for loop segment based on index and properties
+   */
+  getLoopColor(loop: LoopSegment): string {
+    // Use existing color if defined
+    if (loop.color) return loop.color;
+    
+    // Generate color based on loop index and properties for consistency
+    const loops = this.effectiveLoops;
+    const index = loops.findIndex(l => l.id === loop.id);
+    const colorIndex = index % this.COLOR_PALETTE.length;
+    
+    return this.COLOR_PALETTE[colorIndex];
+  }
+
+  /**
+   * Get enhanced CSS classes for loop segments with visual states
+   */
+  getEnhancedLoopClasses(loop: LoopSegment): string {
+    const classes: string[] = ['loop-segment'];
+    
+    // Basic states
+    if (this._selectedLoopId === loop.id) {
+      classes.push('selected');
+    }
+    
+    if (this.dragState.isDragging && this.dragState.loopId === loop.id) {
+      classes.push('dragging');
+    }
+    
+    // Visual states
+    if (this.isLoopPlaying(loop)) {
+      classes.push('playing', 'active');
+    }
+    
+    if (this.animationStates.hoveredLoopId === loop.id) {
+      classes.push('hovered');
+    }
+    
+    // Collision states
+    if (this.hasLoopCollisionNearby(loop)) {
+      classes.push('has-collision-nearby');
+    }
+    
+    // Touch optimization
+    if (this.touchState.isDragging) {
+      classes.push('touch-interaction');
+    }
+    
+    // Duration-based visual classes
+    const duration = loop.endTime - loop.startTime;
+    if (duration < 2) {
+      classes.push('short-duration');
+    } else if (duration > 10) {
+      classes.push('long-duration');
+    }
+    
+    return classes.join(' ');
+  }
+
+  /**
+   * Check if tooltip should be visible for a loop
+   */
+  shouldShowTooltip(loop: LoopSegment): boolean {
+    return this.animationStates.hoveredLoopId === loop.id || 
+           this._selectedLoopId === loop.id ||
+           this.dragState.loopId === loop.id;
+  }
+
+  /**
+   * Get statistics for a loop segment
+   */
+  getLoopStats(loop: LoopSegment): {
+    playCount: number;
+    hasNearbyCollisions: boolean;
+    duration: number;
+    position: string;
+  } {
+    return {
+      playCount: 0, // Could be tracked in facade
+      hasNearbyCollisions: this.hasLoopCollisionNearby(loop),
+      duration: loop.endTime - loop.startTime,
+      position: `${Math.round(loop.startTime)}s`
+    };
+  }
+
+  /**
+   * Check if loop has nearby collisions (within 1 second)
+   */
+  hasLoopCollisionNearby(loop: LoopSegment): boolean {
+    const buffer = 1.0; // 1 second buffer
+    return this.effectiveLoops.some(otherLoop =>
+      otherLoop.id !== loop.id &&
+      (
+        Math.abs(otherLoop.startTime - loop.endTime) < buffer ||
+        Math.abs(otherLoop.endTime - loop.startTime) < buffer
+      )
+    );
+  }
+
+  /**
+   * Get time markers for long videos (every minute)
+   */
+  getTimeMarkers(): Array<{position: number, label: string, shortLabel: string}> {
+    const markers: Array<{position: number, label: string, shortLabel: string}> = [];
+    const intervalMinutes = Math.max(1, Math.floor(this.duration / 300)); // Dynamic interval
+    
+    for (let minutes = intervalMinutes; minutes * 60 < this.duration; minutes += intervalMinutes) {
+      const timeInSeconds = minutes * 60;
+      const position = (timeInSeconds / this.duration) * 100;
+      
+      markers.push({
+        position,
+        label: this.formatDuration(timeInSeconds),
+        shortLabel: `${minutes}m`
+      });
+    }
+    
+    return markers;
+  }
+
   /**
    * Get touch-optimized classes for timeline container
    */
