@@ -637,7 +637,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Global mouse move handler for drag operations
+   * Global mouse move handler for drag operations with temporal precision
    */
   @HostListener('document:mousemove', ['$event'])
   onDocumentMouseMove(event: MouseEvent): void {
@@ -653,7 +653,9 @@ export class TimelineComponent implements OnInit, OnDestroy {
     if (!track) return;
     
     const rect = track.getBoundingClientRect();
-    const deltaTime = (deltaX / rect.width) * this.duration;
+    const rawDeltaTime = (deltaX / rect.width) * this.duration;
+    // Apply temporal precision to delta time
+    const deltaTime = this.roundToPrecision(rawDeltaTime, this.PRECISION_DECIMALS);
     
     const loop = this.effectiveLoops.find(l => l.id === this.dragState.loopId);
     if (!loop) return;
@@ -663,25 +665,40 @@ export class TimelineComponent implements OnInit, OnDestroy {
     
     switch (this.dragState.dragType) {
       case 'move':
-        newStartTime = Math.max(0, Math.min(this.dragState.initialStartTime + deltaTime, this.duration - (this.dragState.initialEndTime - this.dragState.initialStartTime)));
-        newEndTime = newStartTime + (this.dragState.initialEndTime - this.dragState.initialStartTime);
+        const rawNewStartTime = Math.max(0, Math.min(this.dragState.initialStartTime + deltaTime, this.duration - (this.dragState.initialEndTime - this.dragState.initialStartTime)));
+        newStartTime = this.roundToPrecision(rawNewStartTime, this.PRECISION_DECIMALS);
+        newEndTime = this.roundToPrecision(newStartTime + (this.dragState.initialEndTime - this.dragState.initialStartTime), this.PRECISION_DECIMALS);
         break;
         
       case 'resize-left':
-        newStartTime = Math.max(0, Math.min(this.dragState.initialStartTime + deltaTime, this.dragState.initialEndTime - 1));
+        const rawNewStartTime2 = Math.max(0, Math.min(this.dragState.initialStartTime + deltaTime, this.dragState.initialEndTime - 1));
+        newStartTime = this.roundToPrecision(rawNewStartTime2, this.PRECISION_DECIMALS);
         break;
         
       case 'resize-right':
-        newEndTime = Math.max(this.dragState.initialStartTime + 1, Math.min(this.dragState.initialEndTime + deltaTime, this.duration));
+        const rawNewEndTime = Math.max(this.dragState.initialStartTime + 1, Math.min(this.dragState.initialEndTime + deltaTime, this.duration));
+        newEndTime = this.roundToPrecision(rawNewEndTime, this.PRECISION_DECIMALS);
         break;
     }
     
-    // Check for collisions with other loops
-    if (this.checkLoopCollision(this.dragState.loopId!, newStartTime, newEndTime)) {
-      return; // Prevent collision
+    // Apply magnetic guide snapping
+    newStartTime = this.applyMagneticGuides(newStartTime);
+    if (this.dragState.dragType !== 'resize-left') {
+      newEndTime = this.applyMagneticGuides(newEndTime);
     }
     
-    // Emit appropriate event
+    // Update drag feedback for visual indicators
+    this.updateDragFeedback(newStartTime, newEndTime);
+    
+    // Check for collisions with other loops
+    if (this.checkLoopCollision(this.dragState.loopId!, newStartTime, newEndTime)) {
+      this.markDragCollision(true);
+      return; // Prevent collision
+    } else {
+      this.markDragCollision(false);
+    }
+    
+    // Emit appropriate event with precise time values
     const eventData = {id: this.dragState.loopId!, startTime: newStartTime, endTime: newEndTime};
     if (this.dragState.dragType === 'move') {
       this.loopMove.emit(eventData);
@@ -700,6 +717,9 @@ export class TimelineComponent implements OnInit, OnDestroy {
         this.finishVisualLoopCreation();
       }
       
+      // Clear drag feedback and visual states
+      this.clearDragFeedback();
+      
       this.dragState = {
         isDragging: false,
         dragType: null,
@@ -715,37 +735,67 @@ export class TimelineComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Enhanced collision detection with detailed collision information
+   * Enhanced collision detection with optimized real-time checking
    */
   private checkLoopCollision(excludeLoopId: string, startTime: number, endTime: number): boolean {
-    return this.effectiveLoops.some(loop => 
-      loop.id !== excludeLoopId &&
-      !(endTime <= loop.startTime || startTime >= loop.endTime)
-    );
+    // Early return if no loops to check
+    if (this.effectiveLoops.length === 0) return false;
+    
+    // Use cached sorted loops for better performance
+    const loopsToCheck = this.sortedLoops.filter(loop => loop.id !== excludeLoopId);
+    
+    // Optimized collision detection using sorted order
+    for (const loop of loopsToCheck) {
+      // Early exit if loop starts after our end time (sorted order optimization)
+      if (loop.startTime >= endTime) break;
+      
+      // Check for overlap
+      if (!(endTime <= loop.startTime || startTime >= loop.endTime)) {
+        return true; // Collision found
+      }
+    }
+    
+    return false; // No collision
   }
 
   /**
-   * Get detailed collision information for better UI feedback
+   * Get optimized collision information with better performance and UI feedback
    */
   getLoopCollisionInfo(excludeLoopId: string, startTime: number, endTime: number): {
     hasCollision: boolean;
     collidingLoops: LoopSegment[];
     overlapDuration: number;
     recommendedPosition: {startTime: number, endTime: number} | undefined;
+    collisionSeverity: 'none' | 'minor' | 'major';
   } {
-    const collidingLoops = this.effectiveLoops.filter(loop => 
-      loop.id !== excludeLoopId &&
-      !(endTime <= loop.startTime || startTime >= loop.endTime)
-    );
+    // Use optimized collision detection with sorted loops
+    const loopsToCheck = this.sortedLoops.filter(loop => loop.id !== excludeLoopId);
+    const collidingLoops: LoopSegment[] = [];
+    let totalOverlapDuration = 0;
 
-    let overlapDuration = 0;
-    if (collidingLoops.length > 0) {
-      // Calculate total overlap duration
-      collidingLoops.forEach(loop => {
+    // Find all colliding loops and calculate overlap in one pass
+    for (const loop of loopsToCheck) {
+      // Early exit optimization using sorted order
+      if (loop.startTime >= endTime) break;
+      
+      // Check for overlap
+      if (!(endTime <= loop.startTime || startTime >= loop.endTime)) {
+        collidingLoops.push(loop);
+        
+        // Calculate overlap duration for this loop
         const overlapStart = Math.max(startTime, loop.startTime);
         const overlapEnd = Math.min(endTime, loop.endTime);
-        overlapDuration += Math.max(0, overlapEnd - overlapStart);
-      });
+        totalOverlapDuration += Math.max(0, overlapEnd - overlapStart);
+      }
+    }
+
+    // Determine collision severity for better UI feedback
+    const segmentDuration = endTime - startTime;
+    const overlapRatio = segmentDuration > 0 ? totalOverlapDuration / segmentDuration : 0;
+    let collisionSeverity: 'none' | 'minor' | 'major' = 'none';
+    
+    if (overlapRatio > 0) {
+      collisionSeverity = overlapRatio > 0.5 ? 'major' : 'minor';
     }
 
     // Find recommended position if collision exists
@@ -757,28 +807,29 @@ export class TimelineComponent implements OnInit, OnDestroy {
     return {
       hasCollision: collidingLoops.length > 0,
       collidingLoops,
-      overlapDuration,
-      recommendedPosition: recommendedPosition || undefined
+      overlapDuration: totalOverlapDuration,
+      recommendedPosition,
+      collisionSeverity
     };
   }
 
   /**
-   * Find the nearest available position for a loop segment
+   * Find the nearest available position for a loop segment with magnetic guide alignment
    */
   private findNearestAvailablePosition(preferredStart: number, preferredEnd: number, excludeLoopId: string): {startTime: number, endTime: number} | undefined {
     const duration = preferredEnd - preferredStart;
-    const sortedLoops = this.effectiveLoops
-      .filter(loop => loop.id !== excludeLoopId)
-      .sort((a, b) => a.startTime - b.startTime);
+    const loopsToCheck = this.sortedLoops.filter(loop => loop.id !== excludeLoopId);
 
-    // Try placing after the last conflicting loop
-    const lastConflictingLoop = sortedLoops
+    // Try placing after the last conflicting loop with magnetic guide snapping
+    const lastConflictingLoop = loopsToCheck
       .filter(loop => loop.startTime < preferredEnd)
       .pop();
 
     if (lastConflictingLoop) {
-      const suggestedStart = lastConflictingLoop.endTime;
-      const suggestedEnd = suggestedStart + duration;
+      let suggestedStart = lastConflictingLoop.endTime;
+      // Apply magnetic guide snapping to suggested position
+      suggestedStart = this.applyMagneticGuides(suggestedStart);
+      const suggestedEnd = this.roundToPrecision(suggestedStart + duration, this.PRECISION_DECIMALS);
       
       // Check if this position is valid and doesn't exceed video duration
       if (suggestedEnd <= this.duration && !this.checkLoopCollision(excludeLoopId, suggestedStart, suggestedEnd)) {
@@ -789,19 +840,44 @@ export class TimelineComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Try placing before the first conflicting loop
-    const firstConflictingLoop = sortedLoops
+    // Try placing before the first conflicting loop with magnetic guide snapping
+    const firstConflictingLoop = loopsToCheck
       .find(loop => loop.endTime > preferredStart);
 
     if (firstConflictingLoop) {
-      const suggestedEnd = firstConflictingLoop.startTime;
-      const suggestedStart = suggestedEnd - duration;
+      let suggestedEnd = firstConflictingLoop.startTime;
+      // Apply magnetic guide snapping to suggested position
+      suggestedEnd = this.applyMagneticGuides(suggestedEnd);
+      const suggestedStart = this.roundToPrecision(suggestedEnd - duration, this.PRECISION_DECIMALS);
       
       if (suggestedStart >= 0 && !this.checkLoopCollision(excludeLoopId, suggestedStart, suggestedEnd)) {
         return {
           startTime: suggestedStart,
           endTime: suggestedEnd
         };
+      }
+    }
+
+    // Try finding gaps between existing loops with magnetic guide alignment
+    for (let i = 0; i < loopsToCheck.length - 1; i++) {
+      const currentLoop = loopsToCheck[i];
+      const nextLoop = loopsToCheck[i + 1];
+      const gapStart = currentLoop.endTime;
+      const gapEnd = nextLoop.startTime;
+      const gapDuration = gapEnd - gapStart;
+      
+      // Check if the segment fits in this gap
+      if (gapDuration >= duration) {
+        const suggestedStart = this.applyMagneticGuides(gapStart);
+        const suggestedEnd = this.roundToPrecision(suggestedStart + duration, this.PRECISION_DECIMALS);
+        
+        // Ensure it fits within the gap boundaries
+        if (suggestedEnd <= gapEnd && !this.checkLoopCollision(excludeLoopId, suggestedStart, suggestedEnd)) {
+          return {
+            startTime: suggestedStart,
+            endTime: suggestedEnd
+          };
+        }
       }
     }
 
@@ -874,8 +950,17 @@ export class TimelineComponent implements OnInit, OnDestroy {
   
   // Enhanced precision and caching system for timeline calculations
   private readonly PRECISION_DECIMALS = 0.1; // 0.1 second precision
+  private readonly MAGNETIC_GUIDE_INTERVAL = 0.5; // Magnetic guides every 0.5 seconds
   private readonly POSITION_CACHE_SIZE = 1000;
   private readonly POSITION_CACHE_TTL = 5000; // 5 seconds cache TTL
+  
+  // Visual feedback state for drag operations
+  private _dragFeedback: {
+    currentTime: number;
+    magneticGuideTime: number | null;
+    isNearGuide: boolean;
+    visualElement?: HTMLElement;
+  } | null = null;
   
   // Position calculation cache for performance optimization
   private _positionCache = new Map<string, {position: number, timestamp: number}>();
@@ -1220,8 +1305,56 @@ export class TimelineComponent implements OnInit, OnDestroy {
     // Remove visual feedback classes
     document.body.classList.remove('creating-loop', 'creation-collision');
     
+    // Clear drag feedback and visual states
+    this.clearDragFeedback();
+    
     // Clear creation preview
     this._creationPreview = null;
+  }
+
+  /**
+   * Get all magnetic guide times within the timeline duration
+   */
+  getMagneticGuideTimes(): number[] {
+    const guides: number[] = [];
+    const numGuides = Math.floor(this.duration / this.MAGNETIC_GUIDE_INTERVAL) + 1;
+    
+    for (let i = 0; i < numGuides; i++) {
+      const guideTime = i * this.MAGNETIC_GUIDE_INTERVAL;
+      if (guideTime <= this.duration) {
+        guides.push(this.roundToPrecision(guideTime, this.PRECISION_DECIMALS));
+      }
+    }
+    
+    return guides;
+  }
+
+  /**
+   * Get magnetic guide positions as percentages for visual rendering
+   */
+  getMagneticGuidePositions(): number[] {
+    if (this.duration === 0) return [];
+    
+    const guideTimes = this.getMagneticGuideTimes();
+    return this.getBatchPositionsWithPrecision(guideTimes);
+  }
+
+  /**
+   * Check if magnetic guides should be visible based on zoom/duration
+   */
+  get shouldShowMagneticGuides(): boolean {
+    // Show guides when duration is reasonable and not too crowded
+    return this.duration > 0 && this.duration <= 300; // 5 minutes max for visibility
+  }
+
+  /**
+   * Get currently active magnetic guide (nearest to drag position)
+   */
+  get activeMagneticGuide(): number | null {
+    if (!this._dragFeedback || !this._dragFeedback.isNearGuide) {
+      return null;
+    }
+    return this._dragFeedback.magneticGuideTime;
   }
   
   /**
@@ -1256,6 +1389,120 @@ export class TimelineComponent implements OnInit, OnDestroy {
   private roundToPrecision(value: number, precision: number): number {
     const factor = 1 / precision;
     return Math.round(value * factor) / factor;
+  }
+
+  /**
+   * Apply magnetic guide snapping to time values
+   * Snaps to nearest 0.5-second mark if within threshold
+   */
+  private applyMagneticGuides(time: number, threshold: number = 0.15): number {
+    const guideFactor = 1 / this.MAGNETIC_GUIDE_INTERVAL;
+    const nearestGuide = Math.round(time * guideFactor) / guideFactor;
+    const distance = Math.abs(time - nearestGuide);
+    
+    // If within threshold distance of a magnetic guide, snap to it
+    if (distance <= threshold) {
+      return this.roundToPrecision(nearestGuide, this.PRECISION_DECIMALS);
+    }
+    
+    // Otherwise, just apply precision rounding
+    return this.roundToPrecision(time, this.PRECISION_DECIMALS);
+  }
+
+  /**
+   * Check if a time value is near a magnetic guide
+   */
+  private isNearMagneticGuide(time: number, threshold: number = 0.15): boolean {
+    const guideFactor = 1 / this.MAGNETIC_GUIDE_INTERVAL;
+    const nearestGuide = Math.round(time * guideFactor) / guideFactor;
+    return Math.abs(time - nearestGuide) <= threshold;
+  }
+
+  /**
+   * Get the nearest magnetic guide time for a given time
+   */
+  private getNearestMagneticGuide(time: number): number {
+    const guideFactor = 1 / this.MAGNETIC_GUIDE_INTERVAL;
+    const nearestGuide = Math.round(time * guideFactor) / guideFactor;
+    return this.roundToPrecision(nearestGuide, this.PRECISION_DECIMALS);
+  }
+
+  /**
+   * Update drag feedback state for real-time visual indicators
+   */
+  private updateDragFeedback(startTime: number, endTime: number): void {
+    const currentTime = this.dragState.dragType === 'resize-right' ? endTime : startTime;
+    const isNearGuide = this.isNearMagneticGuide(currentTime);
+    const magneticGuideTime = isNearGuide ? this.getNearestMagneticGuide(currentTime) : null;
+    
+    this._dragFeedback = {
+      currentTime,
+      magneticGuideTime,
+      isNearGuide
+    };
+    
+    // Add CSS classes for visual feedback
+    document.body.classList.toggle('dragging-near-guide', isNearGuide);
+    document.body.classList.add('timeline-dragging');
+  }
+
+  /**
+   * Clear drag feedback state
+   */
+  private clearDragFeedback(): void {
+    this._dragFeedback = null;
+    document.body.classList.remove('dragging-near-guide', 'timeline-dragging', 'drag-collision');
+  }
+
+  /**
+   * Mark visual collision state during drag
+   */
+  private markDragCollision(hasCollision: boolean): void {
+    document.body.classList.toggle('drag-collision', hasCollision);
+  }
+
+  /**
+   * Get current drag feedback for template binding
+   */
+  get dragFeedback(): {
+    currentTime: number;
+    magneticGuideTime: number | null;
+    isNearGuide: boolean;
+    visualElement?: HTMLElement;
+  } | null {
+    return this._dragFeedback;
+  }
+
+  /**
+   * Check if currently showing drag feedback
+   */
+  get isDraggingWithFeedback(): boolean {
+    return this._dragFeedback !== null && this.dragState.isDragging;
+  }
+
+  /**
+   * Optimized method to get collision info during real-time drag operations
+   */
+  getRealTimeCollisionFeedback(excludeLoopId: string, startTime: number, endTime: number): {
+    hasCollision: boolean;
+    severity: 'none' | 'minor' | 'major';
+    nearestSafePosition?: {startTime: number, endTime: number};
+  } {
+    // Lightweight collision check for real-time feedback
+    const hasCollision = this.checkLoopCollision(excludeLoopId, startTime, endTime);
+    
+    if (!hasCollision) {
+      return { hasCollision: false, severity: 'none' };
+    }
+    
+    // Only calculate detailed info if there's a collision
+    const collisionInfo = this.getLoopCollisionInfo(excludeLoopId, startTime, endTime);
+    
+    return {
+      hasCollision: true,
+      severity: collisionInfo.collisionSeverity,
+      nearestSafePosition: collisionInfo.recommendedPosition
+    };
   }
 
   /**

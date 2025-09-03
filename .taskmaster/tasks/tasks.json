@@ -231,8 +231,66 @@
         "dependencies": [
           5
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Améliorer la précision temporelle de la timeline",
+            "description": "Implémenter une précision au dixième de seconde pour la sélection et manipulation des segments avec calculs optimisés et cache des positions",
+            "dependencies": [],
+            "details": "Modifier les méthodes getPositionForTime() et getTimeAtPosition() pour supporter une précision de 0.1 seconde. Implémenter un système de cache pour les calculs de position répétitifs. Ajouter une validation de précision dans validateSegmentBounds() avec ajustement automatique au dixième de seconde le plus proche. Optimiser les calculs de pourcentage avec Math.round() à 4 décimales pour éviter les erreurs de précision JavaScript.",
+            "status": "done",
+            "testStrategy": "Tests unitaires des calculs de précision temporelle, validation des positions calculées avec durées variées, tests de performance du système de cache, vérification de l'arrondi correct au dixième de seconde"
+          },
+          {
+            "id": 2,
+            "title": "Optimiser le système de drag & drop des curseurs",
+            "description": "Améliorer les interactions drag & drop existantes avec feedback visuel en temps réel et contraintes de collision",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Étendre le système dragState existant pour inclure des contraintes de précision temporelle. Améliorer les méthodes onLoopMouseDown(), onDocumentMouseMove() et onDocumentMouseUp() pour appliquer la précision au dixième de seconde. Ajouter un feedback visuel temps réel montrant la position exacte pendant le drag. Implémenter des guides magnétiques tous les 0.5 secondes pour faciliter le positionnement précis. Optimiser la détection de collision avec vérification en temps réel.\n<info added on 2025-09-03T17:20:19.757Z>\nTâche complétée avec succès. Implémentation d'un système de drag & drop optimisé comprenant : contraintes de précision temporelle 0.1 seconde avec méthode roundToPrecision(), feedback visuel temps réel via état dragFeedback avec classes CSS, guides magnétiques tous les 0.5 secondes avec seuil d'accrochage 0.15 seconde, détection de collision optimisée avec cache sortedLoops et feedback de sévérité. Améliorations techniques : méthodes updateDragFeedback() et clearDragFeedback() pour gestion état visuel, intégration guides magnétiques dans findNearestAvailablePosition(), performance optimisée de checkLoopCollision(). Compilation TypeScript sans erreur, tous les prérequis satisfaits.\n</info added on 2025-09-03T17:20:19.757Z>",
+            "status": "done",
+            "testStrategy": "Tests d'interaction drag & drop avec validation de la précision, tests de collision detection en temps réel, validation du feedback visuel pendant les manipulations, tests de performance des contraintes magnétiques"
+          },
+          {
+            "id": 3,
+            "title": "Intégrer les événements tactiles pour compatibilité mobile",
+            "description": "Améliorer le système tactile existant avec support complet des gestes mobiles et précision adaptée",
+            "dependencies": [
+              "6.2"
+            ],
+            "details": "Étendre les méthodes onTouchStart() et onTouchEnd() existantes pour supporter les gestes de drag précis. Implémenter la détection de gestes swipe pour navigation rapide entre segments. Ajouter le support multi-touch pour zoom/pan de la timeline. Adapter la précision tactile aux contraintes mobiles (zones de touch plus larges, seuils de précision ajustés). Implémenter un feedback haptique pour les interactions précises sur appareils supportés.",
+            "status": "pending",
+            "testStrategy": "Tests tactiles sur différentes tailles d'écran, validation des gestes swipe et pinch, tests de précision adaptative mobile, vérification du feedback haptique, tests de performance des interactions multi-touch"
+          },
+          {
+            "id": 4,
+            "title": "Implémenter la visualisation des segments existants",
+            "description": "Créer un système de visualisation en temps réel des segments avec états visuels et informations contextuelles",
+            "dependencies": [
+              "6.1",
+              "6.2"
+            ],
+            "details": "Étendre le template HTML existant avec des indicateurs visuels pour durée totale et segments actifs. Implémenter des tooltips informatifs montrant durée exacte, timestamps et statistiques des segments. Ajouter des états visuels différenciés (actif, sélectionné, en collision, en cours de modification). Créer une minimap de navigation pour vidéos longues avec overview des segments. Implémenter un système de coloration automatique des segments pour éviter la confusion visuelle.",
+            "status": "pending",
+            "testStrategy": "Tests de rendu des différents états visuels, validation des tooltips informatifs, tests responsive de la minimap, vérification de l'accessibilité des couleurs et contrastes, tests de performance avec nombreux segments"
+          },
+          {
+            "id": 5,
+            "title": "Optimiser les performances avec OnPush et change detection",
+            "description": "Implémenter les optimisations de performance Angular avec OnPush strategy et gestion optimisée du change detection",
+            "dependencies": [
+              "6.1",
+              "6.2",
+              "6.3",
+              "6.4"
+            ],
+            "details": "Configurer le composant avec ChangeDetectionStrategy.OnPush en remplaçant la stratégie par défaut. Implémenter un système de signaux (signal()) pour les propriétés de state critiques comme les positions de segments et états de drag. Optimiser les méthodes de calcul existantes (getLoopPosition, getPositionForTime) avec memoization et cache intelligent. Utiliser trackBy functions pour les listes de segments dans le template @for. Implémenter un système de batch updates pour les changements multiples simultanés.",
+            "status": "pending",
+            "testStrategy": "Tests de performance avec grand nombre de segments, mesures de temps de rendu et change detection cycles, validation du fonctionnement correct avec OnPush, tests de mémoire et fuites potentielles, benchmarks comparatifs avant/après optimisation"
+          }
+        ]
       },
       {
         "id": 7,
@@ -995,7 +1053,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-02T17:56:49.971Z",
+      "updated": "2025-09-03T17:19:47.960Z",
       "description": "Tasks for master context"
     }
   }
