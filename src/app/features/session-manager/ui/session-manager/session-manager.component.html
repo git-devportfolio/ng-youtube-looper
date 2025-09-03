@@ -1,0 +1,300 @@
+<div class="session-manager-container">
+  
+  <!-- Header Section -->
+  <div class="manager-header">
+    <div class="header-content">
+      
+      <!-- Navigation and Title -->
+      <div class="header-navigation">
+        @if (showBackButton()) {
+          <button 
+            class="back-btn"
+            (click)="navigateBack()"
+            aria-label="Retour à la liste des sessions"
+            type="button">
+            <span class="back-icon">←</span>
+            Retour
+          </button>
+        }
+        
+        <h1 class="manager-title">{{ viewTitle() }}</h1>
+      </div>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        @if (currentView() === 'list') {
+          <!-- List View Actions -->
+          <div class="list-actions">
+            @if (canCreateSession()) {
+              <button 
+                class="action-btn primary"
+                (click)="navigateToCreate()"
+                aria-label="Créer une nouvelle session"
+                type="button">
+                <span class="btn-icon">➕</span>
+                Nouvelle Session
+              </button>
+            }
+            
+            <div class="view-toggle-group">
+              <button 
+                class="view-toggle"
+                [class.active]="currentView() === 'list'"
+                (click)="navigateToView('list')"
+                aria-label="Afficher les sessions"
+                type="button">
+                <span class="toggle-icon">📋</span>
+                Sessions
+              </button>
+              
+              <button 
+                class="view-toggle"
+                [class.active]="currentView() === 'history'"
+                (click)="navigateToView('history')"
+                aria-label="Afficher l'historique"
+                type="button">
+                <span class="toggle-icon">📚</span>
+                Historique
+              </button>
+              
+              <button 
+                class="view-toggle"
+                [class.active]="currentView() === 'import-export'"
+                (click)="navigateToView('import-export')"
+                aria-label="Import/Export de sessions"
+                type="button">
+                <span class="toggle-icon">🔄</span>
+                Import/Export
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Bulk Selection Actions -->
+        @if (currentView() === 'list' && hasSelectedSessions()) {
+          <div class="bulk-actions">
+            <div class="selection-info">
+              {{ getSelectedCount() }} sélectionnée{{ getSelectedCount() !== 1 ? 's' : '' }}
+            </div>
+            
+            <div class="bulk-buttons">
+              <button 
+                class="bulk-btn export"
+                (click)="exportSelectedSessions()"
+                [attr.aria-label]="'Exporter ' + getSelectedCount() + ' sessions'"
+                type="button">
+                <span class="btn-icon">📤</span>
+                Exporter
+              </button>
+              
+              <button 
+                class="bulk-btn delete"
+                (click)="deleteSelectedSessions()"
+                [attr.aria-label]="'Supprimer ' + getSelectedCount() + ' sessions'"
+                type="button">
+                <span class="btn-icon">🗑️</span>
+                Supprimer
+              </button>
+              
+              <button 
+                class="bulk-btn clear"
+                (click)="clearSelectedSessions()"
+                aria-label="Désélectionner toutes les sessions"
+                type="button">
+                <span class="btn-icon">✕</span>
+                Effacer
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="manager-content">
+    
+    <!-- Session List View -->
+    @if (currentView() === 'list') {
+      <div class="list-view">
+        <app-session-list
+          [showSearch]="true"
+          [showVideoFilter]="false"
+          [maxDisplayCount]="50"
+          (sessionSelect)="onSessionSelect($event)"
+          (sessionLoad)="onSessionLoad($event)"
+          (sessionEdit)="onSessionEdit($event)"
+          (sessionDelete)="onSessionDelete($event)"
+          (sessionDuplicate)="onSessionDuplicate($event)">
+        </app-session-list>
+        
+        <!-- Quick Actions Panel -->
+        @if (sessionList().length > 0) {
+          <div class="quick-actions-panel">
+            <h3 class="panel-title">Actions rapides</h3>
+            
+            <div class="quick-actions">
+              <button 
+                class="quick-action-btn"
+                (click)="selectAllSessions()"
+                type="button">
+                <span class="action-icon">☑️</span>
+                Tout sélectionner
+              </button>
+              
+              <button 
+                class="quick-action-btn"
+                (click)="navigateToView('import-export')"
+                type="button">
+                <span class="action-icon">📤</span>
+                Exporter tout
+              </button>
+              
+              <button 
+                class="quick-action-btn"
+                (click)="navigateToView('history')"
+                type="button">
+                <span class="action-icon">📚</span>
+                Voir l'historique
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Session Form Views (Create/Edit) -->
+    @if (currentView() === 'create' || currentView() === 'edit') {
+      <div class="form-view">
+        <app-session-form
+          [session]="currentView() === 'edit' ? editingSession() : null"
+          [videoId]="videoContext()?.videoId || null"
+          [videoTitle]="videoContext()?.videoTitle || null"
+          [videoUrl]="videoContext()?.videoUrl || null"
+          [videoDuration]="videoContext()?.videoDuration || null"
+          (save)="onSessionSave($event)"
+          (cancel)="onSessionCancel()">
+        </app-session-form>
+      </div>
+    }
+
+    <!-- History View -->
+    @if (currentView() === 'history') {
+      <div class="history-view">
+        
+        <!-- Recent Sessions Header -->
+        <div class="history-section">
+          <h2 class="history-title">
+            <span class="history-icon">🕒</span>
+            Sessions récentes
+          </h2>
+          
+          @if (recentSessions().length === 0) {
+            <div class="empty-history">
+              <div class="empty-icon">📭</div>
+              <h3 class="empty-title">Aucun historique</h3>
+              <p class="empty-description">
+                L'historique s'affichera ici quand vous commencerez à utiliser des sessions.
+              </p>
+            </div>
+          }
+        </div>
+
+        <!-- Recent Videos from History -->
+        @if (recentVideos().length > 0) {
+          <div class="recent-videos">
+            <h3 class="section-subtitle">Dernières vidéos utilisées</h3>
+            
+            <div class="video-history-list">
+              @for (entry of recentVideos(); track trackHistoryById($index, entry)) {
+                <div class="history-item"
+                     tabindex="0"
+                     role="button"
+                     [attr.aria-label]="'Vidéo ' + entry.videoTitle + ', dernière utilisation ' + formatRelativeDate(entry.accessedAt)">
+                  
+                  <div class="history-item-content">
+                    <div class="video-info">
+                      <h4 class="video-title">{{ entry.videoTitle }}</h4>
+                      <div class="video-meta">
+                        <span class="session-name">{{ entry.sessionName }}</span>
+                        <span class="access-time">{{ formatRelativeDate(entry.accessedAt) }}</span>
+                      </div>
+                    </div>
+                    
+                    <div class="history-stats">
+                      @if (entry.loopsCount > 0) {
+                        <div class="stat">
+                          <span class="stat-icon">🔄</span>
+                          <span class="stat-value">{{ entry.loopsCount }}</span>
+                        </div>
+                      }
+                      @if (entry.duration > 0) {
+                        <div class="stat">
+                          <span class="stat-icon">⏱️</span>
+                          <span class="stat-value">{{ formatDuration(entry.duration) }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                  
+                  <div class="history-actions">
+                    <button 
+                      class="history-btn load"
+                      (click)="loadSessionFromHistory(entry)"
+                      [attr.aria-label]="'Charger la session ' + entry.sessionName"
+                      type="button">
+                      <span class="btn-icon">▶️</span>
+                      Charger
+                    </button>
+                    
+                    <button 
+                      class="history-btn create"
+                      (click)="createSessionFromHistory(entry)"
+                      [attr.aria-label]="'Créer une nouvelle session pour ' + entry.videoTitle"
+                      type="button">
+                      <span class="btn-icon">➕</span>
+                      Nouvelle
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Import/Export View -->
+    @if (currentView() === 'import-export') {
+      <div class="import-export-view">
+        <app-import-export
+          [selectedSessions]="selectedSessions()"
+          [showBulkExport]="true"
+          [showImport]="true"
+          (exportComplete)="onExportComplete($event)"
+          (importComplete)="onImportComplete($event)"
+          (operationError)="onOperationError($event)">
+        </app-import-export>
+      </div>
+    }
+  </div>
+
+  <!-- Status Bar -->
+  @if (isLoading() || lastError()) {
+    <div class="status-bar">
+      @if (isLoading()) {
+        <div class="status-item loading">
+          <div class="status-spinner"></div>
+          <span class="status-text">Chargement...</span>
+        </div>
+      }
+      
+      @if (lastError(); as error) {
+        <div class="status-item error" role="alert">
+          <span class="status-icon">⚠️</span>
+          <span class="status-text">{{ error }}</span>
+        </div>
+      }
+    </div>
+  }
+</div>
