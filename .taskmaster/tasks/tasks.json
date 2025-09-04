@@ -450,7 +450,7 @@
         "dependencies": [
           9
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -458,7 +458,7 @@
             "description": "Installer et configurer Cypress pour les tests d'intégration E2E. Créer les tests pour les workflows principaux : chargement vidéo YouTube, création de boucles, contrôle vitesse et gestion des erreurs.",
             "dependencies": [],
             "details": "Installer Cypress via npm, créer la configuration dans cypress.config.ts avec baseUrl et viewportWidth/Height. Implémenter les tests E2E dans cypress/e2e/ : test-video-loading.cy.ts (chargement vidéo YouTube), test-loop-creation.cy.ts (création et gestion boucles), test-speed-control.cy.ts (contrôles vitesse), test-error-handling.cy.ts (gestion erreurs API YouTube). Utiliser les sélecteurs data-cy pour identifier les éléments UI. Configurer les commandes personnalisées dans cypress/support/commands.ts pour les actions récurrentes.",
-            "status": "cancelled",
+            "status": "done",
             "testStrategy": "Tests E2E automatisés couvrant 80% des fonctionnalités principales, validation des workflows utilisateur complets avec assertions sur l'état des composants et la persistance localStorage"
           },
           {
@@ -489,7 +489,7 @@
               "10.3"
             ],
             "details": "Installer @lhci/cli et configurer lighthouserc.js avec les seuils de performance (Performance: >90, Accessibility: >90, Best Practices: >90, SEO: >85). Optimiser First Contentful Paint via preload des ressources critiques et inline CSS critique. Améliorer l'accessibilité avec ARIA labels, focus management, contraste couleurs conforme WCAG 2.1. Optimiser SEO avec meta tags dynamiques, structured data pour vidéos. Configurer CSP headers et améliorer les Core Web Vitals. Intégrer l'audit dans npm scripts avec lighthouse-ci.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Audit Lighthouse automatisé dans CI/CD avec scores minimums requis, validation des métriques Core Web Vitals, tests d'accessibilité avec aXe-core"
           },
           {
@@ -501,7 +501,7 @@
               "10.4"
             ],
             "details": "Configurer les tests cross-browser avec BrowserStack ou Playwright pour Chrome 90+, Firefox 88+, Safari 14+, Edge 90+. Tester les API YouTube IFrame sur chaque navigateur avec polyfills si nécessaire. Valider les fonctionnalités tactiles sur Safari mobile. Créer la documentation dans README.md : guide utilisateur, architecture technique, guide de déploiement. Documenter les limitations connues et requirements navigateurs. Optimiser le bundle pour compatibilité ES2020 minimum. Valider les performances sur mobile et desktop.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests automatisés cross-browser avec Playwright, validation manuelle sur appareils mobiles réels, tests de régression complets avant release finale"
           }
         ]
@@ -1214,7 +1214,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-04T18:56:19.046Z",
+      "updated": "2025-09-04T19:41:21.423Z",
       "description": "Tasks for master context"
     }
   }
