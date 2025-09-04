@@ -8,6 +8,13 @@
   top: 0;
   z-index: var(--z-sticky);
   padding: var(--spacing-md) 0;
+  @include transition(all, 0.3s, ease);
+  
+  // Enhanced touch interaction for sticky header
+  @include touch-device {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
 }
 
 .header-container {
@@ -104,6 +111,15 @@
     border-radius: var(--radius-lg);
     font-size: var(--font-size-sm);
     @include transition(all, 0.3s, ease);
+    @include touch-target;
+    
+    // Enhanced touch interaction
+    @include touch-device {
+      font-size: 16px; // Prevent zoom on iOS
+      min-height: 44px;
+      -webkit-appearance: none; // Remove iOS styling
+      -webkit-border-radius: var(--radius-lg); // Ensure consistent styling on iOS
+    }
     
     &:focus {
       border-color: var(--accent-color);
@@ -194,10 +210,20 @@
     @include flex-center;
     @include transition(all, 0.2s, ease);
     @include button-focus;
+    @include touch-target;
     
-    &:hover {
-      background: var(--text-secondary);
-      transform: translateY(-50%) scale(1.1);
+    // Enhanced touch interaction
+    @include touch-device {
+      width: 24px;
+      height: 24px;
+      @include touch-feedback;
+    }
+    
+    @include hover-device {
+      &:hover {
+        background: var(--text-secondary);
+        transform: translateY(-50%) scale(1.1);
+      }
     }
 
     &:active {
@@ -212,7 +238,7 @@
     height: 44px;
     border-radius: var(--radius-lg);
     flex-shrink: 0;
-    @include hover-lift;
+    @include touch-target;
 
     &:disabled {
       background: var(--bg-disabled);
@@ -225,13 +251,25 @@
       }
     }
 
+    // Enhanced mobile touch feedback
+    @include touch-device {
+      @include touch-feedback;
+      min-width: 48px;
+      height: 48px;
+    }
+    
+    // Hover effects only on hover devices
+    @include hover-device {
+      @include hover-lift;
+      
+      &:hover:not(:disabled) .submit-icon {
+        transform: scale(1.1);
+      }
+    }
+
     .submit-icon {
       font-size: var(--font-size-md);
       @include transition(transform, 0.2s, ease);
-    }
-
-    &:hover:not(:disabled) .submit-icon {
-      transform: scale(1.1);
     }
     
     &.loading {
@@ -396,6 +434,220 @@
     
     .logo-icon {
       font-size: 2.5rem;
+    }
+  }
+}
+
+// Orientation-specific optimizations
+@include portrait-mobile {
+  .app-header {
+    padding: var(--spacing-sm) 0;
+    
+    // Enhanced touch scrolling
+    @include touch-device {
+      overflow-x: hidden;
+    }
+  }
+  
+  .header-container {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: stretch;
+    min-height: auto;
+    padding: var(--spacing-sm);
+  }
+  
+  .header-logo {
+    text-align: center;
+    order: 1;
+    
+    .logo-text {
+      font-size: var(--font-size-lg);
+      
+      .logo-icon {
+        font-size: var(--font-size-xl);
+      }
+    }
+  }
+  
+  .header-input {
+    order: 2;
+    max-width: 100%;
+    
+    .url-form {
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+    
+    .input-container {
+      width: 100%;
+    }
+    
+    .url-input {
+      font-size: var(--font-size-md);
+      height: 48px;
+      
+      @include touch-device {
+        height: 52px;
+        font-size: var(--font-size-md);
+      }
+    }
+    
+    .submit-button {
+      align-self: center;
+      width: 100%;
+      max-width: 200px;
+      height: 48px;
+      
+      @include touch-device {
+        height: 52px;
+      }
+    }
+  }
+  
+  .header-actions {
+    order: 3;
+    justify-content: center;
+    
+    ::ng-deep app-theme-toggle .theme-toggle-btn {
+      width: 48px;
+      height: 48px;
+    }
+  }
+}
+
+@include landscape-mobile {
+  .app-header {
+    padding: var(--spacing-xs) 0;
+  }
+  
+  .header-container {
+    min-height: 56px;
+    gap: var(--spacing-sm);
+    padding: 0 var(--spacing-sm);
+    align-items: center;
+  }
+  
+  .header-logo {
+    .logo-text {
+      font-size: var(--font-size-md);
+      
+      .logo-icon {
+        font-size: var(--font-size-lg);
+      }
+    }
+  }
+  
+  .header-input {
+    max-width: 320px;
+    flex: 1;
+    
+    .url-form {
+      gap: var(--spacing-xs);
+    }
+    
+    .url-input {
+      height: 40px;
+      font-size: var(--font-size-sm);
+      padding-right: 50px;
+    }
+    
+    .submit-button {
+      min-width: 40px;
+      height: 40px;
+      
+      .submit-icon {
+        font-size: var(--font-size-sm);
+      }
+    }
+    
+    .clear-button {
+      width: 18px;
+      height: 18px;
+    }
+  }
+  
+  .header-actions {
+    ::ng-deep app-theme-toggle .theme-toggle-btn {
+      width: 40px;
+      height: 40px;
+      
+      .theme-icon {
+        font-size: var(--font-size-sm);
+      }
+    }
+  }
+}
+
+@include portrait-tablet {
+  .app-header {
+    padding: var(--spacing-lg) 0;
+  }
+  
+  .header-container {
+    min-height: 100px;
+    gap: var(--spacing-xl);
+    padding: 0 var(--spacing-lg);
+  }
+  
+  .header-logo .logo-text {
+    font-size: var(--font-size-2xl);
+    
+    .logo-icon {
+      font-size: 2.25rem;
+    }
+  }
+  
+  .header-input {
+    max-width: 500px;
+    
+    .url-input {
+      height: 52px;
+      font-size: var(--font-size-md);
+    }
+    
+    .submit-button {
+      height: 52px;
+      min-width: 52px;
+    }
+  }
+  
+  .header-actions {
+    ::ng-deep app-theme-toggle .theme-toggle-btn {
+      width: 52px;
+      height: 52px;
+      
+      .theme-icon {
+        font-size: var(--font-size-xl);
+      }
+    }
+  }
+}
+
+@include landscape-tablet {
+  .header-container {
+    min-height: 88px;
+    gap: var(--spacing-lg);
+    padding: 0 var(--spacing-xl);
+  }
+  
+  .header-input {
+    max-width: 450px;
+    
+    .url-input {
+      height: 48px;
+    }
+    
+    .submit-button {
+      height: 48px;
+      min-width: 48px;
+    }
+  }
+  
+  .header-actions {
+    ::ng-deep app-theme-toggle .theme-toggle-btn {
+      width: 48px;
+      height: 48px;
     }
   }
 }
