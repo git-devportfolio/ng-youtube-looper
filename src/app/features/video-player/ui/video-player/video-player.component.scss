@@ -63,6 +63,51 @@ $player-large-min: 1200px;
     padding: var(--spacing-lg);
     border-radius: var(--radius-xl);
   }
+
+  // Orientation-specific adaptations
+  @include portrait-mobile {
+    // Mobile portrait - maximize vertical space
+    margin: var(--spacing-xs);
+    padding: var(--spacing-sm);
+    
+    .url-input-section {
+      margin-bottom: var(--spacing-md);
+    }
+  }
+
+  @include landscape-mobile {
+    // Mobile landscape - compact layout
+    margin: var(--spacing-xs) var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    
+    .url-input-section {
+      margin-bottom: var(--spacing-sm);
+      
+      h2 {
+        font-size: var(--font-size-md);
+        margin-bottom: var(--spacing-xs);
+      }
+    }
+    
+    // Compact controls in landscape
+    .controls-section {
+      padding: var(--spacing-xs) var(--spacing-sm);
+    }
+  }
+
+  @include portrait-tablet {
+    // Tablet portrait - balanced layout
+    max-width: 600px;
+    margin: var(--spacing-md) auto;
+    padding: var(--spacing-md);
+  }
+
+  @include landscape-tablet {
+    // Tablet landscape - wider layout
+    max-width: 900px;
+    margin: var(--spacing-sm) auto;
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
 }
 
 // URL Input Section
@@ -253,6 +298,40 @@ $player-large-min: 1200px;
   @include player-large {
     min-height: 450px;
     max-height: 560px;
+  }
+
+  // Orientation-specific optimizations
+  @include portrait-mobile {
+    // Mobile portrait - standard 16:9 ratio
+    min-height: 200px;
+    max-height: 250px;
+  }
+
+  @include landscape-mobile {
+    // Mobile landscape - optimize for horizontal viewing
+    min-height: 160px;
+    max-height: 220px;
+    
+    // Reduce borders for more video space
+    border-radius: var(--radius-xs);
+  }
+
+  @include portrait-tablet {
+    // Tablet portrait - maintain good proportions
+    min-height: 300px;
+    max-height: 400px;
+  }
+
+  @include landscape-tablet {
+    // Tablet landscape - wider video for better experience
+    min-height: 280px;
+    max-height: 380px;
+  }
+
+  @include landscape-desktop {
+    // Desktop landscape - full experience
+    min-height: 400px;
+    max-height: 600px;
   }
 }
 

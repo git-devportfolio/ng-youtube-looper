@@ -121,6 +121,36 @@
   }
 }
 
+@mixin portrait-mobile {
+  @media (orientation: portrait) and (max-width: #{map-get($breakpoints, tablet) - 1px}) {
+    @content;
+  }
+}
+
+@mixin portrait-tablet {
+  @media (orientation: portrait) and (min-width: #{map-get($breakpoints, tablet)}) and (max-width: #{map-get($breakpoints, desktop) - 1px}) {
+    @content;
+  }
+}
+
+@mixin landscape-tablet {
+  @media (orientation: landscape) and (min-width: #{map-get($breakpoints, tablet)}) and (max-width: #{map-get($breakpoints, desktop) - 1px}) {
+    @content;
+  }
+}
+
+@mixin landscape-desktop {
+  @media (orientation: landscape) and (min-width: #{map-get($breakpoints, desktop)}) {
+    @content;
+  }
+}
+
+@mixin portrait-desktop {
+  @media (orientation: portrait) and (min-width: #{map-get($breakpoints, desktop)}) {
+    @content;
+  }
+}
+
 // Animation mixins
 @mixin transition($properties: all, $duration: 0.2s, $timing: ease) {
   transition: $properties $duration $timing;

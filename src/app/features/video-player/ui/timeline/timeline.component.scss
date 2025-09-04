@@ -668,6 +668,148 @@
   }
 }
 
+// Orientation-specific optimizations
+@include portrait-mobile {
+  .timeline-container {
+    height: 4rem;
+    min-height: 48px; // Larger touch targets in portrait
+    
+    .timeline-labels {
+      font-size: var(--font-size-xs);
+      height: 1.25rem;
+    }
+  }
+  
+  .timeline-track {
+    height: 2.75rem;
+    min-height: 48px;
+  }
+  
+  .current-time-indicator .indicator-circle {
+    width: 20px;
+    height: 20px;
+    
+    &::before {
+      width: 10px;
+      height: 10px;
+    }
+  }
+}
+
+@include landscape-mobile {
+  .timeline-container {
+    height: 3rem; // Compact for landscape
+    min-height: 44px;
+    
+    .timeline-labels {
+      font-size: 10px;
+      height: 0.875rem;
+    }
+  }
+  
+  .timeline-track {
+    height: 2rem;
+    margin: 0.25rem 0;
+    min-height: 44px;
+  }
+  
+  .track-background {
+    height: 6px; // Thinner in landscape
+  }
+  
+  .current-time-indicator {
+    .indicator-circle {
+      width: 16px;
+      height: 16px;
+      border-width: 2px;
+      
+      &::before {
+        width: 6px;
+        height: 6px;
+      }
+    }
+    
+    .indicator-line {
+      height: 2rem;
+      width: 1px;
+    }
+  }
+  
+  // Compact loop segments in landscape
+  .loop-segment {
+    height: 20px;
+    min-width: 24px;
+    border-width: 2px;
+  }
+  
+  .loop-label {
+    font-size: 8px;
+  }
+  
+  .loop-times {
+    font-size: 6px;
+  }
+}
+
+@include portrait-tablet {
+  .timeline-container {
+    height: 4.5rem;
+    
+    .timeline-labels {
+      height: 1.5rem;
+      font-size: var(--font-size-sm);
+    }
+  }
+  
+  .timeline-track {
+    height: 3rem;
+  }
+  
+  .current-time-indicator .indicator-circle {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .loop-segment {
+    height: 24px;
+    min-width: 32px;
+  }
+}
+
+@include landscape-tablet {
+  .timeline-container {
+    height: 3.5rem;
+    
+    .timeline-labels {
+      height: 1rem;
+      font-size: var(--font-size-xs);
+    }
+  }
+  
+  .timeline-track {
+    height: 2.5rem;
+  }
+  
+  // Optimize for wider screens in landscape
+  .current-time-indicator .indicator-circle {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .loop-segment {
+    height: 22px;
+    min-width: 28px;
+    
+    .loop-label {
+      font-size: 9px;
+    }
+    
+    .loop-times {
+      font-size: 7px;
+    }
+  }
+}
+
 @include tablet-up {
   .timeline-container {
     // Enhanced hover states for desktop

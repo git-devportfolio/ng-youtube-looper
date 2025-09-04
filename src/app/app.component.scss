@@ -31,3 +31,87 @@
     }
   }
 }
+
+// Orientation-specific layouts for app structure
+@include portrait-mobile {
+  .app-header {
+    padding: var(--spacing-md);
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-sm);
+    
+    h1 {
+      font-size: var(--font-size-lg);
+      order: 1;
+    }
+    
+    // Theme toggle will be order: 2
+    app-theme-toggle {
+      order: 2;
+    }
+  }
+  
+  .main-content {
+    padding: var(--spacing-sm);
+    min-height: calc(100vh - 120px); // Account for taller header
+  }
+}
+
+@include landscape-mobile {
+  .app-header {
+    padding: var(--spacing-xs) var(--spacing-md);
+    height: 56px; // Fixed compact height
+    
+    h1 {
+      font-size: var(--font-size-md);
+    }
+  }
+  
+  .main-content {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    min-height: calc(100vh - 56px);
+    overflow-y: auto; // Ensure scrolling in landscape
+  }
+}
+
+@include portrait-tablet {
+  .app-header {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    
+    h1 {
+      font-size: var(--font-size-2xl);
+    }
+  }
+  
+  .main-content {
+    padding: var(--spacing-lg);
+    min-height: calc(100vh - 100px);
+  }
+}
+
+@include landscape-tablet {
+  .app-header {
+    padding: var(--spacing-md) var(--spacing-xl);
+    
+    h1 {
+      font-size: var(--font-size-xl);
+    }
+  }
+  
+  .main-content {
+    padding: var(--spacing-md) var(--spacing-lg);
+    min-height: calc(100vh - 80px);
+    
+    // Optimize layout for wider screens
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+@include landscape-desktop {
+  .main-content {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+}
