@@ -1,0 +1,98 @@
+<footer class="app-footer" role="contentinfo">
+  <div class="footer-container">
+    <!-- Main Footer Content -->
+    <div class="footer-content">
+      <!-- Brand Section -->
+      <div class="footer-brand">
+        <h3 class="brand-title">
+          <span class="brand-icon">🎵</span>
+          ng-youtube-looper
+        </h3>
+        <p class="brand-description">
+          Application de bouclage de vidéos YouTube pour travailler les parties guitare complexes
+        </p>
+      </div>
+
+      <!-- Navigation Links -->
+      <div class="footer-navigation">
+        <div class="nav-section">
+          <h4 class="nav-title">Navigation</h4>
+          <ul class="nav-list">
+            <li><a href="#" class="nav-link" (click)="scrollToTop($event)">Accueil</a></li>
+            <li><a href="#features" class="nav-link">Fonctionnalités</a></li>
+            <li><a href="#player" class="nav-link">Player</a></li>
+            <li><a href="#sessions" class="nav-link">Sessions</a></li>
+          </ul>
+        </div>
+
+        <div class="nav-section">
+          <h4 class="nav-title">Ressources</h4>
+          <ul class="nav-list">
+            <li><a href="#" class="nav-link" (click)="openExternalLink($event, 'https://github.com/angular/angular')">Angular</a></li>
+            <li><a href="#" class="nav-link" (click)="openExternalLink($event, 'https://developers.google.com/youtube/iframe_api_reference')">YouTube API</a></li>
+            <li><a href="#" class="nav-link" (click)="openExternalLink($event, 'https://sass-lang.com/')">SCSS</a></li>
+            <li><a href="#" class="nav-link">Documentation</a></li>
+          </ul>
+        </div>
+
+        <div class="nav-section">
+          <h4 class="nav-title">Support</h4>
+          <ul class="nav-list">
+            <li><a href="#" class="nav-link">Guide d'utilisation</a></li>
+            <li><a href="#" class="nav-link">FAQ</a></li>
+            <li><a href="#" class="nav-link">Raccourcis clavier</a></li>
+            <li><a href="#" class="nav-link">Accessibilité</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- App Info -->
+      <div class="footer-info">
+        <div class="app-status">
+          <div class="status-item">
+            <span class="status-label">Version:</span>
+            <span class="status-value">{{ appVersion }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Statut:</span>
+            <span class="status-value status-online">{{ connectionStatus }}</span>
+          </div>
+        </div>
+        
+        <div class="theme-info">
+          <span class="theme-label">Thème actuel:</span>
+          <span class="theme-value">{{ currentTheme }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Bottom -->
+    <div class="footer-bottom">
+      <div class="footer-copyright">
+        <p>&copy; {{ currentYear }} ng-youtube-looper. Application développée avec Angular {{ angularVersion }}.</p>
+      </div>
+      
+      <div class="footer-actions">
+        <button 
+          type="button" 
+          class="footer-button" 
+          (click)="scrollToTop($event)"
+          aria-label="Retour en haut de la page">
+          <span class="button-icon">↑</span>
+          <span class="button-text">Haut</span>
+        </button>
+        
+        <button 
+          type="button" 
+          class="footer-button theme-toggle" 
+          (click)="toggleTheme()"
+          [attr.aria-label]="'Changer vers le thème ' + (currentTheme === 'light' ? 'sombre' : 'clair')">
+          <span class="button-icon" [class.light-theme]="currentTheme === 'light'" [class.dark-theme]="currentTheme === 'dark'">
+            {{ currentTheme === 'light' ? '🌙' : '☀️' }}
+          </span>
+          <span class="button-text">{{ currentTheme === 'light' ? 'Sombre' : 'Clair' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</footer>

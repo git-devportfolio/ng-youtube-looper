@@ -10,7 +10,13 @@
       "Bash(npm run build:*)",
       "Bash(ng build:*)",
       "Bash(ng test:*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(ng serve:*)",
+      "Bash(ng generate component:*)",
+      "Read(/C:\\local.dev\\labs\\angular_lab\\ng-youtube-looper\\src\\app\\shared\\components\\footer/**)",
+      "Read(/C:\\local.dev\\labs\\angular_lab\\ng-youtube-looper\\src\\app\\shared\\components\\footer/**)",
+      "Read(/C:\\local.dev\\labs\\angular_lab\\ng-youtube-looper\\src\\app\\shared\\components\\footer/**)",
+      "Read(/C:\\local.dev\\labs\\angular_lab\\ng-youtube-looper\\src\\app/**)"
     ],
     "deny": [],
     "ask": []

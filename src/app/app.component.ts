@@ -3,10 +3,11 @@ import { RouterOutlet } from '@angular/router';
 import { ThemeService } from '@core/services/theme.service';
 import { ThemeToggleComponent } from '@shared/components/theme-toggle/theme-toggle.component';
 import { ThemeDemoComponent } from '@shared/components/theme-demo/theme-demo.component';
+import { FooterComponent } from '@shared/components/footer/footer.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ThemeToggleComponent, ThemeDemoComponent],
+  imports: [RouterOutlet, ThemeToggleComponent, ThemeDemoComponent, FooterComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })

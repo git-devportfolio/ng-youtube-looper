@@ -387,7 +387,58 @@
           8
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Améliorer les breakpoints SCSS et les contrôles tactiles pour la timeline et boutons",
+            "description": "Affiner les mixins responsive existants et optimiser les interactions tactiles sur mobile pour les composants timeline et contrôles",
+            "dependencies": [],
+            "details": "Adapter les mixins responsive dans _mixins.scss pour support optimal des breakpoints mobile-first (320px, 768px, 1024px, 1440px). Améliorer les styles tactiles des composants timeline et boutons avec des targets de 44px minimum, zones de touch adaptées, et feedback visuel approprié. Intégrer les media queries hover/pointer pour différencier souris et tactile.",
+            "status": "done",
+            "testStrategy": "Tests sur différents appareils tactiles, vérification des tailles de touch targets, tests d'accessibilité tactile, validation des interactions hover/pointer"
+          },
+          {
+            "id": 2,
+            "title": "Créer les layouts adaptatifs pour orientations portrait/paysage",
+            "description": "Implémenter les adaptations CSS pour orientations portrait et paysage sur tablettes et mobiles",
+            "dependencies": [],
+            "details": "Ajouter les media queries d'orientation dans les mixins SCSS. Créer des layouts adaptatifs pour les orientations portrait/paysage avec réorganisation des contrôles et adaptation de la timeline. Optimiser l'affichage vidéo en mode paysage mobile et ajuster les proportions des éléments UI selon l'orientation.",
+            "status": "done",
+            "testStrategy": "Tests de rotation d'écran sur différents appareils, vérification des layouts portrait/paysage, tests d'usabilité selon l'orientation"
+          },
+          {
+            "id": 3,
+            "title": "Créer le FooterComponent responsive avec navigation",
+            "description": "Développer un nouveau composant footer avec navigation responsive et informations utiles",
+            "dependencies": [],
+            "details": "Créer footer.component.ts avec navigation responsive incluant liens utiles, informations de version, et navigation secondaire. Implémenter le layout footer adaptatif mobile/desktop avec CSS Grid. Intégrer les liens de navigation cohérents avec le header existant et assurer l'accessibilité.",
+            "status": "done",
+            "testStrategy": "Tests de navigation footer, vérification de l'accessibilité des liens, tests responsive sur différents breakpoints"
+          },
+          {
+            "id": 4,
+            "title": "Optimiser les styles responsive du HeaderComponent existant",
+            "description": "Améliorer la responsivité du HeaderComponent avec optimisations mobile avancées",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "Améliorer les styles existants du HeaderComponent avec les nouveaux mixins tactiles. Optimiser les transitions mobile, ajuster les espacements selon les breakpoints, et améliorer l'UX mobile du champ URL. Intégrer les améliorations d'orientation portrait/paysage et affiner les animations responsive.",
+            "status": "pending",
+            "testStrategy": "Tests de fonctionnalité header sur mobile, vérification des champs de saisie tactiles, tests d'orientation, validation UX mobile"
+          },
+          {
+            "id": 5,
+            "title": "Implémenter les optimisations de performance mobile avec lazy loading",
+            "description": "Mettre en place le lazy loading et le bundle splitting pour optimiser les performances mobiles",
+            "dependencies": [
+              "9.3",
+              "9.4"
+            ],
+            "details": "Configurer le lazy loading des features dans app.routes.ts avec dynamic imports. Implémenter le code splitting par feature modules (video-player, loop-manager, session-manager). Optimiser les images avec lazy loading et format adaptatif. Configurer les service workers pour le cache et créer les optimisations de bundle pour mobile.",
+            "status": "pending",
+            "testStrategy": "Tests de performance mobile avec Lighthouse, vérification du lazy loading des routes, tests de taille de bundle, mesures de temps de chargement initial"
+          }
+        ]
       },
       {
         "id": 10,
@@ -1110,7 +1161,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-03T18:20:05.018Z",
+      "updated": "2025-09-04T17:57:17.704Z",
       "description": "Tasks for master context"
     }
   }
