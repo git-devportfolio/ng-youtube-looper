@@ -1,0 +1,1 @@
+export { VideoPlayerPageComponent } from './video-player-page.component';

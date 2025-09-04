@@ -50,7 +50,37 @@
                   "maximumError": "15kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": true,
+                "fonts": true
+              }
+            },
+            "mobile": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "300kB",
+                  "maximumError": "500kB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              },
+              "extractLicenses": true,
+              "sourceMap": false
             },
             "development": {
               "optimization": false,
@@ -65,6 +95,9 @@
           "configurations": {
             "production": {
               "buildTarget": "ng-youtube-looper:build:production"
+            },
+            "mobile": {
+              "buildTarget": "ng-youtube-looper:build:mobile"
             },
             "development": {
               "buildTarget": "ng-youtube-looper:build:development"
