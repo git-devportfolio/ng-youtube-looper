@@ -35,6 +35,13 @@
     background: rgba(var(--error-rgb), 0.05);
   }
   
+  @include mobile-xs {
+    padding: var(--spacing-xs);
+    gap: var(--spacing-xs);
+    border-radius: var(--border-radius-sm);
+    max-width: none; // Full width on very small screens
+  }
+
   @include mobile {
     padding: var(--spacing-sm);
     gap: var(--spacing-sm);
@@ -54,6 +61,7 @@
 }
 
 .control-button {
+  @include button-base();
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -69,11 +77,18 @@
   position: relative;
   overflow: hidden;
 
-  &:hover:not(:disabled) {
-    background: var(--accent-color-light);
-    border-color: var(--accent-color);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+  // Only apply hover effects on hover-capable devices
+  @include hover-device {
+    &:hover:not(:disabled) {
+      background: var(--accent-color-light);
+      border-color: var(--accent-color);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    &:hover:not(:disabled) .control-icon {
+      transform: scale(1.1);
+    }
   }
 
   &:active:not(:disabled) {
@@ -97,8 +112,16 @@
     transition: transform 0.2s ease;
   }
 
-  &:hover:not(:disabled) .control-icon {
-    transform: scale(1.1);
+  // Enhanced touch feedback
+  @include touch-device {
+    min-width: 48px;
+    min-height: 48px;
+    
+    &:active:not(:disabled) {
+      transform: scale(0.95);
+      background: var(--accent-color-light);
+      border-color: var(--accent-color);
+    }
   }
 }
 
@@ -113,10 +136,13 @@
     font-size: 1.4rem;
   }
 
-  &:hover:not(:disabled) {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
-    transform: translateY(-2px) scale(1.05);
+  // Only apply hover effects on hover-capable devices
+  @include hover-device {
+    &:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      transform: translateY(-2px) scale(1.05);
+    }
   }
 
   &:disabled {
@@ -143,13 +169,16 @@
       transition: transform 0.2s ease;
     }
     
-    &:hover:not(:disabled) {
-      background: var(--accent-hover);
-      transform: translateY(-3px) scale(1.08);
-      box-shadow: var(--shadow-lg);
-      
-      .control-icon {
-        transform: scale(1.1);
+    // Only apply hover effects on hover-capable devices
+    @include hover-device {
+      &:hover:not(:disabled) {
+        background: var(--accent-hover);
+        transform: translateY(-3px) scale(1.08);
+        box-shadow: var(--shadow-lg);
+        
+        .control-icon {
+          transform: scale(1.1);
+        }
       }
     }
     
@@ -164,6 +193,17 @@
     }
     
     // Enhanced mobile sizing
+    @include mobile-xs {
+      width: 4rem;
+      height: 4rem;
+      min-width: 4rem;
+      min-height: 4rem;
+      
+      .control-icon {
+        font-size: 1.8rem;
+      }
+    }
+
     @include mobile {
       width: 3.5rem;
       height: 3.5rem;
@@ -173,9 +213,16 @@
       .control-icon {
         font-size: 1.6rem;
       }
+    }
+
+    // Touch-specific enhancements
+    @include touch-device {
+      min-width: 56px;
+      min-height: 56px;
       
-      &:hover:not(:disabled) {
-        transform: scale(1.05);
+      &:active:not(:disabled) {
+        transform: scale(0.95);
+        background: var(--accent-hover);
       }
     }
     
@@ -194,8 +241,11 @@
     font-weight: var(--font-weight-medium);
   }
 
-  &:hover:not(:disabled) .seek-label {
-    color: var(--accent-color);
+  // Only apply hover effects on hover-capable devices
+  @include hover-device {
+    &:hover:not(:disabled) .seek-label {
+      color: var(--accent-color);
+    }
   }
 }
 
@@ -204,13 +254,46 @@
     color: var(--error-color);
   }
 
-  &:hover:not(:disabled) {
-    border-color: var(--error-color);
-    background: var(--error-color-light);
+  // Only apply hover effects on hover-capable devices
+  @include hover-device {
+    &:hover:not(:disabled) {
+      border-color: var(--error-color);
+      background: var(--error-color-light);
+    }
   }
 }
 
 // Responsive adjustments
+@include mobile-xs {
+  .player-controls {
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs);
+  }
+
+  .control-button {
+    min-width: 48px; // Larger for very small screens
+    min-height: 48px;
+    padding: var(--spacing-xs);
+    
+    .control-icon {
+      font-size: 1.2rem; // Slightly larger
+    }
+  }
+
+  .play-pause-button {
+    min-width: 56px;
+    min-height: 56px;
+    
+    .control-icon {
+      font-size: 1.4rem;
+    }
+  }
+
+  .seek-button .seek-label {
+    font-size: 9px;
+  }
+}
+
 @include mobile {
   .player-controls {
     gap: var(--spacing-xs);

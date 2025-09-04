@@ -2,9 +2,21 @@
 
 // Mixins for responsive design and common patterns
 
-// Responsive mixins
+// Mobile-first responsive mixins with improved breakpoint system
+@mixin mobile-xs {
+  @media (max-width: #{map-get($breakpoints, mobile) - 1px}) {
+    @content;
+  }
+}
+
 @mixin mobile {
-  @media (max-width: #{map-get($breakpoints, tablet) - 1px}) {
+  @media (min-width: #{map-get($breakpoints, mobile)}) and (max-width: #{map-get($breakpoints, tablet) - 1px}) {
+    @content;
+  }
+}
+
+@mixin mobile-up {
+  @media (min-width: #{map-get($breakpoints, mobile)}) {
     @content;
   }
 }
@@ -22,7 +34,7 @@
 }
 
 @mixin desktop {
-  @media (min-width: #{map-get($breakpoints, desktop)}) {
+  @media (min-width: #{map-get($breakpoints, desktop)}) and (max-width: #{map-get($breakpoints, large) - 1px}) {
     @content;
   }
 }
@@ -39,6 +51,76 @@
   }
 }
 
+// Touch and pointer interaction mixins
+@mixin touch-device {
+  @media (hover: none) and (pointer: coarse) {
+    @content;
+  }
+}
+
+@mixin hover-device {
+  @media (hover: hover) and (pointer: fine) {
+    @content;
+  }
+}
+
+@mixin touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.75rem;
+  
+  @include touch-device {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 0.875rem;
+  }
+}
+
+@mixin touch-feedback {
+  position: relative;
+  overflow: hidden;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+    pointer-events: none;
+  }
+  
+  @include touch-device {
+    &:active::after {
+      width: 200px;
+      height: 200px;
+    }
+  }
+}
+
+// Orientation mixins
+@mixin portrait {
+  @media (orientation: portrait) {
+    @content;
+  }
+}
+
+@mixin landscape {
+  @media (orientation: landscape) {
+    @content;
+  }
+}
+
+@mixin landscape-mobile {
+  @media (orientation: landscape) and (max-height: 600px) {
+    @content;
+  }
+}
+
 // Animation mixins
 @mixin transition($properties: all, $duration: 0.2s, $timing: ease) {
   transition: $properties $duration $timing;
@@ -47,8 +129,11 @@
 @mixin hover-lift {
   @include transition(transform, 0.2s, ease);
   
-  &:hover {
-    transform: translateY(-1px);
+  // Only apply hover effects on devices that support hover
+  @include hover-device {
+    &:hover {
+      transform: translateY(-1px);
+    }
   }
   
   &:active {
@@ -134,10 +219,23 @@
   cursor: pointer;
   @include transition();
   @include button-focus();
+  @include touch-target();
   
   &:disabled {
     cursor: not-allowed;
     opacity: 0.6;
+  }
+  
+  // Enhanced touch interaction
+  @include touch-device {
+    @include touch-feedback();
+  }
+  
+  // Hover effects only on hover-capable devices
+  @include hover-device {
+    &:hover:not(:disabled) {
+      @include hover-lift();
+    }
   }
 }
 
