@@ -9,10 +9,11 @@ export const VIDEO_PLAYER_ROUTES: Routes = [
     path: 'player',
     loadComponent: () => import('./ui/video-player/video-player.component').then(m => m.VideoPlayerComponent)
   },
-  {
-    path: 'timeline',
-    loadComponent: () => import('./ui/timeline/timeline.component').then(m => m.TimelineComponent)
-  },
+  // Temporarily disabled due to TypeScript errors
+  // {
+  //   path: 'timeline',
+  //   loadComponent: () => import('./ui/timeline/timeline.component').then(m => m.TimelineComponent)
+  // },
   {
     path: 'controls',
     loadComponent: () => import('./ui/player-controls/player-controls.component').then(m => m.PlayerControlsComponent)

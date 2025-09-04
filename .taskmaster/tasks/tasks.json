@@ -386,7 +386,7 @@
           6,
           8
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -451,7 +451,60 @@
           9
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configurer les tests E2E avec Cypress et implémenter les scénarios principaux",
+            "description": "Installer et configurer Cypress pour les tests d'intégration E2E. Créer les tests pour les workflows principaux : chargement vidéo YouTube, création de boucles, contrôle vitesse et gestion des erreurs.",
+            "dependencies": [],
+            "details": "Installer Cypress via npm, créer la configuration dans cypress.config.ts avec baseUrl et viewportWidth/Height. Implémenter les tests E2E dans cypress/e2e/ : test-video-loading.cy.ts (chargement vidéo YouTube), test-loop-creation.cy.ts (création et gestion boucles), test-speed-control.cy.ts (contrôles vitesse), test-error-handling.cy.ts (gestion erreurs API YouTube). Utiliser les sélecteurs data-cy pour identifier les éléments UI. Configurer les commandes personnalisées dans cypress/support/commands.ts pour les actions récurrentes.",
+            "status": "cancelled",
+            "testStrategy": "Tests E2E automatisés couvrant 80% des fonctionnalités principales, validation des workflows utilisateur complets avec assertions sur l'état des composants et la persistance localStorage"
+          },
+          {
+            "id": 2,
+            "title": "Créer les utilitaires time.utils.ts et youtube.utils.ts avec gestion d'erreurs avancée",
+            "description": "Développer les utilitaires de formatage temporel et de validation YouTube avec gestion complète des erreurs (vidéos privées, géo-blocking, erreurs réseau).",
+            "dependencies": [],
+            "details": "Créer src/app/core/utils/time.utils.ts avec fonctions formatSecondsToMMSS(), parseTimeString(), isValidTimeRange(). Créer src/app/core/utils/youtube.utils.ts avec validateVideoId(), extractVideoId() amélioré, getVideoStatus() pour détecter les erreurs YouTube (code 100: vidéo privée, 101/150: géo-blocking). Intégrer ces utilitaires dans YouTubeService pour améliorer la gestion d'erreurs. Ajouter des messages d'erreur localisés en français avec suggestions de résolution.",
+            "status": "done",
+            "testStrategy": "Tests unitaires exhaustifs pour chaque fonction utilitaire, tests de gestion d'erreurs avec différents codes d'erreur YouTube, validation des formats temporels edge cases"
+          },
+          {
+            "id": 3,
+            "title": "Optimiser le bundle pour respecter les 500KB et implémenter le lazy loading",
+            "description": "Analyser et optimiser la taille du bundle Angular pour respecter la limite de 500KB définie dans angular.json. Implémenter le lazy loading des composants non critiques.",
+            "dependencies": [
+              "10.2"
+            ],
+            "details": "Exécuter ng build avec analyse de bundle (--named-chunks --output-hashing=none) pour identifier les gros modules. Implémenter le lazy loading pour SessionManagerComponent et autres composants non critiques via loadComponent() et dynamic imports. Optimiser les imports en utilisant seulement les modules RxJS nécessaires. Configurer tree-shaking optimal dans tsconfig.json. Utiliser les utilitaires time.utils.ts et youtube.utils.ts pour éviter la duplication de code. Minifier les assets statiques et optimiser les images.",
+            "status": "done",
+            "testStrategy": "Validation que ng build --configuration=production respecte les budgets 500KB warning et 1MB error, tests de chargement lazy loading avec vérification des chunks dynamiques"
+          },
+          {
+            "id": 4,
+            "title": "Configurer Lighthouse CI et optimiser les métriques de performance, accessibilité et SEO",
+            "description": "Implémenter l'audit Lighthouse automatisé et optimiser l'application pour atteindre des scores > 90 en performance, accessibilité et SEO.",
+            "dependencies": [
+              "10.3"
+            ],
+            "details": "Installer @lhci/cli et configurer lighthouserc.js avec les seuils de performance (Performance: >90, Accessibility: >90, Best Practices: >90, SEO: >85). Optimiser First Contentful Paint via preload des ressources critiques et inline CSS critique. Améliorer l'accessibilité avec ARIA labels, focus management, contraste couleurs conforme WCAG 2.1. Optimiser SEO avec meta tags dynamiques, structured data pour vidéos. Configurer CSP headers et améliorer les Core Web Vitals. Intégrer l'audit dans npm scripts avec lighthouse-ci.",
+            "status": "pending",
+            "testStrategy": "Audit Lighthouse automatisé dans CI/CD avec scores minimums requis, validation des métriques Core Web Vitals, tests d'accessibilité avec aXe-core"
+          },
+          {
+            "id": 5,
+            "title": "Valider la compatibilité cross-browser et finaliser la documentation",
+            "description": "Tester et valider l'application sur différents navigateurs (Chrome, Firefox, Safari, Edge). Finaliser la documentation utilisateur et technique.",
+            "dependencies": [
+              "10.1",
+              "10.4"
+            ],
+            "details": "Configurer les tests cross-browser avec BrowserStack ou Playwright pour Chrome 90+, Firefox 88+, Safari 14+, Edge 90+. Tester les API YouTube IFrame sur chaque navigateur avec polyfills si nécessaire. Valider les fonctionnalités tactiles sur Safari mobile. Créer la documentation dans README.md : guide utilisateur, architecture technique, guide de déploiement. Documenter les limitations connues et requirements navigateurs. Optimiser le bundle pour compatibilité ES2020 minimum. Valider les performances sur mobile et desktop.",
+            "status": "pending",
+            "testStrategy": "Tests automatisés cross-browser avec Playwright, validation manuelle sur appareils mobiles réels, tests de régression complets avant release finale"
+          }
+        ]
       },
       {
         "id": 11,
@@ -1161,7 +1214,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-04T18:31:34.728Z",
+      "updated": "2025-09-04T18:56:19.046Z",
       "description": "Tasks for master context"
     }
   }

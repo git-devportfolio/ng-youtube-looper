@@ -17,7 +17,7 @@ export class TimeSliderComponent {
   @Output() seekStart = new EventEmitter<void>();
   @Output() seekEnd = new EventEmitter<void>();
 
-  private isDragging = false;
+  isDragging = false;
 
   get progressPercentage(): number {
     if (this.duration === 0) return 0;

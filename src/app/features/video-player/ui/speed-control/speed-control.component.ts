@@ -37,7 +37,7 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
   @Output() loopSpeedChanged = new EventEmitter<{loopId: string, speed: number}>();
 
   private readonly youTubeService = inject(YouTubeService);
-  private readonly validationService = inject(ValidationService);
+  readonly validationService = inject(ValidationService);
   private readonly loopSpeedManager = inject(LoopSpeedManagerService);
   private readonly destroy$ = new Subject<void>();
 

@@ -73,7 +73,7 @@
             <div class="error-overlay">
               <div class="error-content">
                 <div class="error-icon">⚠️</div>
-                <div class="error-text">{{ facade.vm().playerState.error }}</div>
+                <div class="error-text">{{ facade.vm().error }}</div>
                 <button class="retry-button" (click)="retryVideo()">
                   Réessayer
                 </button>
@@ -93,12 +93,14 @@
                 <!-- Bottom overlay section with main controls -->
                 <div class="overlay-bottom">
                   <div class="overlay-controls">
-                    <app-player-controls class="overlay-player-controls">
+                    <app-player-controls 
+                      [viewModel]="facade.vm()" 
+                      class="overlay-player-controls">
                     </app-player-controls>
 
                     <app-speed-control
-                      [currentRate]="facade.vm().playerState.playbackRate"
-                      [disabled]="!facade.vm().playerState.isReady"
+                      [currentRate]="facade.vm().playbackRate"
+                      [disabled]="!facade.vm().isPlayerReady"
                       (rateChange)="setVideoPlaybackRate($event)"
                       (increaseSpeed)="facade.increaseSpeed()"
                       (decreaseSpeed)="facade.decreaseSpeed()"
@@ -113,10 +115,10 @@
         
         <!-- Video Info -->
         <div class="video-info">
-          <h3>{{ facade.vm().currentVideo.title }}</h3>
+          <h3>{{ facade.vm().currentVideo?.title }}</h3>
           <p class="video-meta">
-            Durée: {{ facade.formatTime(facade.vm().currentVideo.duration) }} | 
-            Auteur: {{ facade.vm().currentVideo.author }}
+            Durée: {{ facade.vm().durationFormatted }} | 
+            Auteur: {{ facade.vm().currentVideo?.author }}
           </p>
         </div>
       </div>
@@ -134,8 +136,8 @@
           ></div>
         </div>
         <div class="time-display">
-          {{ facade.formatTime(facade.vm().playerState.currentTime) }} / 
-          {{ facade.formatTime(facade.vm().playerState.duration) }}
+          {{ facade.vm().currentTimeFormatted }} / 
+          {{ facade.vm().durationFormatted }}
         </div>
       </div>
 
@@ -156,7 +158,7 @@
   @if (facade.vm().hasError) {
     <div class="error-banner">
       <span class="error-icon">⚠️</span>
-      {{ facade.vm().playerState.error }}
+      {{ facade.vm().error }}
     </div>
   }
 </div>

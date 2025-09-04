@@ -6,12 +6,20 @@
 </header>
 
 <main class="main-content">
-  <!-- Demo du système de thématisation -->
-  <app-theme-demo></app-theme-demo>
+  <!-- Demo du système de thématisation - lazy loaded -->
+  @defer (on timer(100ms)) {
+    <app-theme-demo></app-theme-demo>
+  } @loading {
+    <div class="loading-placeholder">Chargement du thème demo...</div>
+  }
   
   <!-- Router content -->
   <router-outlet />
 </main>
 
-<!-- Footer -->
-<app-footer></app-footer>
+<!-- Footer - lazy loaded -->
+@defer (on viewport) {
+  <app-footer></app-footer>
+} @loading {
+  <div class="footer-placeholder">Chargement du footer...</div>
+}

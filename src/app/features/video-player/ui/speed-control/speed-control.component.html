@@ -31,7 +31,7 @@
         [attr.aria-label]="preset.label + (currentRate === preset.value ? ', sélectionné' : '')"
         [attr.aria-pressed]="currentRate === preset.value"
       >
-        <span class="preset-value">{{ preset.display }}</span>
+        <span class="preset-value">{{ preset.value }}x</span>
         @if (currentRate === preset.value) {
           <span class="active-indicator" aria-hidden="true">●</span>
         }
@@ -104,7 +104,7 @@
         title="Appliquer la vitesse personnalisée (arrondie automatiquement)"
         aria-label="Appliquer la vitesse personnalisée"
       >
-        @if (isTransitioning) {
+        @if (isTransitioning()) {
           <span class="spinner" aria-hidden="true">⟳</span>
         } @else {
           <span aria-hidden="true">✓</span>

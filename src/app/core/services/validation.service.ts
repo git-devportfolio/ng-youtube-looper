@@ -272,6 +272,11 @@ export class ValidationService {
   }
 
   /**
+   * Constant for playback speed step size
+   */
+  readonly PLAYBACK_SPEED_STEP = 0.25;
+
+  /**
    * Validates if a speed is within custom range
    */
   isSpeedInRange(speed: number, minSpeed?: number, maxSpeed?: number): boolean {
