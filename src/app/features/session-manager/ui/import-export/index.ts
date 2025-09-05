@@ -1,1 +1,2 @@
-export { ImportExportComponent, ImportExportEvents } from './import-export.component';
+export { ImportExportComponent } from './import-export.component';
+export type { ImportExportEvents } from './import-export.component';

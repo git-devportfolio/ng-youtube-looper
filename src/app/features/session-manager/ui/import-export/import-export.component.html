@@ -63,6 +63,41 @@
           </button>
         </div>
       }
+
+      <!-- Individual Session Export -->
+      @if (sessionList().length > 0) {
+        <div class="option-card individual-export">
+          <div class="option-header">
+            <h4 class="option-title">Exporter une session individuelle</h4>
+            <div class="option-meta">
+              Choisissez une session spécifique à exporter
+            </div>
+          </div>
+          
+          <div class="session-export-list">
+            @for (session of getAvailableSessionsForExport(); track session.id) {
+              <div class="session-export-item">
+                <div class="session-info">
+                  <div class="session-name">{{ session.name }}</div>
+                  <div class="session-meta">{{ session.videoTitle }}</div>
+                </div>
+                <button 
+                  class="export-btn mini"
+                  [disabled]="isExporting()"
+                  (click)="exportIndividualSession(session)"
+                  [attr.aria-label]="'Exporter la session ' + session.name">
+                  @if (isExporting() && lastOperation() === 'export-individual') {
+                    <span class="btn-spinner"></span>
+                  } @else {
+                    <span class="btn-icon">📄</span>
+                    Exporter
+                  }
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
   </div>
 
@@ -91,53 +126,208 @@
       <!-- Import Options -->
       <div class="import-options">
         
-        <!-- Import Button -->
-        <div class="option-card">
-          <div class="option-header">
-            <h4 class="option-title">Importer depuis un fichier</h4>
-            <div class="option-meta">
-              Formats supportés : JSON (max 10MB)
+        <!-- Import Button (only show if no preview) -->
+        @if (!showPreview()) {
+          <div class="option-card">
+            <div class="option-header">
+              <h4 class="option-title">Importer depuis un fichier</h4>
+              <div class="option-meta">
+                Formats supportés : JSON (max 10MB)
+              </div>
+            </div>
+            
+            <button 
+              class="import-btn primary"
+              [disabled]="!canImport()"
+              (click)="triggerImport()"
+              [attr.aria-label]="'Sélectionner un fichier JSON à importer'">
+              @if (isImporting()) {
+                <span class="btn-spinner"></span>
+                Import en cours...
+              } @else {
+                <span class="btn-icon">📁</span>
+                Choisir un fichier
+              }
+            </button>
+          </div>
+
+          <!-- Drag & Drop Zone -->
+          <div class="drop-zone"
+               [class.processing]="isImporting()"
+               (dragover)="onDragOver($event)"
+               (dragleave)="onDragLeave($event)"
+               (drop)="onDrop($event)"
+               [attr.aria-label]="'Zone de dépôt pour fichiers JSON'">
+            
+            <div class="drop-zone-content">
+              @if (isImporting()) {
+                <div class="drop-zone-spinner"></div>
+                <div class="drop-zone-text">Import en cours...</div>
+              } @else {
+                <div class="drop-zone-icon">📎</div>
+                <div class="drop-zone-text">
+                  <strong>Glissez-déposez un fichier JSON ici</strong>
+                </div>
+                <div class="drop-zone-hint">
+                  ou utilisez le bouton "Choisir un fichier"
+                </div>
+              }
             </div>
           </div>
-          
-          <button 
-            class="import-btn primary"
-            [disabled]="!canImport()"
-            (click)="triggerImport()"
-            [attr.aria-label]="'Sélectionner un fichier JSON à importer'">
-            @if (isImporting()) {
-              <span class="btn-spinner"></span>
-              Import en cours...
-            } @else {
-              <span class="btn-icon">📁</span>
-              Choisir un fichier
-            }
-          </button>
-        </div>
+        }
 
-        <!-- Drag & Drop Zone -->
-        <div class="drop-zone"
-             [class.processing]="isImporting()"
-             (dragover)="onDragOver($event)"
-             (dragleave)="onDragLeave($event)"
-             (drop)="onDrop($event)"
-             [attr.aria-label]="'Zone de dépôt pour fichiers JSON'">
-          
-          <div class="drop-zone-content">
-            @if (isImporting()) {
-              <div class="drop-zone-spinner"></div>
-              <div class="drop-zone-text">Import en cours...</div>
-            } @else {
-              <div class="drop-zone-icon">📎</div>
-              <div class="drop-zone-text">
-                <strong>Glissez-déposez un fichier JSON ici</strong>
+        <!-- Import Preview -->
+        @if (showPreview() && importPreview(); as preview) {
+          <div class="import-preview-section">
+            <div class="preview-header">
+              <h4 class="preview-title">
+                <span class="preview-icon">🔍</span>
+                Aperçu de l'import
+              </h4>
+              <div class="preview-file-info">
+                <span class="file-name">{{ preview.fileName }}</span>
+                <span class="file-size">({{ getFormattedFileSize(preview.fileSize) }})</span>
               </div>
-              <div class="drop-zone-hint">
-                ou utilisez le bouton "Choisir un fichier"
+            </div>
+
+            <div class="preview-content">
+              <!-- Import Summary -->
+              <div class="preview-summary">
+                <div class="summary-stat">
+                  <span class="stat-icon">📋</span>
+                  <span class="stat-text">{{ preview.sessionCount }} session{{ preview.sessionCount !== 1 ? 's' : '' }} trouvée{{ preview.sessionCount !== 1 ? 's' : '' }}</span>
+                </div>
+                
+                @if (hasConflicts()) {
+                  <div class="summary-stat conflicts">
+                    <span class="stat-icon">⚠️</span>
+                    <span class="stat-text">{{ getConflictText() }}</span>
+                  </div>
+                }
+                
+                @if (preview.errors.length > 0) {
+                  <div class="summary-stat errors">
+                    <span class="stat-icon">❌</span>
+                    <span class="stat-text">{{ preview.errors.length }} erreur{{ preview.errors.length !== 1 ? 's' : '' }}</span>
+                  </div>
+                }
               </div>
-            }
+
+              <!-- Import Mode Selection -->
+              @if (hasConflicts()) {
+                <div class="import-mode-section">
+                  <h5 class="mode-title">Mode d'import :</h5>
+                  <div class="mode-options">
+                    <label class="mode-option">
+                      <input 
+                        type="radio" 
+                        name="importMode" 
+                        value="merge"
+                        [checked]="importMode() === 'merge'"
+                        (change)="setImportMode('merge')">
+                      <span class="mode-label">
+                        <strong>Fusionner</strong>
+                        <span class="mode-description">Conserver les deux versions (renommer automatiquement)</span>
+                      </span>
+                    </label>
+                    
+                    <label class="mode-option">
+                      <input 
+                        type="radio" 
+                        name="importMode" 
+                        value="replace"
+                        [checked]="importMode() === 'replace'"
+                        (change)="setImportMode('replace')">
+                      <span class="mode-label">
+                        <strong>Remplacer</strong>
+                        <span class="mode-description">Écraser les sessions existantes</span>
+                      </span>
+                    </label>
+                    
+                    <label class="mode-option">
+                      <input 
+                        type="radio" 
+                        name="importMode" 
+                        value="skip-conflicts"
+                        [checked]="importMode() === 'skip-conflicts'"
+                        (change)="setImportMode('skip-conflicts')">
+                      <span class="mode-label">
+                        <strong>Ignorer conflits</strong>
+                        <span class="mode-description">Ne pas importer les sessions en conflit</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              }
+
+              <!-- Session List Preview -->
+              @if (preview.sessions.length > 0) {
+                <div class="session-preview-list">
+                  <h5 class="preview-list-title">Sessions à importer :</h5>
+                  <div class="preview-sessions">
+                    @for (session of preview.sessions.slice(0, 5); track session.id) {
+                      <div class="preview-session-item"
+                           [class.has-conflict]="hasSessionConflict(session.id, preview.conflicts)">
+                        <div class="session-preview-info">
+                          <div class="session-preview-name">{{ session.name }}</div>
+                          <div class="session-preview-meta">{{ session.videoTitle }} • {{ session.loops.length }} boucle{{ session.loops.length !== 1 ? 's' : '' }}</div>
+                        </div>
+                        @if (hasSessionConflict(session.id, preview.conflicts)) {
+                          <div class="conflict-indicator">
+                            <span class="conflict-icon">⚠️</span>
+                            <span class="conflict-text">Conflit</span>
+                          </div>
+                        }
+                      </div>
+                    }
+                    @if (preview.sessions.length > 5) {
+                      <div class="preview-more">
+                        ... et {{ preview.sessions.length - 5 }} autres sessions
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Error List -->
+              @if (preview.errors.length > 0) {
+                <div class="error-list">
+                  <h5 class="error-title">Erreurs détectées :</h5>
+                  <ul class="error-items">
+                    @for (error of preview.errors; track $index) {
+                      <li class="error-item">{{ error }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+
+            <!-- Preview Actions -->
+            <div class="preview-actions">
+              <button 
+                class="preview-btn cancel"
+                (click)="cancelImport()"
+                type="button">
+                <span class="btn-icon">✕</span>
+                Annuler
+              </button>
+              
+              <button 
+                class="preview-btn confirm primary"
+                [disabled]="!canConfirmImport() || isImporting()"
+                (click)="confirmImport()"
+                type="button">
+                @if (isImporting()) {
+                  <span class="btn-spinner"></span>
+                  Import en cours...
+                } @else {
+                  <span class="btn-icon">✓</span>
+                  Confirmer l'import
+                }
+              </button>
+            </div>
           </div>
-        </div>
+        }
       </div>
     </div>
   }
@@ -198,12 +388,12 @@
           </div>
           <div class="storage-stat">
             <span class="stat-label">Espace utilisé :</span>
-            <span class="stat-value">{{ getFormattedFileSize(info.totalSize || 0) }}</span>
+            <span class="stat-value">{{ getFormattedFileSize(info.currentSize || 0) }}</span>
           </div>
-          @if (info.sessionSize) {
+          @if (info.currentSize) {
             <div class="storage-stat">
-              <span class="stat-label">Sessions :</span>
-              <span class="stat-value">{{ getFormattedFileSize(info.sessionSize) }}</span>
+              <span class="stat-label">Données sessions :</span>
+              <span class="stat-value">{{ getFormattedFileSize(info.currentSize) }}</span>
             </div>
           }
         </div>

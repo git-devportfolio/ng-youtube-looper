@@ -966,7 +966,7 @@
               "18.1"
             ],
             "details": "Créer l'interface ImportExportComponent avec options d'export (toutes les sessions, session sélectionnée, sessions multiples). Implémenter l'import avec validation du format JSON, gestion des erreurs et preview des données. Ajouter la validation de structure JSON, gestion des conflicts de noms, et options de merge/replace. Utiliser les méthodes existantes de SessionFacade (exportAllSessions, exportSelectedSessions, importSessionsFromFile).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests de validation des formats JSON, tests d'import/export avec données valides et invalides, tests de gestion des conflits de noms"
           },
           {
@@ -1378,7 +1378,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-05T12:55:33.684Z",
+      "updated": "2025-09-05T13:10:36.422Z",
       "description": "Tasks for master context"
     }
   }

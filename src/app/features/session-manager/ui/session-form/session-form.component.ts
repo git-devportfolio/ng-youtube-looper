@@ -190,7 +190,7 @@ export class SessionFormComponent implements OnInit, OnDestroy {
   // === VALIDATION HELPERS ===
 
   private isNameTaken(name: string): boolean {
-    if (!name || this._isEditMode.set && this.session?.name === name) {
+    if (!name || (this._isEditMode() && this.session?.name === name)) {
       return false;
     }
     
@@ -256,8 +256,8 @@ export class SessionFormComponent implements OnInit, OnDestroy {
     if (result.success) {
       // Update session with additional form data
       await this.sessionFacade.updateSession({
-        description: formData.description,
-        tags: formData.tags
+        description: formData.description || '',
+        tags: formData.tags || []
       });
       
       this.save.emit(formData);
@@ -274,8 +274,8 @@ export class SessionFormComponent implements OnInit, OnDestroy {
 
     const result = await this.sessionFacade.updateSession({
       name: formData.name,
-      description: formData.description,
-      tags: formData.tags
+      description: formData.description || '',
+      tags: formData.tags || []
     });
 
     if (result.success) {
@@ -336,7 +336,7 @@ export class SessionFormComponent implements OnInit, OnDestroy {
 
   getSubmitError(): string | null {
     const errors = this._formErrors();
-    return errors.submit || null;
+    return errors['submit'] || null;
   }
 
   /**

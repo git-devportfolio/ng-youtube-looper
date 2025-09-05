@@ -266,7 +266,7 @@ export class SessionListComponent implements OnInit {
 
   // === TEMPLATE HELPERS ===
 
-  trackSessionById(index: number, session: LooperSession): string {
+  trackSessionById(_index: number, session: LooperSession): string {
     return session.id;
   }
 

@@ -9,8 +9,8 @@ import {
 import { CommonModule } from '@angular/common';
 import { SessionFacade } from '../../data-access';
 import { SessionFormComponent, SessionFormData } from '../session-form';
-import { SessionListComponent, SessionListEvents } from '../session-list';
-import { ImportExportComponent, ImportExportEvents } from '../import-export';
+import { SessionListComponent } from '../session-list';
+import { ImportExportComponent } from '../import-export';
 import { LooperSession, SessionHistoryEntry } from '@core/services/looper-storage.types';
 
 export type ViewMode = 'list' | 'create' | 'edit' | 'history' | 'import-export';
@@ -202,8 +202,8 @@ export class SessionManagerComponent implements OnInit {
     if (result.success) {
       // Update the new session with original data
       await this.sessionFacade.updateSession({
-        description: session.description,
-        tags: session.tags,
+        description: session.description || '',
+        tags: session.tags || [],
         loops: [...session.loops],
         globalPlaybackSpeed: session.globalPlaybackSpeed
       });
@@ -264,7 +264,7 @@ export class SessionManagerComponent implements OnInit {
 
   // === SESSION FORM EVENTS ===
 
-  onSessionSave(formData: SessionFormData): void {
+  onSessionSave(_formData: SessionFormData): void {
     this.navigateBack();
   }
 
@@ -400,7 +400,7 @@ export class SessionManagerComponent implements OnInit {
 
   // === TEMPLATE HELPERS ===
 
-  trackHistoryById(index: number, entry: SessionHistoryEntry): string {
+  trackHistoryById(_index: number, entry: SessionHistoryEntry): string {
     return entry.sessionId;
   }
 
