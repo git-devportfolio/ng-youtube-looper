@@ -512,8 +512,8 @@ describe('TimelineComponent', () => {
 
     it('should render loop segments', () => {
       component.loops = [
-        { id: '1', startTime: 10, endTime: 30, name: 'Loop 1', playCount: 0, isActive: false, playbackSpeed: 1 },
-        { id: '2', startTime: 50, endTime: 80, name: 'Loop 2', playCount: 0, isActive: false, playbackSpeed: 1 }
+        { id: '1', startTime: 10, endTime: 30, name: 'Loop 1', playCount: 0, isActive: false },
+        { id: '2', startTime: 50, endTime: 80, name: 'Loop 2', playCount: 0, isActive: false }
       ];
       fixture.detectChanges();
 
@@ -781,9 +781,9 @@ describe('TimelineComponent', () => {
 
     beforeEach(() => {
       testLoops = [
-        { id: '1', startTime: 10, endTime: 30, name: 'Intro', playCount: 0, isActive: false, playbackSpeed: 1 },
-        { id: '2', startTime: 50, endTime: 80, name: 'Solo', playCount: 0, isActive: false, playbackSpeed: 1 },
-        { id: '3', startTime: 90, endTime: 120, name: 'Bridge', playCount: 0, isActive: false, playbackSpeed: 1 }
+        { id: '1', startTime: 10, endTime: 30, name: 'Intro', playCount: 0, isActive: false },
+        { id: '2', startTime: 50, endTime: 80, name: 'Solo', playCount: 0, isActive: false },
+        { id: '3', startTime: 90, endTime: 120, name: 'Bridge', playCount: 0, isActive: false }
       ];
       component.loops = testLoops;
       component.duration = 150;
@@ -791,7 +791,7 @@ describe('TimelineComponent', () => {
 
     describe('Loop Position Calculations', () => {
       it('should calculate correct loop position percentages', () => {
-        const loop = { id: '1', startTime: 30, endTime: 60, name: 'Test Loop', playCount: 0, isActive: false, playbackSpeed: 1 };
+        const loop = { id: '1', startTime: 30, endTime: 60, name: 'Test Loop', playCount: 0, isActive: false };
         component.duration = 120;
 
         const position = component.getLoopPosition(loop);
@@ -801,7 +801,7 @@ describe('TimelineComponent', () => {
       });
 
       it('should return zero position when duration is zero', () => {
-        const loop = { id: '1', startTime: 30, endTime: 60, name: 'Test Loop', playCount: 0, isActive: false, playbackSpeed: 1 };
+        const loop = { id: '1', startTime: 30, endTime: 60, name: 'Test Loop', playCount: 0, isActive: false };
         component.duration = 0;
 
         const position = component.getLoopPosition(loop);
@@ -811,7 +811,7 @@ describe('TimelineComponent', () => {
       });
 
       it('should constrain position within bounds', () => {
-        const loop = { id: '1', startTime: 0, endTime: 200, name: 'Test Loop', playCount: 0, isActive: false, playbackSpeed: 1 };
+        const loop = { id: '1', startTime: 0, endTime: 200, name: 'Test Loop', playCount: 0, isActive: false };
         component.duration = 100;
 
         const position = component.getLoopPosition(loop);
@@ -828,9 +828,9 @@ describe('TimelineComponent', () => {
 
       it('should calculate multiple loop positions efficiently', () => {
         const loops = [
-          { id: '1', startTime: 20, endTime: 60, name: 'Loop 1', playCount: 0, isActive: false, playbackSpeed: 1 },
-          { id: '2', startTime: 80, endTime: 120, name: 'Loop 2', playCount: 0, isActive: false, playbackSpeed: 1 },
-          { id: '3', startTime: 140, endTime: 180, name: 'Loop 3', playCount: 0, isActive: false, playbackSpeed: 1 }
+          { id: '1', startTime: 20, endTime: 60, name: 'Loop 1', playCount: 0, isActive: false },
+          { id: '2', startTime: 80, endTime: 120, name: 'Loop 2', playCount: 0, isActive: false },
+          { id: '3', startTime: 140, endTime: 180, name: 'Loop 3', playCount: 0, isActive: false }
         ];
 
         const results = component.getMultipleLoopPositions(loops);
@@ -850,8 +850,8 @@ describe('TimelineComponent', () => {
       it('should return zeros when duration is 0', () => {
         component.duration = 0;
         const loops = [
-          { id: '1', startTime: 20, endTime: 60, name: 'Loop 1', playCount: 0, isActive: false, playbackSpeed: 1 },
-          { id: '2', startTime: 80, endTime: 120, name: 'Loop 2', playCount: 0, isActive: false, playbackSpeed: 1 }
+          { id: '1', startTime: 20, endTime: 60, name: 'Loop 1', playCount: 0, isActive: false },
+          { id: '2', startTime: 80, endTime: 120, name: 'Loop 2', playCount: 0, isActive: false }
         ];
 
         const results = component.getMultipleLoopPositions(loops);
@@ -864,8 +864,8 @@ describe('TimelineComponent', () => {
 
       it('should constrain out-of-bounds loops', () => {
         const loops = [
-          { id: '1', startTime: -10, endTime: 50, name: 'Loop 1', playCount: 0, isActive: false, playbackSpeed: 1 },
-          { id: '2', startTime: 150, endTime: 250, name: 'Loop 2', playCount: 0, isActive: false, playbackSpeed: 1 }
+          { id: '1', startTime: -10, endTime: 50, name: 'Loop 1', playCount: 0, isActive: false },
+          { id: '2', startTime: 150, endTime: 250, name: 'Loop 2', playCount: 0, isActive: false }
         ];
 
         const results = component.getMultipleLoopPositions(loops);
@@ -1388,7 +1388,7 @@ describe('TimelineComponent', () => {
   describe('Animations and Micro-interactions (Task 15.5)', () => {
     beforeEach(() => {
       component.loops = [
-        { id: '1', startTime: 10, endTime: 30, name: 'Test Loop', playCount: 0, isActive: false, playbackSpeed: 1 }
+        { id: '1', startTime: 10, endTime: 30, name: 'Test Loop', playCount: 0, isActive: false }
       ];
       component.duration = 100;
       component.isLoading = false;
@@ -1456,9 +1456,9 @@ describe('TimelineComponent', () => {
 
       it('should have staggered animation delay for multiple loops', () => {
         component.loops = [
-          { id: '1', startTime: 10, endTime: 30, name: 'Loop 1', playCount: 0, isActive: false, playbackSpeed: 1 },
-          { id: '2', startTime: 40, endTime: 60, name: 'Loop 2', playCount: 0, isActive: false, playbackSpeed: 1 },
-          { id: '3', startTime: 70, endTime: 90, name: 'Loop 3', playCount: 0, isActive: false, playbackSpeed: 1 }
+          { id: '1', startTime: 10, endTime: 30, name: 'Loop 1', playCount: 0, isActive: false },
+          { id: '2', startTime: 40, endTime: 60, name: 'Loop 2', playCount: 0, isActive: false },
+          { id: '3', startTime: 70, endTime: 90, name: 'Loop 3', playCount: 0, isActive: false }
         ];
         fixture.detectChanges();
 
@@ -1569,9 +1569,9 @@ describe('TimelineComponent', () => {
 
     beforeEach(() => {
       testLoops = [
-        { id: '1', startTime: 10, endTime: 30, name: 'Intro', playCount: 0, isActive: false, playbackSpeed: 1 },
-        { id: '2', startTime: 50, endTime: 80, name: 'Solo', playCount: 0, isActive: false, playbackSpeed: 1 },
-        { id: '3', startTime: 90, endTime: 120, name: 'Bridge', playCount: 0, isActive: false, playbackSpeed: 1 }
+        { id: '1', startTime: 10, endTime: 30, name: 'Intro', playCount: 0, isActive: false },
+        { id: '2', startTime: 50, endTime: 80, name: 'Solo', playCount: 0, isActive: false },
+        { id: '3', startTime: 90, endTime: 120, name: 'Bridge', playCount: 0, isActive: false }
       ];
       component.loops = testLoops;
       component.duration = 150;
@@ -1947,7 +1947,7 @@ describe('TimelineComponent', () => {
         
         component.onTouchStart(touchStartEvent);
 
-        // Try click event - should be prevented
+        // Try click - should be prevented
         const clickEvent = {
           currentTarget: mockElement,
           clientX: 20
@@ -1994,8 +1994,7 @@ describe('TimelineComponent', () => {
           endTime: i * 10 + 5,
           name: `Loop ${i}`,
           playCount: 0,
-          isActive: false,
-          playbackSpeed: 1
+          isActive: false
         })) as LoopSegment[];
         
         component.loops = manyLoops;
@@ -2018,8 +2017,8 @@ describe('TimelineComponent', () => {
       // Create mock facade with proper signals
       mockTimelineVm = {
         loops: [
-          { id: '1', startTime: 10, endTime: 30, name: 'Test Loop 1', playCount: 0, isActive: false, playbackSpeed: 1 },
-          { id: '2', startTime: 50, endTime: 80, name: 'Test Loop 2', playCount: 0, isActive: false, playbackSpeed: 1 }
+          { id: '1', startTime: 10, endTime: 30, name: 'Test Loop 1', playCount: 0, isActive: false },
+          { id: '2', startTime: 50, endTime: 80, name: 'Test Loop 2', playCount: 0, isActive: false }
         ],
         editingLoop: null,
         activeLoopId: '1',
@@ -2035,7 +2034,7 @@ describe('TimelineComponent', () => {
         'getLoopProgress'
       ], {
         timelineVm: jasmine.createSpy().and.returnValue(mockTimelineVm),
-        activeLoop: jasmine.createSpy().and.returnValue({ id: '1', startTime: 10, endTime: 30, name: 'Test Loop 1', playCount: 0, isActive: true, playbackSpeed: 1 }),
+        activeLoop: jasmine.createSpy().and.returnValue({ id: '1', startTime: 10, endTime: 30, name: 'Test Loop 1', playCount: 0, isActive: true }),
         isLooping: jasmine.createSpy().and.returnValue(true),
         error: jasmine.createSpy().and.returnValue(null)
       });
@@ -2076,7 +2075,7 @@ describe('TimelineComponent', () => {
 
       it('should use input loops when useFacade is false', () => {
         component.useFacade = false;
-        const inputLoops = [{ id: '3', startTime: 100, endTime: 120, name: 'Input Loop', playCount: 0, isActive: false, playbackSpeed: 1 }];
+        const inputLoops = [{ id: '3', startTime: 100, endTime: 120, name: 'Input Loop', playCount: 0, isActive: false }];
         component.loops = inputLoops;
         
         const loops = component.effectiveLoops;
@@ -2311,7 +2310,7 @@ describe('TimelineComponent', () => {
 
       it('should provide collision recommendations', () => {
         component.loops = [
-          { id: '1', startTime: 20, endTime: 40, name: 'Existing', playCount: 0, isActive: false, playbackSpeed: 1 }
+          { id: '1', startTime: 20, endTime: 40, name: 'Existing Loop', playCount: 0, isActive: false }
         ];
         spyOn(component.validationErrorChange, 'emit');
         
@@ -2447,8 +2446,7 @@ describe('TimelineComponent', () => {
           endTime: 65,
           name: 'Existing Loop',
           playCount: 0,
-          isActive: false,
-          playbackSpeed: 1
+          isActive: false
         }];
         
         component.onTrackMouseDown(mockEvent);
@@ -2578,7 +2576,7 @@ describe('TimelineComponent', () => {
     describe('Collision Detection During Creation', () => {
       beforeEach(() => {
         component.loops = [
-          { id: '1', startTime: 30, endTime: 60, name: 'Existing Loop', playCount: 0, isActive: false, playbackSpeed: 1 }
+          { id: '1', startTime: 30, endTime: 60, name: 'Existing Loop', playCount: 0, isActive: false }
         ];
       });
       
@@ -2651,7 +2649,7 @@ describe('TimelineComponent', () => {
       
       it('should not create loop when collision detected', () => {
         component.loops = [
-          { id: '1', startTime: 20, endTime: 40, name: 'Existing', playCount: 0, isActive: false, playbackSpeed: 1 }
+          { id: '1', startTime: 20, endTime: 40, name: 'Existing', playCount: 0, isActive: false }
         ];
         
         component.onTrackMouseDown(mockEvent);
@@ -2741,7 +2739,7 @@ describe('TimelineComponent', () => {
       
       it('should show collision warning during creation collision', () => {
         component.loops = [
-          { id: '1', startTime: 25, endTime: 35, name: 'Collision', playCount: 0, isActive: false, playbackSpeed: 1 }
+          { id: '1', startTime: 25, endTime: 35, name: 'Collision', playCount: 0, isActive: false }
         ];
         
         component['_creationPreview'] = {
@@ -2798,7 +2796,7 @@ describe('TimelineComponent', () => {
           isVisible: true
         };
         component.loops = [
-          { id: '1', startTime: 25, endTime: 35, name: 'Collision', playCount: 0, isActive: false, playbackSpeed: 1 }
+          { id: '1', startTime: 25, endTime: 35, name: 'Collision', playCount: 0, isActive: false }
         ];
         fixture.detectChanges();
         

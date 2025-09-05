@@ -1,0 +1,277 @@
+<div class="loop-manager">
+  <!-- Header Section -->
+  <header class="loop-manager-header">
+    <div class="header-title">
+      <h1>Gestion des Boucles</h1>
+      <p class="subtitle">
+        @if (vm().hasLoops) {
+          {{ vm().totalLoops }} boucle{{ vm().totalLoops > 1 ? 's' : '' }} trouvée{{ vm().totalLoops > 1 ? 's' : '' }}
+        } @else {
+          Aucune boucle créée
+        }
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <!-- Timeline Sync Toggle -->
+      @if (vm().hasLoops) {
+        <button
+          type="button"
+          class="btn btn-secondary timeline-sync-toggle"
+          [class.active]="timelineSyncEnabled()"
+          (click)="toggleTimelineSync()"
+          [attr.aria-pressed]="timelineSyncEnabled()"
+          [title]="timelineSyncStatus">
+          <span class="btn-icon" aria-hidden="true">
+            {{ timelineSyncEnabled() ? '🔄' : '⏸️' }}
+          </span>
+          <span class="btn-text">
+            Sync Timeline
+          </span>
+        </button>
+      }
+      
+      <button 
+        class="btn btn-primary add-loop-btn"
+        (click)="onAddLoop()"
+        [disabled]="vm().isLoading"
+        type="button"
+        aria-label="Ajouter une nouvelle boucle">
+        <span class="btn-icon" aria-hidden="true">➕</span>
+        <span class="btn-text">Ajouter une boucle</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Search and Filters Section -->
+  @if (vm().hasLoops) {
+    <section class="filters-section">
+      <div class="search-controls">
+        <!-- Search Input -->
+        <div class="search-input-group">
+          <label for="search-loops" class="sr-only">Rechercher des boucles</label>
+          <input
+            id="search-loops"
+            type="text"
+            class="search-input"
+            placeholder="Rechercher par nom..."
+            [value]="searchTerm()"
+            (input)="onSearch($event.target.value)"
+            aria-describedby="search-help">
+          <span id="search-help" class="sr-only">
+            Saisissez du texte pour filtrer les boucles par nom
+          </span>
+        </div>
+
+        <!-- Sort Controls -->
+        <div class="sort-controls">
+          <label for="sort-select" class="sort-label">Trier par:</label>
+          <div class="sort-buttons" role="group" aria-label="Options de tri">
+            <button
+              type="button"
+              class="sort-btn"
+              [class.active]="sortBy() === 'name'"
+              (click)="onSortChange('name')"
+              [attr.aria-pressed]="sortBy() === 'name'"
+              title="Trier par nom">
+              Nom
+              @if (sortBy() === 'name') {
+                <span class="sort-direction" aria-hidden="true">
+                  {{ sortDirection() === 'asc' ? '↑' : '↓' }}
+                </span>
+              }
+            </button>
+            
+            <button
+              type="button"
+              class="sort-btn"
+              [class.active]="sortBy() === 'startTime'"
+              (click)="onSortChange('startTime')"
+              [attr.aria-pressed]="sortBy() === 'startTime'"
+              title="Trier par temps de début">
+              Début
+              @if (sortBy() === 'startTime') {
+                <span class="sort-direction" aria-hidden="true">
+                  {{ sortDirection() === 'asc' ? '↑' : '↓' }}
+                </span>
+              }
+            </button>
+            
+            <button
+              type="button"
+              class="sort-btn"
+              [class.active]="sortBy() === 'duration'"
+              (click)="onSortChange('duration')"
+              [attr.aria-pressed]="sortBy() === 'duration'"
+              title="Trier par durée">
+              Durée
+              @if (sortBy() === 'duration') {
+                <span class="sort-direction" aria-hidden="true">
+                  {{ sortDirection() === 'asc' ? '↑' : '↓' }}
+                </span>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- Loading State -->
+  @if (vm().isLoading) {
+    <div class="loading-state" role="status" aria-label="Chargement en cours">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>Chargement des boucles...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (vm().error && !vm().isLoading) {
+    <div class="error-state" role="alert">
+      <h2>Erreur</h2>
+      <p>{{ vm().error }}</p>
+      <button type="button" class="btn btn-secondary" (click)="ngOnInit()">
+        Réessayer
+      </button>
+    </div>
+  }
+
+  <!-- Main Content -->
+  @if (!vm().isLoading && !vm().error) {
+    <main class="loop-manager-content">
+      
+      <!-- Add/Edit Form -->
+      @if (showAddForm()) {
+        <section class="form-section" aria-label="Formulaire de boucle">
+          <div class="form-header">
+            <h2>{{ editingLoopId() ? 'Modifier' : 'Ajouter' }} une boucle</h2>
+            <button
+              type="button"
+              class="close-form-btn"
+              (click)="onLoopFormCancel()"
+              aria-label="Fermer le formulaire">
+              ✕
+            </button>
+          </div>
+          
+          <app-loop-form
+            [loopId]="editingLoopId()"
+            (save)="onLoopFormSubmit($event)"
+            (cancel)="onLoopFormCancel()">
+          </app-loop-form>
+        </section>
+      }
+
+      <!-- Loops List -->
+      @if (vm().hasLoops) {
+        <section class="loops-section" aria-label="Liste des boucles">
+          <div class="loops-container" [class]="getTimelineSyncClasses()">
+            @for (loop of vm().loops; track loop.id; let i = $index) {
+              <article 
+                class="loop-item" 
+                [class]="getEnhancedLoopClasses(loop)"
+                [attr.data-loop-id]="loop.id"
+                [attr.role]="getLoopAriaRole()"
+                [attr.aria-label]="getLoopAriaLabel(loop, i)"
+                [attr.tabindex]="focusedLoopId() === loop.id ? 0 : -1"
+                (keydown)="onLoopKeyDown($event, loop, i)"
+                (click)="onLoopSelect(loop)">
+                
+                <!-- Timeline Sync Indicator -->
+                @if (selectedLoopForTimeline()?.id === loop.id && timelineSyncEnabled()) {
+                  <div class="timeline-sync-indicator" aria-hidden="true" title="Synchronisé avec la timeline">
+                    🔄
+                  </div>
+                }
+                
+                <!-- Loop Info -->
+                <div class="loop-info">
+                  <h3 class="loop-name">{{ loop.name }}</h3>
+                  <div class="loop-times">
+                    <span class="time-range">
+                      {{ formatTime(loop.startTime) }} - {{ formatTime(loop.endTime) }}
+                    </span>
+                    <span class="duration">
+                      ({{ formatDuration(loop.startTime, loop.endTime) }})
+                    </span>
+                  </div>
+                  
+                  @if (loop.color) {
+                    <div class="loop-color" [style.background-color]="loop.color" aria-hidden="true">
+                    </div>
+                  }
+                </div>
+
+                <!-- Loop Actions -->
+                <div class="loop-actions">
+                  <button
+                    type="button"
+                    class="action-btn play-btn"
+                    (click)="onPlayLoop(loop)"
+                    [disabled]="vm().isLoading"
+                    [title]="vm().currentLoop?.id === loop.id ? 'Arrêter la boucle' : 'Jouer la boucle'"
+                    [attr.aria-label]="vm().currentLoop?.id === loop.id ? 'Arrêter la boucle ' + loop.name : 'Jouer la boucle ' + loop.name">
+                    @if (vm().currentLoop?.id === loop.id) {
+                      ⏸️
+                    } @else {
+                      ▶️
+                    }
+                  </button>
+
+                  <button
+                    type="button"
+                    class="action-btn edit-btn"
+                    (click)="onEditLoop(loop)"
+                    [disabled]="vm().isLoading"
+                    [title]="'Modifier la boucle ' + loop.name"
+                    [attr.aria-label]="'Modifier la boucle ' + loop.name">
+                    ✏️
+                  </button>
+
+                  <button
+                    type="button"
+                    class="action-btn duplicate-btn"
+                    (click)="onDuplicateLoop(loop)"
+                    [disabled]="vm().isLoading"
+                    [title]="'Dupliquer la boucle ' + loop.name"
+                    [attr.aria-label]="'Dupliquer la boucle ' + loop.name">
+                    📋
+                  </button>
+
+                  <button
+                    type="button"
+                    class="action-btn delete-btn"
+                    (click)="onDeleteLoop(loop)"
+                    [disabled]="vm().isLoading"
+                    [title]="'Supprimer la boucle ' + loop.name"
+                    [attr.aria-label]="'Supprimer la boucle ' + loop.name">
+                    🗑️
+                  </button>
+                </div>
+              </article>
+            } @empty {
+              <div class="no-results-state">
+                <p>Aucune boucle ne correspond à votre recherche.</p>
+                <button type="button" class="btn btn-secondary" (click)="onSearch('')">
+                  Effacer la recherche
+                </button>
+              </div>
+            }
+          </div>
+        </section>
+      } @else if (!showAddForm()) {
+        <!-- Empty State -->
+        <section class="empty-state" aria-label="État vide">
+          <div class="empty-content">
+            <div class="empty-icon" aria-hidden="true">🔄</div>
+            <h2>Aucune boucle créée</h2>
+            <p>Créez votre première boucle pour commencer à organiser vos segments de practice.</p>
+            <button type="button" class="btn btn-primary" (click)="onAddLoop()">
+              Créer ma première boucle
+            </button>
+          </div>
+        </section>
+      }
+    </main>
+  }
+</div>
