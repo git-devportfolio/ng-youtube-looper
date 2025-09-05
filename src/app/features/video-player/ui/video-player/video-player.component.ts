@@ -5,6 +5,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { VideoPlayerFacade } from '../../data-access/video-player.facade';
 import { PlayerControlsComponent } from '../player-controls';
 import { SpeedControlComponent } from '../speed-control';
+import { KeyboardShortcutsService } from '@shared/services';
 
 @Component({
   selector: 'app-video-player',
@@ -15,6 +16,7 @@ import { SpeedControlComponent } from '../speed-control';
 export class VideoPlayerComponent implements OnInit, OnDestroy {
   readonly facade = inject(VideoPlayerFacade);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly keyboardShortcuts = inject(KeyboardShortcutsService);
   
   @ViewChild('youtubePlayer', { static: false }) 
   youtubePlayerRef?: ElementRef<HTMLIFrameElement>;
@@ -58,6 +60,9 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
 
     // Set up iframe event listeners for YouTube API synchronization
     this.setupIFrameEventListeners();
+
+    // Register keyboard shortcuts for video player
+    this.registerVideoPlayerShortcuts();
   }
 
   ngOnDestroy() {
@@ -67,6 +72,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
     }
     this.stopCurrentTimePolling();
     this.removeIFrameEventListeners();
+    this.unregisterVideoPlayerShortcuts();
   }
 
   async loadVideo() {
@@ -408,5 +414,186 @@ export class VideoPlayerComponent implements OnInit, OnDestroy {
       JSON.stringify(message),
       'https://www.youtube.com'
     );
+  }
+
+  /**
+   * Registers keyboard shortcuts for video player functionality
+   */
+  private registerVideoPlayerShortcuts(): void {
+    // Space bar - Play/Pause
+    this.keyboardShortcuts.registerShortcut({
+      key: ' ',
+      description: 'Lire/Mettre en pause la vidéo',
+      category: 'video',
+      action: () => {
+        if (this.facade.vm().isPlaying) {
+          this.pauseVideo();
+        } else {
+          this.playVideo();
+        }
+      },
+      enabled: true
+    });
+
+    // Arrow keys - Seek
+    this.keyboardShortcuts.registerShortcut({
+      key: 'ArrowLeft',
+      description: 'Reculer de 5 secondes',
+      category: 'video',
+      action: () => {
+        const currentTime = this.facade.vm().currentTime;
+        this.seekToTime(Math.max(0, currentTime - 5));
+      },
+      enabled: true
+    });
+
+    this.keyboardShortcuts.registerShortcut({
+      key: 'ArrowRight',
+      description: 'Avancer de 5 secondes',
+      category: 'video',
+      action: () => {
+        const currentTime = this.facade.vm().currentTime;
+        const duration = this.facade.vm().duration;
+        this.seekToTime(Math.min(duration, currentTime + 5));
+      },
+      enabled: true
+    });
+
+    this.keyboardShortcuts.registerShortcut({
+      key: 'ArrowLeft',
+      shiftKey: true,
+      description: 'Reculer de 10 secondes',
+      category: 'video',
+      action: () => {
+        const currentTime = this.facade.vm().currentTime;
+        this.seekToTime(Math.max(0, currentTime - 10));
+      },
+      enabled: true
+    });
+
+    this.keyboardShortcuts.registerShortcut({
+      key: 'ArrowRight',
+      shiftKey: true,
+      description: 'Avancer de 10 secondes',
+      category: 'video',
+      action: () => {
+        const currentTime = this.facade.vm().currentTime;
+        const duration = this.facade.vm().duration;
+        this.seekToTime(Math.min(duration, currentTime + 10));
+      },
+      enabled: true
+    });
+
+    // Number keys for playback speed
+    this.keyboardShortcuts.registerShortcut({
+      key: '1',
+      description: 'Vitesse x0.25',
+      category: 'video',
+      action: () => this.setVideoPlaybackRate(0.25),
+      enabled: true
+    });
+
+    this.keyboardShortcuts.registerShortcut({
+      key: '2',
+      description: 'Vitesse x0.5',
+      category: 'video',
+      action: () => this.setVideoPlaybackRate(0.5),
+      enabled: true
+    });
+
+    this.keyboardShortcuts.registerShortcut({
+      key: '3',
+      description: 'Vitesse x0.75',
+      category: 'video',
+      action: () => this.setVideoPlaybackRate(0.75),
+      enabled: true
+    });
+
+    this.keyboardShortcuts.registerShortcut({
+      key: '4',
+      description: 'Vitesse normale (x1)',
+      category: 'video',
+      action: () => this.setVideoPlaybackRate(1),
+      enabled: true
+    });
+
+    this.keyboardShortcuts.registerShortcut({
+      key: '5',
+      description: 'Vitesse x1.25',
+      category: 'video',
+      action: () => this.setVideoPlaybackRate(1.25),
+      enabled: true
+    });
+
+    this.keyboardShortcuts.registerShortcut({
+      key: '6',
+      description: 'Vitesse x1.5',
+      category: 'video',
+      action: () => this.setVideoPlaybackRate(1.5),
+      enabled: true
+    });
+
+    this.keyboardShortcuts.registerShortcut({
+      key: '7',
+      description: 'Vitesse x1.75',
+      category: 'video',
+      action: () => this.setVideoPlaybackRate(1.75),
+      enabled: true
+    });
+
+    this.keyboardShortcuts.registerShortcut({
+      key: '8',
+      description: 'Vitesse x2',
+      category: 'video',
+      action: () => this.setVideoPlaybackRate(2),
+      enabled: true
+    });
+
+    // Home/End keys - Jump to beginning/end
+    this.keyboardShortcuts.registerShortcut({
+      key: 'Home',
+      description: 'Aller au début de la vidéo',
+      category: 'video',
+      action: () => this.seekToTime(0),
+      enabled: true
+    });
+
+    this.keyboardShortcuts.registerShortcut({
+      key: 'End',
+      description: 'Aller à la fin de la vidéo',
+      category: 'video',
+      action: () => {
+        const duration = this.facade.vm().duration;
+        this.seekToTime(duration - 1);
+      },
+      enabled: true
+    });
+  }
+
+  /**
+   * Unregisters all video player keyboard shortcuts
+   */
+  private unregisterVideoPlayerShortcuts(): void {
+    const shortcuts = [
+      { key: ' ' },
+      { key: 'ArrowLeft' },
+      { key: 'ArrowRight' },
+      { key: 'ArrowLeft', shiftKey: true },
+      { key: 'ArrowRight', shiftKey: true },
+      { key: '1' },
+      { key: '2' },
+      { key: '3' },
+      { key: '4' },
+      { key: '5' },
+      { key: '6' },
+      { key: '7' },
+      { key: '8' },
+      { key: 'Home' },
+      { key: 'End' }
+    ];
+
+    shortcuts.forEach(shortcut => {
+      this.keyboardShortcuts.unregisterShortcut(shortcut);
+    });
   }
 }

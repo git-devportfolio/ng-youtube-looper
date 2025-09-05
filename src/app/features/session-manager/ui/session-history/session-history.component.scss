@@ -126,7 +126,7 @@
       font-size: 0.875rem;
       color: #495057;
       font-weight: 500;
-      @include truncate-text;
+      @include text-truncate;
       max-width: 200px;
 
       @include mobile {
@@ -177,12 +177,12 @@
     }
 
     .duration::before {
-      content: 'ñ';
+      content: 'ï¿½';
       margin-right: 0.25rem;
     }
 
     .play-position::before {
-      content: '=Í';
+      content: '=ï¿½';
       margin-right: 0.25rem;
     }
 
