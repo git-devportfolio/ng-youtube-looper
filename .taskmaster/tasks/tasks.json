@@ -955,7 +955,7 @@
               "18.1"
             ],
             "details": "Utiliser les effets Angular et les signals existants dans SessionFacade pour détecter les changements dans la session courante. Configurer l'auto-save via les settings (autoSaveEnabled, autoSaveInterval). Ajouter des indicateurs visuels dans l'UI pour montrer l'état de sauvegarde (saving, saved, error). Implémenter la gestion des conflits et la récupération automatique après erreur.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests d'intégration de l'auto-save, validation des intervals de sauvegarde, tests de gestion d'erreurs et récupération automatique"
           },
           {
@@ -1378,7 +1378,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-05T06:20:41.868Z",
+      "updated": "2025-09-05T12:55:33.684Z",
       "description": "Tasks for master context"
     }
   }

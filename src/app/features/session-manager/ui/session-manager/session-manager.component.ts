@@ -28,7 +28,8 @@ export type ViewMode = 'list' | 'create' | 'edit' | 'history' | 'import-export';
   styleUrls: ['./session-manager.component.scss']
 })
 export class SessionManagerComponent implements OnInit {
-  private readonly sessionFacade = inject(SessionFacade);
+  // Expose facade for template access (public readonly for both private use and template)
+  readonly sessionFacade = inject(SessionFacade);
 
   // Component state signals
   private readonly _currentView = signal<ViewMode>('list');
@@ -228,6 +229,37 @@ export class SessionManagerComponent implements OnInit {
    */
   onImportSessionsRequest(): void {
     this.navigateToView('import-export');
+  }
+
+  // === AUTO-SAVE EVENTS ===
+
+  /**
+   * Handle manual save request
+   */
+  async onManualSave(): Promise<void> {
+    await this.sessionFacade.forceSave();
+  }
+
+  /**
+   * Handle retry save after error
+   */
+  async onRetrySave(): Promise<void> {
+    this.sessionFacade.clearSaveError();
+    await this.sessionFacade.forceSave();
+  }
+
+  /**
+   * Handle dismiss save error
+   */
+  onDismissError(): void {
+    this.sessionFacade.clearSaveError();
+  }
+
+  /**
+   * Handle toggle auto-save
+   */
+  async onToggleAutoSave(): Promise<void> {
+    await this.sessionFacade.toggleAutoSave();
   }
 
   // === SESSION FORM EVENTS ===

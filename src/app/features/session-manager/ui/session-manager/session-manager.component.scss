@@ -730,7 +730,8 @@
 // Print styles
 @media print {
   .manager-header,
-  .status-bar {
+  .status-bar,
+  .auto-save-status-bar {
     display: none;
   }
   
@@ -741,5 +742,180 @@
   
   .session-manager-container {
     height: auto;
+  }
+}
+
+// === AUTO-SAVE STATUS BAR ===
+
+.auto-save-status-bar {
+  background: var(--background-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: 0.75rem 1rem;
+  z-index: 50;
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.1);
+
+  .save-status-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 1rem;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+  }
+
+  .save-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+
+    &.status-saving {
+      color: var(--primary-color);
+    }
+
+    &.status-saved {
+      color: var(--success-color);
+    }
+
+    &.status-pending {
+      color: var(--warning-color);
+    }
+
+    &.status-error {
+      color: var(--error-color);
+    }
+
+    .status-icon {
+      font-size: 1rem;
+      
+      &.success {
+        color: var(--success-color);
+      }
+      
+      &.pending {
+        color: var(--warning-color);
+        animation: pulse 2s infinite;
+      }
+      
+      &.error {
+        color: var(--error-color);
+      }
+    }
+
+    .status-spinner.auto-save {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border-color);
+      border-top: 2px solid var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  .save-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+      justify-content: center;
+    }
+  }
+
+  .save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    .btn-icon {
+      font-size: 0.875rem;
+    }
+
+    &:hover:not(:disabled) {
+      background: var(--background-hover);
+      border-color: var(--border-color-dark);
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    &.manual {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+
+      &:hover:not(:disabled) {
+        background: var(--primary-color-dark);
+        border-color: var(--primary-color-dark);
+      }
+    }
+
+    &.retry {
+      background: var(--warning-color);
+      color: white;
+      border-color: var(--warning-color);
+
+      &:hover:not(:disabled) {
+        background: var(--warning-color-dark);
+        border-color: var(--warning-color-dark);
+      }
+    }
+
+    &.dismiss {
+      background: var(--error-color);
+      color: white;
+      border-color: var(--error-color);
+
+      &:hover:not(:disabled) {
+        background: var(--error-color-dark);
+        border-color: var(--error-color-dark);
+      }
+    }
+
+    &.toggle {
+      position: relative;
+      
+      &.active {
+        background: var(--success-color);
+        color: white;
+        border-color: var(--success-color);
+
+        &:hover:not(:disabled) {
+          background: var(--success-color-dark);
+          border-color: var(--success-color-dark);
+        }
+      }
+    }
+  }
+}
+
+// Auto-save animations
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }

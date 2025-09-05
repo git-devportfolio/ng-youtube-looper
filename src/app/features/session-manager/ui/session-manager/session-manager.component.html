@@ -281,7 +281,85 @@
     }
   </div>
 
-  <!-- Status Bar -->
+  <!-- Auto-save Status Bar -->
+  @if (currentSession() && (sessionFacade.autoSaveStatus() !== 'idle' || sessionFacade.saveError())) {
+    <div class="auto-save-status-bar">
+      <div class="save-status-content">
+        <!-- Save Status Indicator -->
+        <div class="save-status-indicator" 
+             [class]="'status-' + sessionFacade.autoSaveStatus()"
+             [attr.aria-live]="sessionFacade.autoSaveStatus() === 'saving' ? 'polite' : 'off'">
+          
+          @switch (sessionFacade.autoSaveStatus()) {
+            @case ('saving') {
+              <div class="status-spinner auto-save"></div>
+              <span class="status-text">{{ sessionFacade.saveStatusText() }}</span>
+            }
+            @case ('saved') {
+              <span class="status-icon success">✓</span>
+              <span class="status-text">{{ sessionFacade.saveStatusText() }}</span>
+            }
+            @case ('pending') {
+              <span class="status-icon pending">●</span>
+              <span class="status-text">{{ sessionFacade.saveStatusText() }}</span>
+            }
+            @case ('error') {
+              <span class="status-icon error">⚠️</span>
+              <span class="status-text">{{ sessionFacade.saveStatusText() }}</span>
+            }
+          }
+        </div>
+
+        <!-- Auto-save Actions -->
+        <div class="save-actions">
+          @if (sessionFacade.canManualSave()) {
+            <button 
+              class="save-btn manual"
+              (click)="onManualSave()"
+              [disabled]="sessionFacade.isSaving()"
+              aria-label="Sauvegarder manuellement"
+              type="button">
+              <span class="btn-icon">💾</span>
+              Sauvegarder
+            </button>
+          }
+
+          @if (sessionFacade.saveError()) {
+            <button 
+              class="save-btn retry"
+              (click)="onRetrySave()"
+              [disabled]="sessionFacade.isSaving()"
+              aria-label="Réessayer la sauvegarde"
+              type="button">
+              <span class="btn-icon">🔄</span>
+              Réessayer
+            </button>
+
+            <button 
+              class="save-btn dismiss"
+              (click)="onDismissError()"
+              aria-label="Ignorer l'erreur"
+              type="button">
+              <span class="btn-icon">✕</span>
+            </button>
+          }
+
+          <!-- Auto-save Toggle -->
+          <button 
+            class="save-btn toggle"
+            [class.active]="sessionFacade.settings().autoSaveEnabled"
+            (click)="onToggleAutoSave()"
+            [attr.aria-label]="sessionFacade.settings().autoSaveEnabled ? 'Désactiver la sauvegarde automatique' : 'Activer la sauvegarde automatique'"
+            type="button">
+            <span class="btn-icon">⚙️</span>
+            Auto-save {{ sessionFacade.settings().autoSaveEnabled ? 'ON' : 'OFF' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- General Status Bar -->
   @if (isLoading() || lastError()) {
     <div class="status-bar">
       @if (isLoading()) {
