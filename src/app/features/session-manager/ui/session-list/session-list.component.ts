@@ -51,7 +51,7 @@ export class SessionListComponent implements OnInit {
   private readonly _searchQuery = signal<string>('');
   private readonly _selectedSessionId = signal<string | null>(null);
   private readonly _confirmingDeleteId = signal<string | null>(null);
-  private readonly _sortBy = signal<'name' | 'date' | 'duration'>('date');
+  private readonly _sortBy = signal<'name' | 'date' | 'duration' | 'loops' | 'playTime' | 'playCount'>('date');
   private readonly _sortAscending = signal<boolean>(false);
 
   // Public readonly signals
@@ -135,7 +135,7 @@ export class SessionListComponent implements OnInit {
 
   // === SORTING ===
 
-  setSortBy(sortBy: 'name' | 'date' | 'duration'): void {
+  setSortBy(sortBy: 'name' | 'date' | 'duration' | 'loops' | 'playTime' | 'playCount'): void {
     if (this._sortBy() === sortBy) {
       this._sortAscending.set(!this._sortAscending());
     } else {
@@ -162,6 +162,15 @@ export class SessionListComponent implements OnInit {
           const aDuration = this.getTotalSessionDuration(a);
           const bDuration = this.getTotalSessionDuration(b);
           comparison = aDuration - bDuration;
+          break;
+        case 'loops':
+          comparison = a.loops.length - b.loops.length;
+          break;
+        case 'playTime':
+          comparison = a.totalPlayTime - b.totalPlayTime;
+          break;
+        case 'playCount':
+          comparison = a.playCount - b.playCount;
           break;
       }
 
@@ -282,19 +291,22 @@ export class SessionListComponent implements OnInit {
     return this._confirmingDeleteId() === session.id;
   }
 
-  getSortIcon(field: 'name' | 'date' | 'duration'): string {
+  getSortIcon(field: 'name' | 'date' | 'duration' | 'loops' | 'playTime' | 'playCount'): string {
     if (this._sortBy() !== field) return '↕';
     return this._sortAscending() ? '↑' : '↓';
   }
 
-  getSortAriaLabel(field: 'name' | 'date' | 'duration'): string {
+  getSortAriaLabel(field: 'name' | 'date' | 'duration' | 'loops' | 'playTime' | 'playCount'): string {
     const isActive = this._sortBy() === field;
     const direction = isActive 
       ? (this._sortAscending() ? 'croissant' : 'décroissant')
       : 'non trié';
     
     const fieldName = field === 'name' ? 'nom' : 
-                      field === 'date' ? 'date' : 'durée';
+                      field === 'date' ? 'date' : 
+                      field === 'duration' ? 'durée' :
+                      field === 'loops' ? 'nombre de boucles' :
+                      field === 'playTime' ? 'temps de lecture' : 'nombre de lectures';
     
     return `Trier par ${fieldName}, actuellement ${direction}`;
   }

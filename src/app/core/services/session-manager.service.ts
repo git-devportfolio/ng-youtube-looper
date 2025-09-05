@@ -559,6 +559,24 @@ export class SessionManagerService {
       .slice(0, limit);
   }
 
+  /**
+   * Clear session history
+   */
+  clearHistory(): boolean {
+    try {
+      const result = this.storage.clearSessionHistory();
+      
+      if (result.success) {
+        this._history.set([]);
+      }
+      
+      return result.success;
+    } catch (error) {
+      console.error('Failed to clear history:', error);
+      return false;
+    }
+  }
+
   // === LIFECYCLE MANAGEMENT ===
 
   /**

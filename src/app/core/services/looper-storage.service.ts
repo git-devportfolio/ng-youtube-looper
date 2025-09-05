@@ -924,6 +924,31 @@ export class LooperStorageService {
     }
   }
 
+  /**
+   * Clear all session history
+   */
+  clearSessionHistory(): StorageOperationResult {
+    try {
+      const success = this.secureStorage.removeData(LOOPER_STORAGE_KEYS.HISTORY);
+      
+      // Invalider le cache d'historique
+      this.optimizationService.invalidateCache('session_history');
+      
+      const result: StorageOperationResult = {
+        success
+      };
+      if (!success) {
+        result.error = 'Échec de la suppression de l\'historique';
+      }
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        error: `Erreur lors de la suppression de l'historique: ${(error as Error).message}`
+      };
+    }
+  }
+
   // === VALIDATION METHODS ===
 
   private validateSessions(sessions: any[]): boolean {

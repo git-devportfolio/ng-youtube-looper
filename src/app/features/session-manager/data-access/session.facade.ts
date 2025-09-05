@@ -1,9 +1,10 @@
-import { Injectable, inject, signal, computed, effect } from '@angular/core';
+import { Injectable, inject, signal, computed, effect, DestroyRef } from '@angular/core';
 import { SessionManagerService } from '@core/services/session-manager.service';
 import { 
   LooperSession,
   SessionSettings,
   CurrentState,
+  SessionHistoryEntry,
   StorageOperationResult 
 } from '@core/services/looper-storage.types';
 import { LoopSegment } from '@shared/interfaces';
@@ -13,6 +14,7 @@ import { LoopSegment } from '@shared/interfaces';
 })
 export class SessionFacade {
   private readonly sessionManager = inject(SessionManagerService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Internal signals for facade state
   private readonly _isLoading = signal<boolean>(false);
@@ -21,6 +23,12 @@ export class SessionFacade {
   private readonly _filteredSessions = signal<LooperSession[]>([]);
   private readonly _searchQuery = signal<string>('');
   private readonly _selectedVideoId = signal<string | null>(null);
+  private readonly _selectedTags = signal<string[]>([]);
+  
+  // Debounced search
+  private readonly _debouncedSearchQuery = signal<string>('');
+  private searchDebounceTimer?: number;
+  private readonly SEARCH_DEBOUNCE_DELAY = 300; // 300ms
   
   // Auto-save state signals
   private readonly _isSaving = signal<boolean>(false);
@@ -37,6 +45,7 @@ export class SessionFacade {
   readonly filteredSessions = this._filteredSessions.asReadonly();
   readonly searchQuery = this._searchQuery.asReadonly();
   readonly selectedVideoId = this._selectedVideoId.asReadonly();
+  readonly selectedTags = this._selectedTags.asReadonly();
   
   // Auto-save state signals for UI
   readonly isSaving = this._isSaving.asReadonly();
@@ -93,6 +102,21 @@ export class SessionFacade {
     return this._hasUnsavedChanges() && !this._isSaving() && this._currentSession() !== null;
   });
 
+  // Computed signals for filtering
+  readonly availableTags = computed(() => {
+    const allTags = new Set<string>();
+    this._sessionList().forEach(session => {
+      session.tags?.forEach(tag => allTags.add(tag));
+    });
+    return Array.from(allTags).sort();
+  });
+
+  readonly hasActiveFilters = computed(() => {
+    return this._searchQuery().length > 0 || 
+           this._selectedVideoId() !== null || 
+           this._selectedTags().length > 0;
+  });
+
   // Expose underlying service signals
   readonly currentState = this.sessionManager.currentState;
   readonly settings = this.sessionManager.settings;
@@ -100,6 +124,13 @@ export class SessionFacade {
   readonly lastError = this.sessionManager.lastError;
 
   constructor() {
+    // Setup cleanup for debounce timer
+    this.destroyRef.onDestroy(() => {
+      if (this.searchDebounceTimer !== undefined) {
+        clearTimeout(this.searchDebounceTimer);
+      }
+    });
+
     // Sync facade state with session manager
     effect(() => {
       const sessions = this.sessionManager.sessions();
@@ -112,7 +143,7 @@ export class SessionFacade {
       this._currentSession.set(activeSession);
     });
 
-    // Auto-update filtered sessions when search changes
+    // Auto-update filtered sessions when debounced search or other filters change
     effect(() => {
       this.updateFilteredSessions();
     });
@@ -275,10 +306,33 @@ export class SessionFacade {
   // === SEARCH & FILTERING ===
 
   /**
-   * Set search query for filtering sessions
+   * Set search query for filtering sessions (with debouncing)
    */
   setSearchQuery(query: string): void {
-    this._searchQuery.set(query.trim());
+    const trimmedQuery = query.trim();
+    this._searchQuery.set(trimmedQuery);
+    
+    // Debounce the actual search
+    if (this.searchDebounceTimer !== undefined) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+    
+    this.searchDebounceTimer = window.setTimeout(() => {
+      this._debouncedSearchQuery.set(trimmedQuery);
+    }, this.SEARCH_DEBOUNCE_DELAY);
+  }
+
+  /**
+   * Set search query immediately (for programmatic use)
+   */
+  setSearchQueryImmediate(query: string): void {
+    const trimmedQuery = query.trim();
+    this._searchQuery.set(trimmedQuery);
+    this._debouncedSearchQuery.set(trimmedQuery);
+    
+    if (this.searchDebounceTimer !== undefined) {
+      clearTimeout(this.searchDebounceTimer);
+    }
   }
 
   /**
@@ -289,11 +343,37 @@ export class SessionFacade {
   }
 
   /**
+   * Set tag filters
+   */
+  setTagFilter(tags: string[]): void {
+    this._selectedTags.set([...tags]);
+  }
+
+  /**
+   * Add tag to filter
+   */
+  addTagFilter(tag: string): void {
+    const currentTags = this._selectedTags();
+    if (!currentTags.includes(tag)) {
+      this._selectedTags.set([...currentTags, tag]);
+    }
+  }
+
+  /**
+   * Remove tag from filter
+   */
+  removeTagFilter(tag: string): void {
+    const currentTags = this._selectedTags();
+    this._selectedTags.set(currentTags.filter(t => t !== tag));
+  }
+
+  /**
    * Clear all filters
    */
   clearFilters(): void {
     this._searchQuery.set('');
     this._selectedVideoId.set(null);
+    this._selectedTags.set([]);
   }
 
   /**
@@ -301,8 +381,9 @@ export class SessionFacade {
    */
   private updateFilteredSessions(): void {
     const sessions = this._sessionList();
-    const query = this._searchQuery();
+    const query = this._debouncedSearchQuery(); // Use debounced search query
     const videoId = this._selectedVideoId();
+    const selectedTags = this._selectedTags();
 
     let filtered = [...sessions];
 
@@ -311,17 +392,84 @@ export class SessionFacade {
       filtered = filtered.filter(session => session.videoId === videoId);
     }
 
-    // Apply search query
+    // Apply tag filters
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(session => 
+        session.tags && selectedTags.every(tag => session.tags!.includes(tag))
+      );
+    }
+
+    // Apply search query (now separate from tag filtering)
     if (query) {
       const searchTerm = query.toLowerCase();
       filtered = filtered.filter(session =>
         session.name.toLowerCase().includes(searchTerm) ||
         session.videoTitle.toLowerCase().includes(searchTerm) ||
+        (session.description && session.description.toLowerCase().includes(searchTerm)) ||
         session.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
       );
     }
 
     this._filteredSessions.set(filtered);
+  }
+
+  // === HISTORY NAVIGATION ===
+
+  /**
+   * Load session from history entry
+   */
+  async loadFromHistory(historyEntry: SessionHistoryEntry): Promise<boolean> {
+    try {
+      const session = this._sessionList().find(s => s.id === historyEntry.sessionId);
+      
+      if (!session) {
+        console.warn(`Session ${historyEntry.sessionId} not found`);
+        return false;
+      }
+
+      // Set as current session
+      await this.sessionManager.setActiveSession(session.id);
+      
+      // Restore playback position if available
+      if (historyEntry.lastCurrentTime > 0) {
+        // This would be handled by the video player component
+        // We store the desired position in the current state
+        const currentState = this.sessionManager.currentState();
+        if (currentState) {
+          const updatedState = {
+            ...currentState,
+            currentTime: historyEntry.lastCurrentTime,
+            lastActivity: new Date()
+          };
+          await this.sessionManager.updateCurrentState(updatedState);
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to load from history:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Clear session history
+   */
+  async clearHistory(): Promise<boolean> {
+    try {
+      const result = await this.sessionManager.clearHistory();
+      return result;
+    } catch (error) {
+      console.error('Failed to clear history:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get recent sessions from history
+   */
+  getRecentSessions(limit: number = 10): SessionHistoryEntry[] {
+    return this.sessionManager.getRecentSessions(limit);
   }
 
   // === LOOP MANAGEMENT ===

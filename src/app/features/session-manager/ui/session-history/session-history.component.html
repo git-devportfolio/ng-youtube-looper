@@ -1,0 +1,82 @@
+<div class="session-history">
+  <div class="history-header">
+    <h3 class="history-title">Sessions récentes</h3>
+    @if (!isEmpty()) {
+      <button 
+        class="clear-history-btn" 
+        (click)="onClearHistory()"
+        title="Effacer l'historique">
+        🗑️
+      </button>
+    }
+  </div>
+
+  @if (isEmpty()) {
+    <div class="empty-history">
+      <div class="empty-icon">⏳</div>
+      <p class="empty-message">Aucune session récente</p>
+      <p class="empty-help">Vos sessions récentes apparaîtront ici</p>
+    </div>
+  } @else {
+    <div class="history-list">
+      @for (entry of recentHistory(); track trackEntryById($index, entry)) {
+        <div 
+          class="history-entry" 
+          [class.selected]="isSelected(entry)"
+          (click)="onLoadFromHistory(entry)">
+          
+          @if (showVideoInfo) {
+            <div class="video-info">
+              <img 
+                class="video-thumbnail" 
+                [src]="getVideoThumbnailUrl(entry.videoId)"
+                [alt]="entry.videoTitle"
+                loading="lazy">
+              <div class="video-details">
+                <div class="video-title" [title]="entry.videoTitle">
+                  {{ entry.videoTitle }}
+                </div>
+              </div>
+            </div>
+          }
+
+          <div class="session-info">
+            <div class="session-name" [title]="entry.sessionName">
+              {{ entry.sessionName }}
+            </div>
+            
+            <div class="session-stats">
+              <span class="loop-count">{{ entry.loopsCount }} boucle{{ entry.loopsCount > 1 ? 's' : '' }}</span>
+              <span class="duration">{{ formatDuration(entry.duration) }}</span>
+              <span class="play-position">à {{ formatDuration(entry.lastCurrentTime) }}</span>
+            </div>
+
+            @if (showDateInfo) {
+              <div class="access-time" [title]="entry.accessedAt | date:'full':'':'fr'">
+                {{ formatDate(entry.accessedAt) }}
+              </div>
+            }
+          </div>
+
+          <div class="entry-actions">
+            <button 
+              class="load-btn"
+              (click)="onLoadFromHistory(entry, $event)"
+              title="Charger cette session"
+              [attr.aria-label]="'Charger la session ' + entry.sessionName">
+              ▶️
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (history().length > maxItems) {
+      <div class="history-footer">
+        <p class="more-items-info">
+          {{ history().length - maxItems }} session{{ history().length - maxItems > 1 ? 's' : '' }} de plus dans l'historique
+        </p>
+      </div>
+    }
+  }
+</div>
