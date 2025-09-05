@@ -179,6 +179,207 @@
       }
     }
   }
+
+  // Time Input Container with Current Time Button
+  .time-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    
+    .time-input {
+      flex: 1;
+      padding-right: 3rem; // Make space for the button
+    }
+    
+    .current-time-btn {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2rem;
+      height: 2rem;
+      border: none;
+      background: var(--primary-color, #3B82F6);
+      color: white;
+      border-radius: 0.25rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      transition: all 0.2s ease-in-out;
+      
+      .btn-icon {
+        font-size: 1rem;
+      }
+      
+      &:hover:not(:disabled) {
+        background: var(--primary-hover-color, #2563EB);
+        transform: translateY(-50%) scale(1.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      }
+      
+      &:focus-visible {
+        outline: 2px solid var(--focus-color, #3B82F6);
+        outline-offset: 2px;
+      }
+      
+      &:disabled {
+        background: var(--border-color, #D1D5DB);
+        color: var(--text-secondary, #6B7280);
+        cursor: not-allowed;
+        transform: translateY(-50%);
+        
+        &:hover {
+          transform: translateY(-50%);
+        }
+      }
+    }
+  }
+
+  // Segment Preview Timeline
+  .segment-preview {
+    background: var(--bg-secondary, #F8F9FA);
+    border: 1px solid var(--border-color, #E5E7EB);
+    border-radius: var(--border-radius, 0.5rem);
+    padding: var(--spacing-md, 1rem);
+    margin-top: var(--spacing-sm, 0.5rem);
+
+    .timeline-container {
+      margin-bottom: var(--spacing-md, 1rem);
+
+      .video-timeline {
+        position: relative;
+        height: 2rem;
+        background: var(--bg-tertiary, #E5E7EB);
+        border-radius: 1rem;
+        overflow: hidden;
+        margin-bottom: var(--spacing-sm, 0.5rem);
+
+        .segment-highlight {
+          position: absolute;
+          top: 0;
+          height: 100%;
+          border-radius: 1rem;
+          transition: all 0.3s ease-in-out;
+
+          &.valid {
+            background: linear-gradient(90deg, 
+              var(--success-color, #10B981) 0%,
+              var(--success-color-light, #34D399) 100%);
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+          }
+
+          &.invalid {
+            background: linear-gradient(90deg, 
+              var(--error-color, #EF4444) 0%,
+              var(--error-color-light, #F87171) 100%);
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+          }
+        }
+
+        .time-markers {
+          position: relative;
+          height: 100%;
+
+          .marker {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            
+            .marker-line {
+              position: absolute;
+              top: -0.25rem;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 2px;
+              height: calc(100% + 0.5rem);
+              background: var(--text-primary, #1F2937);
+              border-radius: 1px;
+            }
+
+            .marker-label {
+              position: absolute;
+              top: -2rem;
+              left: 50%;
+              transform: translateX(-50%);
+              font-size: 0.75rem;
+              font-weight: 600;
+              color: var(--text-primary, #1F2937);
+              background: white;
+              padding: 0.125rem 0.375rem;
+              border-radius: 0.25rem;
+              border: 1px solid var(--border-color, #E5E7EB);
+              white-space: nowrap;
+              box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            }
+
+            &.start-marker .marker-label {
+              color: var(--success-color, #10B981);
+              border-color: var(--success-color, #10B981);
+            }
+
+            &.end-marker .marker-label {
+              color: var(--primary-color, #3B82F6);
+              border-color: var(--primary-color, #3B82F6);
+            }
+          }
+        }
+      }
+
+      .timeline-labels {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+        color: var(--text-secondary, #6B7280);
+
+        .start-label,
+        .end-label {
+          font-weight: 500;
+        }
+
+        .duration-info {
+          font-weight: 600;
+          color: var(--text-primary, #1F2937);
+        }
+      }
+    }
+
+    .preview-info {
+      .validation-warning {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs, 0.5rem);
+        padding: var(--spacing-sm, 0.75rem);
+        background: var(--bg-error-alpha, rgba(239, 68, 68, 0.1));
+        border: 1px solid var(--error-color, #EF4444);
+        border-radius: var(--border-radius, 0.375rem);
+        color: var(--error-color, #EF4444);
+        font-size: 0.875rem;
+        font-weight: 500;
+
+        .warning-icon {
+          font-size: 1rem;
+        }
+      }
+
+      .segment-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-md, 1rem);
+        font-size: 0.875rem;
+
+        .stat {
+          color: var(--text-secondary, #6B7280);
+
+          strong {
+            color: var(--text-primary, #1F2937);
+          }
+        }
+      }
+    }
+  }
 }
 
 // Responsive adjustments
@@ -189,5 +390,49 @@
     padding: 1rem;
     border-radius: 0;
     box-shadow: none;
+  }
+  
+  .time-input-container {
+    .current-time-btn {
+      width: 1.75rem;
+      height: 1.75rem;
+      right: 0.375rem;
+      
+      .btn-icon {
+        font-size: 0.875rem;
+      }
+    }
+    
+    .time-input {
+      padding-right: 2.5rem;
+    }
+  }
+
+  // Segment Preview adjustments for mobile
+  .segment-preview {
+    padding: var(--spacing-sm, 0.75rem);
+
+    .timeline-container {
+      .video-timeline {
+        height: 1.5rem;
+
+        .time-markers .marker .marker-label {
+          font-size: 0.625rem;
+          padding: 0.125rem 0.25rem;
+        }
+      }
+
+      .timeline-labels {
+        font-size: 0.75rem;
+      }
+    }
+
+    .preview-info {
+      .segment-stats {
+        flex-direction: column;
+        gap: var(--spacing-xs, 0.5rem);
+        font-size: 0.75rem;
+      }
+    }
   }
 }

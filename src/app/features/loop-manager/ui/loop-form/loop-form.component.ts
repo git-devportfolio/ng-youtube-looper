@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChange
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { LoopManagerFacade } from '../../services/loop-manager.facade';
+import { VideoPlayerFacade } from '../../../video-player/data-access/video-player.facade';
 import { LoopSegment, CreateLoopRequest, UpdateLoopRequest } from '@shared/interfaces';
 
 export interface LoopFormData {
@@ -27,6 +28,7 @@ export interface LoopFormResult {
 export class LoopFormComponent implements OnInit, OnChanges {
   private readonly fb = inject(FormBuilder);
   private readonly facade = inject(LoopManagerFacade);
+  private readonly videoPlayerFacade = inject(VideoPlayerFacade);
 
   @Input() editingLoop: LoopSegment | null = null;
   @Input() videoDuration?: number;
@@ -213,6 +215,165 @@ export class LoopFormComponent implements OnInit, OnChanges {
       repeatCount: 1,
       color: '#3B82F6'
     });
+  }
+
+  // Current Time buttons methods
+
+  /**
+   * Set start time to current video time
+   */
+  setCurrentTimeAsStart(): void {
+    const currentTimeFormatted = this.videoPlayerFacade.currentTimeFormatted();
+    this.startTimeControl?.setValue(currentTimeFormatted);
+    this.startTimeControl?.markAsTouched();
+  }
+
+  /**
+   * Set end time to current video time
+   */
+  setCurrentTimeAsEnd(): void {
+    const currentTimeFormatted = this.videoPlayerFacade.currentTimeFormatted();
+    this.endTimeControl?.setValue(currentTimeFormatted);
+    this.endTimeControl?.markAsTouched();
+  }
+
+  /**
+   * Check if current time buttons should be enabled
+   */
+  get canUseCurrentTime(): boolean {
+    return this.videoPlayerFacade.isPlayerReady() && this.videoPlayerFacade.currentTime() > 0;
+  }
+
+  /**
+   * Get current time for display in button tooltip
+   */
+  get currentTimeDisplay(): string {
+    return this.videoPlayerFacade.currentTimeFormatted();
+  }
+
+  // Segment Preview methods
+
+  /**
+   * Get segment start position as percentage of total video duration
+   */
+  getSegmentStartPercent(): number {
+    if (!this.videoDuration) return 0;
+    
+    const startTime = this.getStartTimeInSeconds();
+    return Math.max(0, Math.min(100, (startTime / this.videoDuration) * 100));
+  }
+
+  /**
+   * Get segment end position as percentage of total video duration
+   */
+  getSegmentEndPercent(): number {
+    if (!this.videoDuration) return 0;
+    
+    const endTime = this.getEndTimeInSeconds();
+    return Math.max(0, Math.min(100, (endTime / this.videoDuration) * 100));
+  }
+
+  /**
+   * Get segment width as percentage of total video duration
+   */
+  getSegmentWidthPercent(): number {
+    const startPercent = this.getSegmentStartPercent();
+    const endPercent = this.getSegmentEndPercent();
+    return Math.max(0, endPercent - startPercent);
+  }
+
+  /**
+   * Check if the current segment is valid
+   */
+  isSegmentValid(): boolean {
+    const startTime = this.getStartTimeInSeconds();
+    const endTime = this.getEndTimeInSeconds();
+    
+    if (isNaN(startTime) || isNaN(endTime)) return false;
+    if (startTime >= endTime) return false;
+    if (endTime - startTime < 0.1) return false; // Minimum 100ms
+    if (this.videoDuration && endTime > this.videoDuration) return false;
+    
+    return true;
+  }
+
+  /**
+   * Get segment validation error message
+   */
+  getSegmentValidationError(): string {
+    const startTime = this.getStartTimeInSeconds();
+    const endTime = this.getEndTimeInSeconds();
+    
+    if (isNaN(startTime) || isNaN(endTime)) {
+      return 'Format de temps invalide';
+    }
+    
+    if (startTime >= endTime) {
+      return 'Le temps de fin doit être supérieur au temps de début';
+    }
+    
+    if (endTime - startTime < 0.1) {
+      return 'Le segment doit durer au moins 0.1 seconde';
+    }
+    
+    if (this.videoDuration && endTime > this.videoDuration) {
+      return 'Le temps de fin dépasse la durée de la vidéo';
+    }
+    
+    return '';
+  }
+
+  /**
+   * Get start time display text
+   */
+  getStartTimeDisplay(): string {
+    return this.startTimeControl?.value || '0:00';
+  }
+
+  /**
+   * Get end time display text
+   */
+  getEndTimeDisplay(): string {
+    return this.endTimeControl?.value || '0:30';
+  }
+
+  /**
+   * Get segment duration display text
+   */
+  getSegmentDurationDisplay(): string {
+    const startTime = this.getStartTimeInSeconds();
+    const endTime = this.getEndTimeInSeconds();
+    
+    if (isNaN(startTime) || isNaN(endTime) || endTime <= startTime) {
+      return '0:00';
+    }
+    
+    const duration = endTime - startTime;
+    return this.facade.formatTime(duration);
+  }
+
+  /**
+   * Format video total duration for display
+   */
+  formatVideoDuration(): string {
+    if (!this.videoDuration) return '0:00';
+    return this.facade.formatTime(this.videoDuration);
+  }
+
+  /**
+   * Convert start time text to seconds
+   */
+  private getStartTimeInSeconds(): number {
+    const timeText = this.startTimeControl?.value;
+    return this.facade.parseTime(timeText || '0:00');
+  }
+
+  /**
+   * Convert end time text to seconds
+   */
+  private getEndTimeInSeconds(): number {
+    const timeText = this.endTimeControl?.value;
+    return this.facade.parseTime(timeText || '0:30');
   }
 
   private markFormGroupTouched(): void {

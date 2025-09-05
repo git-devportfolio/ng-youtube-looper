@@ -1,0 +1,436 @@
+@import '../../../../../styles/mixins';
+
+// Modal Overlay & Container
+.loop-creation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  &.animating {
+    pointer-events: none;
+    
+    .loop-creation-modal-content {
+      transform: scale(0.95) translateY(10px);
+      opacity: 0.7;
+    }
+  }
+
+  // Modal Content Container
+  .loop-creation-modal-content {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+}
+
+// Modal Header
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+
+  .modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .modal-close-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: none;
+    border-radius: var(--border-radius);
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      transform: scale(1.05);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+      background: none !important;
+      
+      &:hover {
+        transform: none !important;
+        background: none !important;
+        color: var(--text-secondary);
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-color);
+      outline-offset: 2px;
+    }
+  }
+}
+
+// Modal Body
+.modal-body {
+  flex: 1;
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  min-height: 0;
+
+  .current-time-info {
+    background: var(--bg-info);
+    border: 1px solid var(--border-info);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+
+    .info-text {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      font-size: 0.95rem;
+      color: var(--text-info);
+      margin: 0 0 var(--spacing-xs) 0;
+
+      .info-icon {
+        font-size: 1.1rem;
+      }
+
+      strong {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+    }
+
+    .hint-text {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin: 0;
+      font-style: italic;
+    }
+  }
+
+  .form-container {
+    .modal-form {
+      // Override LoopFormComponent styles for modal context
+      :deep(.loop-form) {
+        // Remove form header since we have modal header
+        .form-header {
+          display: none;
+        }
+
+        .form-body {
+          padding: 0;
+        }
+
+        .form-footer {
+          margin-top: var(--spacing-lg);
+          padding-top: var(--spacing-lg);
+          border-top: 1px solid var(--border-color);
+          background: var(--bg-secondary);
+          border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+          margin: var(--spacing-lg) calc(-1 * var(--spacing-lg)) 0;
+          padding-left: var(--spacing-lg);
+          padding-right: var(--spacing-lg);
+          padding-bottom: var(--spacing-lg);
+        }
+      }
+    }
+  }
+
+  // Validation messages styles removed - handled by LoopFormComponent
+}
+
+// Modal Footer styles removed - handled by LoopFormComponent
+
+// Loading Overlay
+.modal-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .loading-content {
+    text-align: center;
+    color: white;
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto var(--spacing-md);
+    }
+
+    .loading-text {
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin: 0;
+    }
+  }
+}
+
+// Modal States
+.loop-creation-modal {
+  &.create-mode {
+    .modal-header {
+      background: linear-gradient(135deg, var(--success-color-alpha), var(--bg-secondary));
+    }
+  }
+
+  &.edit-mode {
+    .modal-header {
+      background: linear-gradient(135deg, var(--warning-color-alpha), var(--bg-secondary));
+    }
+  }
+
+  &.submitting {
+    pointer-events: none;
+    opacity: 0.9;
+    
+    .modal-close-button {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+  
+  &.has-validation-errors {
+    .modal-header {
+      border-bottom-color: var(--error-color, #EF4444);
+    }
+  }
+}
+
+// Button Styles
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.4;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+    
+    &:hover {
+      transform: none !important;
+      box-shadow: none !important;
+    }
+  }
+
+  &.btn-primary {
+    background: var(--primary-color);
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: var(--primary-color-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(var(--primary-color-rgb), 0.3);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-color);
+      outline-offset: 2px;
+    }
+  }
+
+  &.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+
+    &:hover:not(:disabled) {
+      background: var(--bg-hover);
+      border-color: var(--border-color-dark);
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-color);
+      outline-offset: 2px;
+    }
+  }
+}
+
+// Accessibility & Screen Reader
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Body scroll lock
+:global(body.modal-open) {
+  overflow: hidden;
+  padding-right: var(--scrollbar-width, 0);
+}
+
+// Animations
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .loop-creation-modal-overlay {
+    padding: var(--spacing-sm);
+    align-items: flex-start;
+    padding-top: var(--spacing-lg);
+
+    .loop-creation-modal-content {
+      max-width: 100%;
+      max-height: calc(100vh - 2rem);
+      margin: 0;
+    }
+  }
+
+  .modal-header {
+    padding: var(--spacing-md);
+
+    .modal-title {
+      font-size: 1.25rem;
+    }
+
+    .modal-close-button {
+      width: 36px;
+      height: 36px;
+      font-size: 1.25rem;
+    }
+  }
+
+  .modal-body {
+    padding: var(--spacing-md);
+  }
+
+  // Modal footer styles removed - handled by LoopFormComponent
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .loop-creation-modal-overlay {
+    background: rgba(0, 0, 0, 0.8);
+  }
+
+  .loop-creation-modal-content {
+    border: 2px solid currentColor;
+  }
+
+  .btn {
+    border: 2px solid currentColor;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .loop-creation-modal-overlay,
+  .loop-creation-modal-content,
+  .btn,
+  .modal-close-button {
+    transition: none;
+    animation: none;
+  }
+
+  .loading-spinner {
+    animation: none;
+    border: 3px solid currentColor;
+  }
+}
+
+// Dark mode adjustments
+@media (prefers-color-scheme: dark) {
+  .loop-creation-modal-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .loop-creation-modal-content {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+}

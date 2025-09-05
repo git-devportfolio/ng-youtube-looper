@@ -24,14 +24,26 @@
     <div class="time-inputs-group">
       <div class="form-group half-width">
         <label for="startTime" class="form-label">Début</label>
-        <input
-          type="text"
-          id="startTime"
-          formControlName="startTimeText"
-          class="form-input time-input"
-          [class.error]="startTimeControl?.invalid && startTimeControl?.touched"
-          placeholder="0:00"
-        />
+        <div class="time-input-container">
+          <input
+            type="text"
+            id="startTime"
+            formControlName="startTimeText"
+            class="form-input time-input"
+            [class.error]="startTimeControl?.invalid && startTimeControl?.touched"
+            placeholder="0:00"
+          />
+          <button
+            type="button"
+            class="current-time-btn"
+            [disabled]="!canUseCurrentTime"
+            (click)="setCurrentTimeAsStart()"
+            [attr.title]="canUseCurrentTime ? 'Utiliser temps actuel (' + currentTimeDisplay + ')' : 'Pas de vidéo en lecture'"
+            [attr.aria-label]="'Définir le temps de début au temps actuel'"
+          >
+            <span class="btn-icon" aria-hidden="true">🕐</span>
+          </button>
+        </div>
         @if (startTimeControl?.invalid && startTimeControl?.touched) {
           <span class="error-message">{{ getStartTimeErrorMessage() }}</span>
         }
@@ -39,19 +51,100 @@
 
       <div class="form-group half-width">
         <label for="endTime" class="form-label">Fin</label>
-        <input
-          type="text"
-          id="endTime"
-          formControlName="endTimeText"
-          class="form-input time-input"
-          [class.error]="endTimeControl?.invalid && endTimeControl?.touched"
-          placeholder="0:30"
-        />
+        <div class="time-input-container">
+          <input
+            type="text"
+            id="endTime"
+            formControlName="endTimeText"
+            class="form-input time-input"
+            [class.error]="endTimeControl?.invalid && endTimeControl?.touched"
+            placeholder="0:30"
+          />
+          <button
+            type="button"
+            class="current-time-btn"
+            [disabled]="!canUseCurrentTime"
+            (click)="setCurrentTimeAsEnd()"
+            [attr.title]="canUseCurrentTime ? 'Utiliser temps actuel (' + currentTimeDisplay + ')' : 'Pas de vidéo en lecture'"
+            [attr.aria-label]="'Définir le temps de fin au temps actuel'"
+          >
+            <span class="btn-icon" aria-hidden="true">🕐</span>
+          </button>
+        </div>
         @if (endTimeControl?.invalid && endTimeControl?.touched) {
           <span class="error-message">{{ getEndTimeErrorMessage() }}</span>
         }
       </div>
     </div>
+
+    <!-- Segment Preview Timeline -->
+    @if (videoDuration && videoDuration > 0) {
+      <div class="form-group">
+        <label class="form-label">Prévisualisation du segment</label>
+        <div class="segment-preview">
+          <div class="timeline-container">
+            <!-- Video duration bar -->
+            <div class="video-timeline">
+              <!-- Selected segment highlight -->
+              <div 
+                class="segment-highlight"
+                [style.left.%]="getSegmentStartPercent()"
+                [style.width.%]="getSegmentWidthPercent()"
+                [class.valid]="isSegmentValid()"
+                [class.invalid]="!isSegmentValid()"
+              ></div>
+              
+              <!-- Time markers -->
+              <div class="time-markers">
+                <div class="marker start-marker" [style.left.%]="getSegmentStartPercent()">
+                  <div class="marker-line"></div>
+                  <div class="marker-label">{{ getStartTimeDisplay() }}</div>
+                </div>
+                <div class="marker end-marker" [style.left.%]="getSegmentEndPercent()">
+                  <div class="marker-line"></div>
+                  <div class="marker-label">{{ getEndTimeDisplay() }}</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Timeline labels -->
+            <div class="timeline-labels">
+              <span class="start-label">0:00</span>
+              <span class="duration-info">
+                Durée: {{ getSegmentDurationDisplay() }}
+              </span>
+              <span class="end-label">{{ formatVideoDuration() }}</span>
+            </div>
+          </div>
+          
+          <!-- Preview info -->
+          <div class="preview-info">
+            @if (!isSegmentValid()) {
+              <div class="validation-warning" role="alert">
+                <span class="warning-icon" aria-hidden="true">⚠️</span>
+                <span class="warning-text">
+                  @if (getSegmentValidationError()) {
+                    {{ getSegmentValidationError() }}
+                  }
+                </span>
+              </div>
+            } @else {
+              <div class="segment-stats">
+                <span class="stat">
+                  <strong>Début:</strong> {{ getStartTimeDisplay() }}
+                </span>
+                <span class="stat">
+                  <strong>Fin:</strong> {{ getEndTimeDisplay() }}
+                </span>
+                <span class="stat">
+                  <strong>Durée:</strong> {{ getSegmentDurationDisplay() }}
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
 
     <!-- Vitesse de lecture -->
     <div class="form-group">

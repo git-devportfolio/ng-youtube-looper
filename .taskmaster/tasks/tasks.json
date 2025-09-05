@@ -869,8 +869,62 @@
         "dependencies": [
           16
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer le LoopCreationModalComponent avec structure modal overlay",
+            "description": "Créer le composant modal avec overlay backdrop, structure HTML de base et gestion des événements de fermeture (ESC, click backdrop)",
+            "dependencies": [],
+            "details": "Implémenter le composant standalone avec backdrop modal, div overlay avec positionnement fixed, gestion des événements clavier (ESC) et click sur backdrop pour fermer. Structure HTML avec modal-overlay, modal-content, modal-header. Utiliser les conventions Angular modernes (@if, inject()).",
+            "status": "done",
+            "testStrategy": "Tests unitaires pour fermeture ESC et click backdrop, tests d'affichage conditionnel de la modal, tests d'accessibilité clavier"
+          },
+          {
+            "id": 2,
+            "title": "Intégrer LoopFormComponent dans la modal avec inputs/outputs",
+            "description": "Intégrer le LoopFormComponent existant dans la modal avec la communication parent-enfant via @Input et @Output",
+            "dependencies": [
+              "17.1"
+            ],
+            "details": "Utiliser le LoopFormComponent existant dans la modal-content, passer les propriétés editingLoop et videoDuration via @Input(), gérer les événements formSubmit et formCancel via @Output(). Configurer la communication bidirectionnelle entre modal et formulaire.",
+            "status": "done",
+            "testStrategy": "Tests d'intégration entre modal et formulaire, validation du passage des données via inputs/outputs, tests des actions Cancel/Save"
+          },
+          {
+            "id": 3,
+            "title": "Ajouter les boutons 'Temps actuel' pour pré-remplir les champs temps",
+            "description": "Implémenter les boutons 'Temps actuel' à côté des inputs de temps début/fin pour pré-remplir avec le temps courant de la vidéo",
+            "dependencies": [
+              "17.2"
+            ],
+            "details": "Ajouter des boutons icon à côté des inputs startTime et endTime. Injecter VideoPlayerFacade pour obtenir currentTime, formater le temps avec facade.formatTime() et remplir les champs via FormControl.setValue(). Gérer les états disabled selon l'état du player.",
+            "status": "done",
+            "testStrategy": "Tests des boutons avec différents états du player, validation du formatage des temps, tests d'intégration avec VideoPlayerFacade"
+          },
+          {
+            "id": 4,
+            "title": "Implémenter la prévisualisation du segment sur timeline",
+            "description": "Ajouter une prévisualisation visuelle du segment de boucle sur une mini-timeline dans la modal",
+            "dependencies": [
+              "17.3"
+            ],
+            "details": "Créer une mini-timeline dans la modal affichant la durée totale de la vidéo avec indication visuelle du segment sélectionné. Utiliser les valeurs des inputs temps pour mettre à jour en temps réel la prévisualisation. Styling avec barre de progression et segment coloré.",
+            "status": "done",
+            "testStrategy": "Tests de mise à jour en temps réel de la prévisualisation, validation des calculs de position sur timeline, tests d'affichage avec différentes durées vidéo"
+          },
+          {
+            "id": 5,
+            "title": "Finaliser la validation et les états disabled des actions",
+            "description": "Implémenter la validation complète du formulaire modal avec états disabled appropriés pour les boutons Cancel/Save",
+            "dependencies": [
+              "17.4"
+            ],
+            "details": "Connecter la validation existante du LoopFormComponent avec les boutons de la modal. Gérer les états disabled du bouton Save selon la validité du formulaire, maintenir le bouton Cancel toujours actif. Afficher les messages d'erreur de validation au niveau modal si nécessaire.",
+            "status": "done",
+            "testStrategy": "Tests de validation avec durées minimum/maximum, tests des états disabled selon validité formulaire, tests d'accessibilité avec navigation clavier Tab"
+          }
+        ]
       },
       {
         "id": 18,
@@ -1268,7 +1322,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-05T05:29:30.859Z",
+      "updated": "2025-09-05T06:07:01.238Z",
       "description": "Tasks for master context"
     }
   }

@@ -1,0 +1,93 @@
+<!-- Modal Container -->
+@if (showModal()) {
+  <div 
+    class="loop-creation-modal-overlay" 
+    [class]="getModalContainerClasses()"
+    (click)="onBackdropClick($event)"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'modal-title-' + data.mode"
+    aria-describedby="modal-description">
+    
+    <!-- Modal Content -->
+    <div 
+      class="loop-creation-modal-content"
+      [class]="getModalClasses()"
+      role="document">
+      
+      <!-- Modal Header -->
+      <header class="modal-header">
+        <h2 
+          class="modal-title"
+          [id]="'modal-title-' + data.mode">
+          {{ modalTitle }}
+        </h2>
+        
+        <button
+          type="button"
+          class="modal-close-button"
+          (click)="onCancel()"
+          [disabled]="isCloseDisabled"
+          aria-label="Fermer la modal"
+          title="Fermer (Échap)">
+          <span aria-hidden="true">✕</span>
+        </button>
+      </header>
+
+      <!-- Modal Description -->
+      <p id="modal-description" class="sr-only">
+        @if (data.mode === 'edit') {
+          Formulaire de modification d'une boucle existante. Utilisez Tab pour naviguer entre les champs.
+        } @else {
+          Formulaire de création d'une nouvelle boucle. Utilisez Tab pour naviguer entre les champs.
+        }
+      </p>
+
+      <!-- Modal Body -->
+      <main class="modal-body">
+        
+        <!-- Current Time Helper -->
+        @if (data.mode === 'create') {
+          <div class="current-time-info" role="status" aria-live="polite">
+            <p class="info-text">
+              <span class="info-icon" aria-hidden="true">ℹ️</span>
+              Temps vidéo actuel : <strong>{{ formatTime(currentVideoTime) }}</strong>
+            </p>
+            <p class="hint-text">
+              Les temps de début et fin sont pré-remplis autour du temps actuel
+            </p>
+          </div>
+        }
+
+        <!-- Loop Form -->
+        <div class="form-container">
+          <app-loop-form
+            [editingLoop]="data.mode === 'edit' ? data.loop : null"
+            [videoDuration]="videoDuration"
+            (formSubmit)="onFormSubmit($event)"
+            (formCancel)="onCancel()"
+            class="modal-form">
+          </app-loop-form>
+        </div>
+        
+        <!-- Note: Validation is handled internally by LoopFormComponent -->
+        
+      </main>
+
+      <!-- Note: Form actions are handled by LoopFormComponent footer -->
+      
+    </div>
+  </div>
+}
+
+<!-- Loading Overlay -->
+@if (isSubmitting()) {
+  <div class="modal-loading-overlay" role="status" aria-live="polite">
+    <div class="loading-content">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p class="loading-text">
+        {{ data.mode === 'edit' ? 'Modification en cours...' : 'Création en cours...' }}
+      </p>
+    </div>
+  </div>
+}
