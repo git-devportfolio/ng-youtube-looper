@@ -305,21 +305,123 @@
   }
 }
 
+// Shake animation for errors and attention
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+// Success check animation  
+@keyframes success-check {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+    opacity: 1;
+  }
+}
+
 // ===== CLASSES UTILITAIRES =====
 
-// Loading skeleton avec shimmer
+// Enhanced loading skeletons with multiple variants
 .loading-skeleton {
   background: var(--bg-tertiary);
   background-image: var(--shimmer-gradient);
-  background-size: 200px 100%;
+  background-size: 200% 100%;
   background-repeat: no-repeat;
   border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
   
   animation: shimmer 2s infinite linear;
+  
+  // Enhanced skeleton variants
+  &.skeleton-text {
+    height: 1em;
+    border-radius: var(--radius-sm);
+    
+    &.skeleton-title {
+      height: 1.5em;
+      width: 70%;
+    }
+    
+    &.skeleton-subtitle {
+      height: 1.2em;
+      width: 50%;
+    }
+    
+    &.skeleton-paragraph {
+      height: 1em;
+      width: 90%;
+      margin-bottom: var(--spacing-xs);
+      
+      &:last-child {
+        width: 65%;
+        margin-bottom: 0;
+      }
+    }
+  }
+  
+  &.skeleton-button {
+    height: 44px;
+    width: 120px;
+    border-radius: var(--radius-md);
+  }
+  
+  &.skeleton-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    
+    &.skeleton-avatar-sm {
+      width: 32px;
+      height: 32px;
+    }
+    
+    &.skeleton-avatar-lg {
+      width: 64px;
+      height: 64px;
+    }
+  }
+  
+  &.skeleton-card {
+    height: 200px;
+    width: 100%;
+    border-radius: var(--radius-lg);
+  }
+  
+  &.skeleton-video {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: var(--radius-md);
+  }
+  
+  // Pulse variant for different effect
+  &.skeleton-pulse {
+    animation: skeleton-pulse 1.5s infinite ease-in-out;
+    background-image: none;
+    
+    @keyframes skeleton-pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+  }
   
   @media (prefers-reduced-motion: reduce) {
     animation: none;
     background-image: none;
+    opacity: 0.6;
   }
 }
 
@@ -456,4 +558,168 @@
 // Focus visible utilitaire
 .focus-visible {
   @include focus-visible();
+}
+
+// Toast notification system
+.toast-notification {
+  position: fixed;
+  top: var(--spacing-lg);
+  right: var(--spacing-lg);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-md);
+  min-width: 300px;
+  max-width: 400px;
+  z-index: var(--z-toast, 1000);
+  
+  animation: slide-in-right var(--animation-normal) var(--ease-out) forwards;
+  
+  &.toast-success {
+    border-color: var(--success-color);
+    background: var(--success-color-light);
+    color: var(--success-color-dark);
+    
+    .toast-icon {
+      color: var(--success-color);
+      animation: success-check 0.6s var(--ease-bounce) forwards;
+    }
+  }
+  
+  &.toast-error {
+    border-color: var(--error-color);
+    background: var(--error-color-light);
+    color: var(--error-color-dark);
+    
+    .toast-icon {
+      color: var(--error-color);
+      animation: shake 0.6s ease-in-out;
+    }
+  }
+  
+  &.toast-warning {
+    border-color: var(--warning-color);
+    background: var(--warning-color-light);
+    color: var(--warning-color-dark);
+    
+    .toast-icon {
+      color: var(--warning-color);
+      animation: bounce var(--animation-slow) var(--ease-bounce);
+    }
+  }
+  
+  &.toast-info {
+    border-color: var(--accent-color);
+    background: var(--accent-color-light);
+    color: var(--accent-color-dark);
+    
+    .toast-icon {
+      color: var(--accent-color);
+      animation: pulse 2s infinite;
+    }
+  }
+  
+  // Toast exit animation
+  &.toast-exit {
+    animation: slide-out-right var(--animation-fast) var(--ease-in) forwards;
+  }
+  
+  .toast-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+    
+    .toast-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    
+    .toast-title {
+      font-weight: var(--font-weight-semibold);
+      font-size: var(--font-size-sm);
+    }
+    
+    .toast-close {
+      margin-left: auto;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: var(--spacing-xs);
+      border-radius: var(--radius-sm);
+      @include animate-property('background-color');
+      
+      &:hover {
+        background: rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+  
+  .toast-message {
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    opacity: 0;
+    animation: fade-in var(--animation-normal) ease-out forwards;
+    animation-delay: var(--animation-delay-short);
+  }
+  
+  .toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: currentColor;
+    opacity: 0.3;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    animation: toast-progress 5s linear forwards;
+  }
+  
+  @keyframes toast-progress {
+    0% { width: 100%; }
+    100% { width: 0%; }
+  }
+  
+  @keyframes slide-out-right {
+    0% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: fade-in var(--animation-fast) ease forwards;
+    
+    &.toast-exit {
+      animation: fade-out var(--animation-fast) ease forwards;
+    }
+    
+    .toast-icon {
+      animation: none !important;
+    }
+    
+    .toast-progress {
+      animation: none;
+      width: 0;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    top: auto;
+    bottom: var(--spacing-lg);
+    left: var(--spacing-md);
+    right: var(--spacing-md);
+    min-width: auto;
+    max-width: none;
+    
+    animation: slide-in-bottom var(--animation-normal) var(--ease-out) forwards;
+    
+    &.toast-exit {
+      animation: slide-in-bottom var(--animation-fast) var(--ease-in) forwards reverse;
+    }
+  }
 }

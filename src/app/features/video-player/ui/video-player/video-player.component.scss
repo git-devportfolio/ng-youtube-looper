@@ -192,21 +192,78 @@ $player-large-min: 1200px;
     border-radius: var(--radius-md);
     font-weight: var(--font-weight-medium);
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    @include animate-properties('transform, box-shadow, background-color', var(--animation-normal), var(--ease-out));
     min-width: 120px;
     min-height: 44px; // Touch target size
     justify-content: center;
     white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+
+    // Loading state shimmer effect
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.6s ease;
+    }
 
     &:hover:not(:disabled) {
       background: var(--accent-hover);
-      transform: translateY(-1px);
+      transform: var(--hover-lift);
+      box-shadow: var(--shadow-hover);
+      
+      &::before {
+        left: 100%;
+      }
+    }
+
+    &:active:not(:disabled) {
+      transform: var(--button-press);
+      transition-duration: var(--animation-fast);
     }
 
     &:disabled {
       background: var(--bg-disabled);
       cursor: not-allowed;
       transform: none;
+      @include animate-property('opacity', var(--animation-fast));
+      opacity: 0.6;
+      
+      &::before {
+        display: none;
+      }
+    }
+    
+    // Enhanced loading state
+    &.loading {
+      cursor: progress;
+      
+      .loading-spinner {
+        animation-duration: 0.8s;
+      }
+      
+      &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -50%;
+        width: 200%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.1) 30%,
+          rgba(255, 255, 255, 0.2) 50%,
+          rgba(255, 255, 255, 0.1) 70%,
+          transparent
+        );
+        animation: loading-shimmer 2s ease-in-out infinite;
+      }
     }
 
     // Enhanced responsive behavior
@@ -232,6 +289,11 @@ $player-large-min: 1200px;
     border-top: 2px solid currentColor;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+      opacity: 0.7;
+    }
   }
 
   .error-message {
@@ -555,56 +617,8 @@ $player-large-min: 1200px;
   }
 }
 
-// Loading State Overlay
+// Enhanced Loading State Overlay
 .loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  @include flex-center;
-  z-index: 15;
-  backdrop-filter: blur(4px);
-  
-  .loading-content {
-    text-align: center;
-    color: white;
-    
-    .loading-spinner-large {
-      margin-bottom: var(--spacing-md);
-      @include flex-center;
-      
-      .spinner-ring {
-        width: 64px;
-        height: 64px;
-        border: 4px solid rgba(255, 255, 255, 0.2);
-        border-top: 4px solid var(--accent-color);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        
-        @include mobile {
-          width: 48px;
-          height: 48px;
-          border-width: 3px;
-        }
-      }
-    }
-    
-    .loading-text {
-      font-size: var(--font-size-md);
-      font-weight: var(--font-weight-medium);
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-      
-      @include mobile {
-        font-size: var(--font-size-sm);
-      }
-    }
-  }
-}
-
-// Error State Overlay
-.error-overlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -613,29 +627,190 @@ $player-large-min: 1200px;
   background: rgba(0, 0, 0, 0.85);
   @include flex-center;
   z-index: 15;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
+  animation: fade-in var(--animation-normal) var(--ease-out) forwards;
+  
+  .loading-content {
+    text-align: center;
+    color: white;
+    animation: slide-in-bottom var(--animation-normal) var(--ease-out) forwards;
+    animation-delay: var(--animation-delay-short);
+    
+    .loading-spinner-large {
+      margin-bottom: var(--spacing-lg);
+      @include flex-center;
+      position: relative;
+      
+      // Enhanced multi-ring spinner with sophisticated animation
+      .spinner-ring {
+        width: 80px;
+        height: 80px;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top: 3px solid var(--accent-color);
+        border-radius: 50%;
+        animation: spin 1.2s var(--ease-bounce) infinite;
+        position: relative;
+        
+        &::before {
+          content: '';
+          position: absolute;
+          top: 6px;
+          left: 6px;
+          right: 6px;
+          bottom: 6px;
+          border: 2px solid rgba(255, 255, 255, 0.08);
+          border-bottom: 2px solid rgba(var(--accent-rgb), 0.7);
+          border-radius: 50%;
+          animation: spin 2s linear infinite reverse;
+        }
+        
+        &::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 8px;
+          height: 8px;
+          background: var(--accent-color);
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          animation: pulse 1.5s ease-in-out infinite;
+          box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.6);
+        }
+        
+        @include mobile {
+          width: 64px;
+          height: 64px;
+          border-width: 2px;
+          
+          &::before {
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+          }
+          
+          &::after {
+            width: 6px;
+            height: 6px;
+          }
+        }
+      }
+    }
+    
+    .loading-text {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-medium);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+      margin-bottom: var(--spacing-sm);
+      animation: pulse 2s ease-in-out infinite;
+      
+      @include mobile {
+        font-size: var(--font-size-md);
+      }
+    }
+    
+    // Loading progress dots
+    .loading-dots {
+      display: flex;
+      justify-content: center;
+      gap: var(--spacing-xs);
+      margin-top: var(--spacing-sm);
+      
+      .dot {
+        width: 6px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        animation: loading-dots 1.5s ease-in-out infinite;
+        
+        &:nth-child(2) { animation-delay: 0.2s; }
+        &:nth-child(3) { animation-delay: 0.4s; }
+        &:nth-child(4) { animation-delay: 0.6s; }
+      }
+    }
+  }
+  
+  // Enhanced accessibility support
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    
+    .loading-content {
+      animation: none;
+      opacity: 1;
+    }
+    
+    .spinner-ring {
+      animation: none !important;
+      
+      &::before,
+      &::after {
+        animation: none !important;
+      }
+      
+      // Static loading indicator for reduced motion
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      border-top: 3px solid var(--accent-color);
+      
+      &::after {
+        box-shadow: none;
+      }
+    }
+    
+    .loading-text,
+    .loading-dots .dot {
+      animation: none;
+      opacity: 0.8;
+    }
+  }
+}
+
+// Enhanced Error State Overlay
+.error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  @include flex-center;
+  z-index: 15;
+  backdrop-filter: blur(6px);
+  animation: fade-in var(--animation-normal) var(--ease-out) forwards;
   
   .error-content {
     text-align: center;
     color: white;
-    max-width: 300px;
+    max-width: 320px;
     padding: var(--spacing-lg);
+    animation: slide-in-top var(--animation-normal) var(--ease-out) forwards;
+    animation-delay: var(--animation-delay-normal);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     
     .error-icon {
-      font-size: 3rem;
+      font-size: 3.5rem;
       margin-bottom: var(--spacing-md);
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+      animation: shake 0.6s ease-in-out;
+      animation-delay: var(--animation-delay-long);
+      display: inline-block;
       
       @include mobile {
-        font-size: 2rem;
+        font-size: 2.5rem;
       }
     }
     
     .error-text {
       font-size: var(--font-size-md);
       margin-bottom: var(--spacing-lg);
-      line-height: 1.4;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      line-height: 1.5;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+      animation: fade-in var(--animation-normal) ease-out forwards;
+      animation-delay: calc(var(--animation-delay-long) + 0.3s);
+      opacity: 0;
       
       @include mobile {
         font-size: var(--font-size-sm);
@@ -645,27 +820,72 @@ $player-large-min: 1200px;
     
     .retry-button {
       @include button-primary;
-      padding: var(--spacing-sm) var(--spacing-lg);
-      background: var(--accent-color);
+      padding: var(--spacing-md) var(--spacing-xl);
+      background: var(--error-color);
       border: 2px solid transparent;
       border-radius: var(--radius-md);
-      font-weight: var(--font-weight-medium);
-      @include transition(all, 0.3s, ease);
+      font-weight: var(--font-weight-semibold);
+      @include animate-properties('transform, box-shadow, background-color, border-color', var(--animation-normal), var(--ease-out));
+      animation: slide-in-bottom var(--animation-normal) ease-out forwards;
+      animation-delay: calc(var(--animation-delay-long) + 0.5s);
+      opacity: 0;
+      position: relative;
+      overflow: hidden;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transition: left 0.6s ease;
+      }
       
       &:hover:not(:disabled) {
-        background: var(--accent-color-dark);
+        background: var(--error-color-dark);
         border-color: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
+        transform: var(--hover-lift);
+        box-shadow: var(--shadow-lift);
+        
+        &::before {
+          left: 100%;
+        }
       }
       
       &:active {
-        transform: translateY(0);
+        transform: var(--button-press);
+        transition-duration: var(--animation-fast);
       }
       
       @include mobile {
-        padding: var(--spacing-xs) var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-lg);
         font-size: var(--font-size-sm);
       }
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    
+    .error-content {
+      animation: none;
+      opacity: 1;
+    }
+    
+    .error-icon {
+      animation: none;
+    }
+    
+    .error-text,
+    .retry-button {
+      animation: none;
+      opacity: 1;
+    }
+    
+    .retry-button::before {
+      display: none;
     }
   }
 }
@@ -1094,5 +1314,58 @@ $player-large-min: 1200px;
     .youtube-iframe, .player-overlay {
       display: none;
     }
+  }
+}
+
+// Loading animations
+@keyframes loading-dots {
+  0%, 20% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+}
+
+@keyframes loading-shimmer {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+// Enhanced success animations for feedback
+@keyframes success-check {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+    opacity: 1;
+  }
+}
+
+@keyframes success-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--success-rgb), 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(var(--success-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--success-rgb), 0);
   }
 }
