@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SecureStorageService } from './storage.service';
+import { StorageOptimizationService, PaginatedResult } from './storage-optimization.service';
 import { 
   LooperSession,
   SessionSettings,
@@ -7,6 +8,7 @@ import {
   SessionHistoryEntry,
   SessionMetadata,
   StorageOperationResult,
+  CompressedSessionData,
   DEFAULT_SESSION_SETTINGS,
   DEFAULT_LOOPER_STORAGE_CONFIG,
   LOOPER_STORAGE_KEYS
@@ -18,11 +20,13 @@ import { LoopSegment } from '@shared/interfaces';
 })
 export class LooperStorageService {
   private readonly secureStorage = inject(SecureStorageService);
+  private readonly optimizationService = inject(StorageOptimizationService);
+  private readonly COMPRESSION_THRESHOLD = 10240; // 10KB
 
   // === SESSION MANAGEMENT ===
 
   /**
-   * Sauvegarde toutes les sessions de boucles
+   * Sauvegarde toutes les sessions de boucles avec optimisation
    */
   saveSessions(sessions: LooperSession[]): StorageOperationResult {
     try {
@@ -34,11 +38,41 @@ export class LooperStorageService {
       }
 
       const sanitizedSessions = sessions.map(session => this.sanitizeSession(session));
-      const success = this.secureStorage.saveData(LOOPER_STORAGE_KEYS.SESSIONS, sanitizedSessions);
+      
+      // Vérifier si la compression est bénéfique
+      const originalSize = JSON.stringify(sanitizedSessions).length;
+      const shouldCompress = originalSize > this.COMPRESSION_THRESHOLD;
+      
+      let dataToStore: any;
+      let storageKey: string;
+      
+      if (shouldCompress) {
+        // Utiliser la compression
+        const compressedData = this.optimizationService.compressSessionData(sanitizedSessions);
+        dataToStore = compressedData;
+        storageKey = LOOPER_STORAGE_KEYS.SESSIONS + '_compressed';
+        
+        // Supprimer l'ancienne version non compressée
+        this.secureStorage.removeData(LOOPER_STORAGE_KEYS.SESSIONS);
+      } else {
+        // Stockage normal
+        dataToStore = sanitizedSessions;
+        storageKey = LOOPER_STORAGE_KEYS.SESSIONS;
+        
+        // Supprimer l'ancienne version compressée
+        this.secureStorage.removeData(LOOPER_STORAGE_KEYS.SESSIONS + '_compressed');
+      }
+      
+      const success = this.secureStorage.saveData(storageKey, dataToStore);
       
       if (success) {
-        // Mettre à jour les métadonnées
+        // Mettre à jour les métadonnées et l'index de recherche
         this.updateSessionsMetadata(sanitizedSessions);
+        this.optimizationService.buildSearchIndex(sanitizedSessions);
+        
+        // Invalider le cache
+        this.optimizationService.invalidateCache('sessions_*');
+        this.optimizationService.invalidateCache('all_sessions');
       }
 
       const result: StorageOperationResult = {
@@ -46,8 +80,10 @@ export class LooperStorageService {
         data: sanitizedSessions,
         metadata: {
           operation: 'saveSessions',
-          key: LOOPER_STORAGE_KEYS.SESSIONS,
-          size: JSON.stringify(sanitizedSessions).length,
+          key: storageKey,
+          size: JSON.stringify(dataToStore).length,
+          originalSize: originalSize,
+          compressed: shouldCompress,
           timestamp: new Date()
         }
       };
@@ -64,19 +100,55 @@ export class LooperStorageService {
   }
 
   /**
-   * Charge toutes les sessions de boucles
+   * Charge toutes les sessions de boucles avec optimisation
    */
   loadSessions(): StorageOperationResult {
     try {
-      const sessions = this.secureStorage.loadData<LooperSession[]>(LOOPER_STORAGE_KEYS.SESSIONS, []);
+      // Vérifier le cache d'abord
+      const cachedSessions = this.optimizationService.getCache<LooperSession[]>('all_sessions');
+      if (cachedSessions) {
+        return {
+          success: true,
+          data: cachedSessions,
+          metadata: {
+            operation: 'loadSessions',
+            key: 'cache',
+            cached: true,
+            timestamp: new Date()
+          }
+        };
+      }
+
+      let sessions: LooperSession[] = [];
+      let sourceKey = '';
+      let compressed = false;
+
+      // Essayer de charger la version compressée d'abord
+      const compressedData = this.secureStorage.loadData<CompressedSessionData>(LOOPER_STORAGE_KEYS.SESSIONS + '_compressed', null);
+      if (compressedData) {
+        sessions = this.optimizationService.decompressSessionData(compressedData);
+        sourceKey = LOOPER_STORAGE_KEYS.SESSIONS + '_compressed';
+        compressed = true;
+      } else {
+        // Fallback vers la version non compressée
+        sessions = this.secureStorage.loadData<LooperSession[]>(LOOPER_STORAGE_KEYS.SESSIONS, []);
+        sourceKey = LOOPER_STORAGE_KEYS.SESSIONS;
+      }
+
       const validSessions = sessions.filter(session => this.validateSession(session));
+      
+      // Construire l'index de recherche et mettre en cache
+      this.optimizationService.buildSearchIndex(validSessions);
+      this.optimizationService.setCache('all_sessions', validSessions, 2 * 60 * 1000); // Cache 2 minutes
 
       return {
         success: true,
         data: validSessions,
         metadata: {
           operation: 'loadSessions',
-          key: LOOPER_STORAGE_KEYS.SESSIONS,
+          key: sourceKey,
+          compressed,
+          sessionCount: validSessions.length,
           timestamp: new Date()
         }
       };
@@ -116,6 +188,9 @@ export class LooperStorageService {
         sessions.push(sanitizedSession);
       }
 
+      // Invalider le cache avant de sauvegarder
+      this.invalidateSessionCache(session.id, session.videoId);
+      
       return this.saveSessions(sessions);
     } catch (error) {
       return {
@@ -136,6 +211,7 @@ export class LooperStorageService {
       }
 
       const sessions = sessionsResult.data as LooperSession[];
+      const sessionToDelete = sessions.find(s => s.id === sessionId);
       const filteredSessions = sessions.filter(s => s.id !== sessionId);
 
       if (filteredSessions.length === sessions.length) {
@@ -143,6 +219,11 @@ export class LooperStorageService {
           success: false,
           error: `Session ${sessionId} introuvable`
         };
+      }
+
+      // Invalider le cache avant de sauvegarder
+      if (sessionToDelete) {
+        this.invalidateSessionCache(sessionId, sessionToDelete.videoId);
       }
 
       return this.saveSessions(filteredSessions);
@@ -369,6 +450,11 @@ export class LooperStorageService {
       const limitedHistory = filteredHistory.slice(0, settings.sessionHistoryLimit);
 
       const success = this.secureStorage.saveData(LOOPER_STORAGE_KEYS.HISTORY, limitedHistory);
+      
+      if (success) {
+        // Invalider le cache d'historique
+        this.optimizationService.invalidateCache('session_history');
+      }
 
       const result: StorageOperationResult = {
         success,
@@ -444,6 +530,269 @@ export class LooperStorageService {
         error: `Erreur lors du nettoyage: ${(error as Error).message}`
       };
     }
+  }
+
+  // === OPTIMIZED OPERATIONS ===
+
+  /**
+   * Charge les sessions avec pagination
+   */
+  async loadSessionsPaginated(page: number = 1, pageSize: number = 20): Promise<StorageOperationResult> {
+    try {
+      const paginatedResult = await this.optimizationService.lazyLoadSessions(
+        async () => {
+          const result = this.loadSessions();
+          return result.success ? result.data as LooperSession[] : [];
+        },
+        page,
+        pageSize
+      );
+
+      return {
+        success: true,
+        data: paginatedResult,
+        metadata: {
+          operation: 'loadSessionsPaginated',
+          page,
+          pageSize,
+          totalCount: paginatedResult.totalCount,
+          timestamp: new Date()
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Erreur lors du chargement paginé: ${(error as Error).message}`
+      };
+    }
+  }
+
+  /**
+   * Recherche optimisée dans les sessions
+   */
+  searchSessions(query: string, options?: {
+    category?: string;
+    page?: number;
+    pageSize?: number;
+    videoId?: string;
+    tags?: string[];
+    dateRange?: { from: Date; to: Date };
+  }): StorageOperationResult {
+    try {
+      const { category, page = 1, pageSize = 20, ...filters } = options || {};
+      
+      // Recherche dans l'index
+      const searchResults = this.optimizationService.searchSessions(query, category);
+      
+      // Charger les sessions complètes si nécessaire
+      if (Object.keys(filters).length > 0) {
+        const sessionsResult = this.loadSessions();
+        if (!sessionsResult.success) {
+          return sessionsResult;
+        }
+        
+        const filteredSessions = this.optimizationService.filterSessions(
+          sessionsResult.data as LooperSession[],
+          { query, ...filters }
+        );
+        
+        const paginatedResult = this.optimizationService.paginate(filteredSessions, page, pageSize);
+        
+        return {
+          success: true,
+          data: paginatedResult,
+          metadata: {
+            operation: 'searchSessions',
+            query,
+            filters,
+            timestamp: new Date()
+          }
+        };
+      }
+      
+      // Pagination des métadonnées de recherche
+      const paginatedMetadata = this.optimizationService.paginate(searchResults, page, pageSize);
+      
+      return {
+        success: true,
+        data: paginatedMetadata,
+        metadata: {
+          operation: 'searchSessions',
+          query,
+          category,
+          timestamp: new Date()
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Erreur lors de la recherche: ${(error as Error).message}`
+      };
+    }
+  }
+
+  /**
+   * Obtient les sessions d'une vidéo avec cache
+   */
+  getVideoSessionsOptimized(videoId: string): StorageOperationResult {
+    try {
+      const cacheKey = `video_sessions_${videoId}`;
+      const cached = this.optimizationService.getCache<LooperSession[]>(cacheKey);
+      
+      if (cached) {
+        return {
+          success: true,
+          data: cached,
+          metadata: {
+            operation: 'getVideoSessions',
+            cached: true,
+            videoId,
+            timestamp: new Date()
+          }
+        };
+      }
+
+      const sessionsResult = this.loadSessions();
+      if (!sessionsResult.success) {
+        return sessionsResult;
+      }
+
+      const sessions = sessionsResult.data as LooperSession[];
+      const videoSessions = sessions.filter(s => s.videoId === videoId);
+      
+      // Mettre en cache pour 5 minutes
+      this.optimizationService.setCache(cacheKey, videoSessions, 5 * 60 * 1000);
+
+      return {
+        success: true,
+        data: videoSessions,
+        metadata: {
+          operation: 'getVideoSessions',
+          videoId,
+          count: videoSessions.length,
+          timestamp: new Date()
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: [],
+        error: `Erreur lors de la récupération: ${(error as Error).message}`
+      };
+    }
+  }
+
+  /**
+   * Charge les sessions avec pagination et lazy loading
+   */
+  getSessionsPaginated(page: number = 1, pageSize: number = 20): Promise<StorageOperationResult> {
+    try {
+      return this.optimizationService.lazyLoadSessions(
+        async () => {
+          const result = this.loadSessions();
+          return result.success ? result.data as LooperSession[] : [];
+        },
+        page,
+        pageSize
+      ).then(paginatedResult => ({
+        success: true,
+        data: paginatedResult,
+        metadata: {
+          operation: 'getSessionsPaginated',
+          key: `page_${page}_size_${pageSize}`,
+          timestamp: new Date()
+        }
+      })).catch(error => ({
+        success: false,
+        error: `Erreur lors de la pagination: ${error.message}`
+      }));
+    } catch (error) {
+      return Promise.resolve({
+        success: false,
+        error: `Erreur lors de la pagination: ${(error as Error).message}`
+      });
+    }
+  }
+
+  /**
+   * Analyse les performances de stockage
+   */
+  analyzeStoragePerformance(): StorageOperationResult {
+    try {
+      const sessionsResult = this.loadSessions();
+      if (!sessionsResult.success) {
+        return sessionsResult;
+      }
+
+      const sessions = sessionsResult.data as LooperSession[];
+      const analysis = this.optimizationService.analyzeStoragePerformance(sessions);
+
+      return {
+        success: true,
+        data: analysis,
+        metadata: {
+          operation: 'analyzeStoragePerformance',
+          timestamp: new Date()
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Erreur lors de l'analyse: ${(error as Error).message}`
+      };
+    }
+  }
+
+  /**
+   * Nettoie le cache et optimise le stockage
+   */
+  optimizeStorage(): StorageOperationResult {
+    try {
+      // Nettoyer le cache expiré
+      this.optimizationService.cleanupExpiredCache();
+      
+      // Nettoyer l'historique
+      const historyResult = this.cleanupHistory();
+      
+      // Forcer la reconstruction de l'index
+      const sessionsResult = this.loadSessions();
+      if (sessionsResult.success) {
+        this.optimizationService.buildSearchIndex(sessionsResult.data as LooperSession[]);
+      }
+
+      return {
+        success: true,
+        data: {
+          cacheCleared: true,
+          historyCleanup: historyResult.success,
+          indexRebuilt: sessionsResult.success
+        },
+        metadata: {
+          operation: 'optimizeStorage',
+          timestamp: new Date()
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Erreur lors de l'optimisation: ${(error as Error).message}`
+      };
+    }
+  }
+
+  /**
+   * Invalide le cache pour une session modifiée
+   */
+  invalidateSessionCache(sessionId: string, videoId?: string): void {
+    this.optimizationService.invalidateCache('all_sessions');
+    this.optimizationService.invalidateCache('sessions_*');
+    
+    if (videoId) {
+      this.optimizationService.invalidateCache(`video_sessions_${videoId}`);
+    }
+    
+    // Invalider aussi les caches de filtres qui pourraient contenir cette session
+    this.optimizationService.invalidateCache('filter_*');
   }
 
   // === COMPRESSION & SERIALIZATION ===

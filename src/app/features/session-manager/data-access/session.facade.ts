@@ -4,7 +4,6 @@ import {
   LooperSession,
   SessionSettings,
   CurrentState,
-  SessionHistoryEntry,
   StorageOperationResult 
 } from '@core/services/looper-storage.types';
 import { LoopSegment } from '@shared/interfaces';
@@ -29,7 +28,7 @@ export class SessionFacade {
   private readonly _saveError = signal<string | null>(null);
   private readonly _hasUnsavedChanges = signal<boolean>(false);
   
-  private autoSaveTimer?: number;
+  private autoSaveTimer?: number | undefined;
 
   // Public readonly signals for external access
   readonly isLoading = this._isLoading.asReadonly();
