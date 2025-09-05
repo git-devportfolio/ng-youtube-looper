@@ -1005,8 +1005,63 @@
         "dependencies": [
           18
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer le système de base pour les animations CSS avec variables custom",
+            "description": "Implémenter les mixins et variables CSS pour les animations standardisées avec transitions 200-300ms ease-out et support prefers-reduced-motion",
+            "dependencies": [],
+            "details": "Créer un nouveau fichier _animations.scss avec des variables custom pour les durées d'animation (--animation-fast: 200ms, --animation-normal: 300ms), les fonctions de timing (--ease-out: cubic-bezier(0.4, 0, 0.2, 1)), et les mixins pour les transitions communes. Intégrer le support prefers-reduced-motion pour désactiver les animations selon les préférences utilisateur. Ajouter des mixins pour les micro-interactions communes comme hover-lift et button-press.",
+            "status": "done",
+            "testStrategy": "Tests des variables CSS dans différents navigateurs, validation prefers-reduced-motion, tests de performance des animations (maintenir 60fps), vérification des durées d'animation cohérentes"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter les micro-interactions pour les boutons et composants interactifs",
+            "description": "Créer les effets hover avec translateY(-1px) et box-shadow, plus les états focus-visible pour l'accessibilité",
+            "dependencies": [
+              "19.1"
+            ],
+            "details": "Améliorer les mixins button-base existants dans _mixins.scss pour ajouter les micro-interactions avec translateY(-1px) sur hover, box-shadow dynamiques, et les états focus-visible conformes aux standards WCAG. Appliquer ces effets aux PlayerControls, TimeSlider, SpeedControl, et tous les boutons de l'application. Créer des variantes pour les cards interactives et les éléments cliquables.",
+            "status": "in-progress",
+            "testStrategy": "Tests d'accessibilité focus-visible, validation hover states sur devices tactiles vs souris, tests de performance des transformations CSS, vérification compatibilité touch-device"
+          },
+          {
+            "id": 3,
+            "title": "Développer le système de loading skeletons avec shimmer animation",
+            "description": "Créer des composants skeleton réutilisables avec animation shimmer pour les états de chargement",
+            "dependencies": [
+              "19.1"
+            ],
+            "details": "Développer des composants skeleton pour VideoPlayer, Timeline, LoopList, et SessionList. Utiliser l'animation shimmer existante dans _mixins.scss et créer des variants pour différentes formes (rectangulaire, circulaire, ligne). Implémenter un service SkeletonService pour gérer les états de loading et intégrer avec les façades existantes. Créer des directives appSkeleton pour application automatique.",
+            "status": "pending",
+            "testStrategy": "Tests de rendu skeleton sur connexions lentes, validation animation shimmer 60fps, tests d'intégration avec les façades de données, vérification prefers-reduced-motion"
+          },
+          {
+            "id": 4,
+            "title": "Créer le système de toast notifications avec animations slide-in",
+            "description": "Implémenter un service de notifications toast avec animations d'entrée et sortie fluides",
+            "dependencies": [
+              "19.1"
+            ],
+            "details": "Créer ToastNotificationService avec méthodes success(), error(), info(), warning(). Développer ToastComponent avec animations slide-in depuis le haut/côté, auto-dismiss configurable, et gestion de pile de notifications. Intégrer avec les actions utilisateur (création boucle, sauvegarde session, erreurs validation). Utiliser les animations CSS créées en 19.1 et supporter les positions multiples (top-right, top-center, bottom-right).",
+            "status": "pending",
+            "testStrategy": "Tests de timing auto-dismiss, validation animations slide-in/out, tests de pile de notifications multiples, vérification accessibilité screen readers"
+          },
+          {
+            "id": 5,
+            "title": "Implémenter les animations de feedback pour la timeline et drag interactions",
+            "description": "Créer les animations de drag feedback et enhanced visual states pour TimelineComponent",
+            "dependencies": [
+              "19.1",
+              "19.2"
+            ],
+            "details": "Améliorer TimelineComponent avec animations de drag feedback lors de déplacement des boucles, visual feedback création de nouvelles boucles, et animations de collision detection. Implémenter les états visuels pour loop creation preview, drag indicators, et enhanced hover states. Utiliser les animations CSS de base et créer des animations spécifiques au contexte timeline. Intégrer avec LoopManagerFacade pour les changements d'état.",
+            "status": "pending",
+            "testStrategy": "Tests de drag performance sur mobile et desktop, validation feedback visuel creation boucles, tests collision detection animations, vérification fluidité 60fps pendant drag"
+          }
+        ]
       },
       {
         "id": 20,
@@ -1378,7 +1433,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-05T13:43:47.101Z",
+      "updated": "2025-09-05T19:30:27.919Z",
       "description": "Tasks for master context"
     }
   }

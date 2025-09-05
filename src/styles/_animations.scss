@@ -1,0 +1,459 @@
+// Animation System - Variables et Mixins CSS
+// Système de base pour les animations standardisées
+
+// ===== CSS CUSTOM PROPERTIES =====
+:root {
+  // Durées d'animation
+  --animation-instant: 0ms;
+  --animation-fast: 200ms;
+  --animation-normal: 300ms;
+  --animation-slow: 500ms;
+  --animation-slower: 800ms;
+  
+  // Fonctions de timing (easing)
+  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-elastic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  
+  // Delays communs
+  --animation-delay-short: 50ms;
+  --animation-delay-normal: 100ms;
+  --animation-delay-long: 200ms;
+  
+  // Transformations communes
+  --hover-lift: translateY(-1px);
+  --hover-lift-high: translateY(-2px);
+  --button-press: translateY(1px);
+  --scale-hover: scale(1.02);
+  --scale-press: scale(0.98);
+  --scale-grow: scale(1.05);
+  
+  // Box shadows pour les animations
+  --shadow-hover: 0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 4px 8px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lift: 0 12px 20px -8px rgba(0, 0, 0, 0.15), 0 6px 12px -4px rgba(0, 0, 0, 0.1);
+  --shadow-press: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  
+  // Shimmer animation pour loading skeletons
+  --shimmer-gradient: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  --shimmer-gradient-dark: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  
+  // Toast notification positions
+  --toast-enter-from-right: translateX(100%);
+  --toast-enter-from-left: translateX(-100%);
+  --toast-enter-from-top: translateY(-100%);
+  --toast-enter-from-bottom: translateY(100%);
+}
+
+// Support pour prefers-reduced-motion
+:root {
+  --motion-reduce: 0; // Par défaut, animations activées
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-reduce: 1; // Indicateur pour réduire les animations
+    --animation-instant: 0ms;
+    --animation-fast: 0ms;
+    --animation-normal: 0ms;
+    --animation-slow: 0ms;
+    --animation-slower: 0ms;
+  }
+}
+
+// ===== MIXINS DE BASE =====
+
+// Mixin de base pour toutes les transitions
+@mixin animate-base($duration: var(--animation-normal), $timing: var(--ease-out), $delay: 0ms) {
+  transition-duration: $duration;
+  transition-timing-function: $timing;
+  transition-delay: $delay;
+  
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 0ms;
+    transition-delay: 0ms;
+  }
+}
+
+// Transition pour une propriété spécifique
+@mixin animate-property($property, $duration: var(--animation-normal), $timing: var(--ease-out), $delay: 0ms) {
+  transition-property: $property;
+  @include animate-base($duration, $timing, $delay);
+}
+
+// Transition pour plusieurs propriétés
+@mixin animate-properties($properties, $duration: var(--animation-normal), $timing: var(--ease-out), $delay: 0ms) {
+  transition-property: #{$properties};
+  @include animate-base($duration, $timing, $delay);
+}
+
+// Transition complète (all)
+@mixin animate-all($duration: var(--animation-normal), $timing: var(--ease-out), $delay: 0ms) {
+  transition: all $duration $timing $delay;
+  
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 0ms;
+    transition-delay: 0ms;
+  }
+}
+
+// ===== MICRO-INTERACTIONS =====
+
+// Enhanced hover lift effect avec shadow (extension du mixin existant)
+@mixin enhanced-hover-lift($shadow: var(--shadow-hover)) {
+  @include animate-properties('transform, box-shadow');
+  
+  &:hover {
+    transform: var(--hover-lift);
+    box-shadow: $shadow;
+  }
+  
+  &:active {
+    transform: var(--button-press);
+    transition-duration: var(--animation-fast);
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    &:hover,
+    &:active {
+      transform: none;
+    }
+  }
+}
+
+// Hover lift plus prononcé
+@mixin hover-lift-high($shadow: var(--shadow-lift)) {
+  @include animate-properties('transform, box-shadow');
+  
+  &:hover {
+    transform: var(--hover-lift-high);
+    box-shadow: $shadow;
+  }
+  
+  &:active {
+    transform: var(--button-press);
+    transition-duration: var(--animation-fast);
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    &:hover,
+    &:active {
+      transform: none;
+    }
+  }
+}
+
+// Scale hover effect
+@mixin hover-scale($scale: var(--scale-hover), $duration: var(--animation-normal)) {
+  @include animate-property('transform', $duration);
+  
+  &:hover {
+    transform: $scale;
+  }
+  
+  &:active {
+    transform: var(--scale-press);
+    transition-duration: var(--animation-fast);
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    &:hover,
+    &:active {
+      transform: none;
+    }
+  }
+}
+
+// Button press feedback
+@mixin button-press($scale: var(--scale-press)) {
+  @include animate-property('transform', var(--animation-fast));
+  
+  &:active {
+    transform: $scale;
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    &:active {
+      transform: none;
+    }
+  }
+}
+
+// Focus visible states pour l'accessibilité
+@mixin focus-visible($color: var(--accent-color), $width: 2px, $offset: 2px) {
+  &:focus-visible {
+    outline: $width solid $color;
+    outline-offset: $offset;
+    border-radius: var(--radius-md);
+  }
+}
+
+// ===== ANIMATIONS KEYFRAMES =====
+
+// Shimmer effect pour loading skeletons
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+// Fade in animation
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// Fade out animation
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+// Slide in from right (pour toasts)
+@keyframes slide-in-right {
+  from {
+    transform: var(--toast-enter-from-right);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+// Slide in from left
+@keyframes slide-in-left {
+  from {
+    transform: var(--toast-enter-from-left);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+// Slide in from top
+@keyframes slide-in-top {
+  from {
+    transform: var(--toast-enter-from-top);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+// Slide in from bottom
+@keyframes slide-in-bottom {
+  from {
+    transform: var(--toast-enter-from-bottom);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+// Bounce animation
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    animation-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+    transform: translate3d(0,0,0);
+  }
+  40%, 43% {
+    animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+    transform: translate3d(0, -30px, 0);
+  }
+  70% {
+    animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+    transform: translate3d(0, -15px, 0);
+  }
+  90% {
+    transform: translate3d(0,-4px,0);
+  }
+}
+
+// Pulse animation
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// Spin animation (pour loading indicators)
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ===== CLASSES UTILITAIRES =====
+
+// Loading skeleton avec shimmer
+.loading-skeleton {
+  background: var(--bg-tertiary);
+  background-image: var(--shimmer-gradient);
+  background-size: 200px 100%;
+  background-repeat: no-repeat;
+  border-radius: var(--radius-md);
+  
+  animation: shimmer 2s infinite linear;
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    background-image: none;
+  }
+}
+
+[data-theme="dark"] .loading-skeleton {
+  background: var(--bg-tertiary);
+  background-image: var(--shimmer-gradient-dark);
+}
+
+// Animation classes
+.animate-fade-in {
+  animation: fade-in var(--animation-normal) var(--ease-out) forwards;
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.animate-fade-out {
+  animation: fade-out var(--animation-normal) var(--ease-out) forwards;
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right var(--animation-normal) var(--ease-out) forwards;
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left var(--animation-normal) var(--ease-out) forwards;
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top var(--animation-normal) var(--ease-out) forwards;
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-bottom var(--animation-normal) var(--ease-out) forwards;
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-bounce {
+  animation: bounce var(--animation-slower) var(--ease-bounce);
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+// Classes pour les transitions communes
+.transition-all {
+  @include animate-all();
+}
+
+.transition-colors {
+  @include animate-properties('color, background-color, border-color');
+}
+
+.transition-opacity {
+  @include animate-property('opacity');
+}
+
+.transition-transform {
+  @include animate-property('transform');
+}
+
+.transition-fast {
+  transition-duration: var(--animation-fast) !important;
+}
+
+.transition-slow {
+  transition-duration: var(--animation-slow) !important;
+}
+
+// Hover effects utilitaires
+.enhanced-hover-lift {
+  @include enhanced-hover-lift();
+}
+
+.hover-lift-high {
+  @include hover-lift-high();
+}
+
+.hover-scale {
+  @include hover-scale();
+}
+
+.button-press {
+  @include button-press();
+}
+
+// Focus visible utilitaire
+.focus-visible {
+  @include focus-visible();
+}

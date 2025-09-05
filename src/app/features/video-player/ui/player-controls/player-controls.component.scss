@@ -71,28 +71,30 @@
   border: 2px solid var(--border-color);
   border-radius: var(--border-radius);
   cursor: pointer;
-  transition: all 0.3s ease;
   min-width: 48px;
   min-height: 48px;
   position: relative;
   overflow: hidden;
+  @include animate-properties('transform, box-shadow, background-color, border-color', var(--animation-normal), var(--ease-out));
 
   // Only apply hover effects on hover-capable devices
   @include hover-device {
     &:hover:not(:disabled) {
       background: var(--accent-color-light);
       border-color: var(--accent-color);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
+      transform: var(--hover-lift);
+      box-shadow: var(--shadow-hover);
     }
 
     &:hover:not(:disabled) .control-icon {
-      transform: scale(1.1);
+      transform: var(--scale-hover);
     }
   }
 
   &:active:not(:disabled) {
-    transform: translateY(0);
+    transform: var(--button-press);
+    box-shadow: var(--shadow-press);
+    transition-duration: var(--animation-fast);
   }
 
   &:disabled {
@@ -100,27 +102,44 @@
     cursor: not-allowed;
     background: var(--bg-disabled);
     border-color: var(--border-color);
+    @include animate-property('opacity', var(--animation-fast));
     
     .control-icon {
       opacity: 0.5;
+      @include animate-property('opacity', var(--animation-fast));
     }
   }
 
   .control-icon {
     font-size: 1.2rem;
     line-height: 1;
-    transition: transform 0.2s ease;
+    @include animate-property('transform', var(--animation-normal), var(--ease-out));
   }
 
-  // Enhanced touch feedback
+  // Enhanced touch feedback with micro-interactions
   @include touch-device {
     min-width: 48px;
     min-height: 48px;
     
     &:active:not(:disabled) {
-      transform: scale(0.95);
+      transform: var(--scale-press);
       background: var(--accent-color-light);
       border-color: var(--accent-color);
+      transition-duration: var(--animation-fast);
+    }
+    
+    // Add subtle pulse feedback on touch
+    &:active:not(:disabled)::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(var(--accent-rgb), 0.3) 0%, transparent 70%);
+      transform: translate(-50%, -50%) scale(0);
+      animation: touch-ripple var(--animation-normal) var(--ease-out);
+      pointer-events: none;
     }
   }
 }
@@ -150,7 +169,7 @@
     border-color: var(--bg-disabled);
   }
   
-  // Circular variant for main play/pause button
+  // Circular variant for main play/pause button with enhanced animations
   &.circular {
     border-radius: 50%;
     width: 3rem;
@@ -162,34 +181,42 @@
     justify-content: center;
     padding: 0;
     box-shadow: var(--shadow-md);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    @include animate-properties('transform, box-shadow, background-color', var(--animation-normal), var(--ease-out));
     
     .control-icon {
       font-size: 1.5rem;
-      transition: transform 0.2s ease;
+      @include animate-property('transform', var(--animation-normal), var(--ease-out));
     }
     
     // Only apply hover effects on hover-capable devices
     @include hover-device {
       &:hover:not(:disabled) {
         background: var(--accent-hover);
-        transform: translateY(-3px) scale(1.08);
-        box-shadow: var(--shadow-lg);
+        transform: var(--hover-lift-high) var(--scale-grow);
+        box-shadow: var(--shadow-lift);
         
         .control-icon {
-          transform: scale(1.1);
+          transform: var(--scale-grow);
         }
       }
     }
     
     &:active:not(:disabled) {
-      transform: translateY(-1px) scale(1.02);
-      box-shadow: var(--shadow-sm);
+      transform: var(--button-press) scale(1.02);
+      box-shadow: var(--shadow-press);
+      transition-duration: var(--animation-fast);
     }
     
     &:focus-visible {
       outline: 3px solid rgba(var(--accent-rgb), 0.3);
       outline-offset: 4px;
+      @include animate-properties('outline-color, box-shadow', var(--animation-fast));
+      
+      // Enhanced focus glow for circular buttons
+      box-shadow: 
+        var(--shadow-md),
+        0 0 0 6px rgba(var(--accent-rgb), 0.15),
+        0 0 0 3px var(--accent-color);
     }
     
     // Enhanced mobile sizing
@@ -558,6 +585,17 @@
   75% { transform: translateX(2px); }
 }
 
+@keyframes touch-ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}
+
 // Accessibility improvements
 @media (prefers-reduced-motion: reduce) {
   .loading-icon,
@@ -572,6 +610,12 @@
 
     &:hover:not(:disabled) {
       transform: none;
+    }
+    
+    // Disable touch ripple effect for reduced motion
+    &:active:not(:disabled)::after {
+      animation: none;
+      opacity: 0;
     }
   }
 }

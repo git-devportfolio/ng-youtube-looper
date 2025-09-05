@@ -1,4 +1,5 @@
 @import 'variables';
+@import 'animations';
 
 // Mixins for responsive design and common patterns
 
@@ -151,23 +152,30 @@
   }
 }
 
-// Animation mixins
-@mixin transition($properties: all, $duration: 0.2s, $timing: ease) {
-  transition: $properties $duration $timing;
+// Animation mixins - legacy support, prefer animate-* mixins
+@mixin transition($properties: all, $duration: var(--animation-normal), $timing: var(--ease-out)) {
+  @if $properties == all {
+    @include animate-all($duration, $timing);
+  } @else {
+    @include animate-properties($properties, $duration, $timing);
+  }
 }
 
 @mixin hover-lift {
-  @include transition(transform, 0.2s, ease);
+  @include animate-properties('transform, box-shadow', var(--animation-normal), var(--ease-out));
   
   // Only apply hover effects on devices that support hover
   @include hover-device {
     &:hover {
-      transform: translateY(-1px);
+      transform: var(--hover-lift);
+      box-shadow: var(--shadow-hover);
     }
   }
   
   &:active {
-    transform: translateY(0);
+    transform: var(--button-press);
+    box-shadow: var(--shadow-press);
+    transition-duration: var(--animation-fast);
   }
 }
 
@@ -175,6 +183,12 @@
   &:focus-visible {
     outline: 2px solid var(--accent-color);
     outline-offset: 2px;
+    border-radius: var(--radius-md);
+    @include animate-property('outline-color', var(--animation-fast));
+    
+    // Enhanced focus ring with subtle glow
+    box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.2);
+    @include animate-property('box-shadow', var(--animation-fast));
   }
 }
 
@@ -247,24 +261,37 @@
   font-family: var(--font-family-base);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  @include transition();
+  @include animate-properties('transform, box-shadow, background-color, border-color', var(--animation-normal), var(--ease-out));
   @include button-focus();
   @include touch-target();
   
   &:disabled {
     cursor: not-allowed;
     opacity: 0.6;
+    @include animate-property('opacity', var(--animation-fast));
   }
   
-  // Enhanced touch interaction
+  // Enhanced touch interaction with better feedback
   @include touch-device {
     @include touch-feedback();
+    
+    &:active:not(:disabled) {
+      transform: var(--scale-press);
+      transition-duration: var(--animation-fast);
+    }
   }
   
-  // Hover effects only on hover-capable devices
+  // Improved hover effects only on hover-capable devices
   @include hover-device {
     &:hover:not(:disabled) {
-      @include hover-lift();
+      transform: var(--hover-lift);
+      box-shadow: var(--shadow-hover);
+    }
+    
+    &:active:not(:disabled) {
+      transform: var(--button-press);
+      box-shadow: var(--shadow-press);
+      transition-duration: var(--animation-fast);
     }
   }
 }

@@ -9,7 +9,7 @@
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   flex-wrap: wrap;
-  transition: all 0.3s ease;
+  @include animate-properties('border-color, box-shadow', var(--animation-normal), var(--ease-out));
   position: relative;
   overflow: hidden;
   
@@ -146,7 +146,7 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  @include animate-properties('transform, box-shadow, background-color, border-color', var(--animation-normal), var(--ease-out));
   min-width: 40px;
   position: relative;
   overflow: hidden;
@@ -185,8 +185,8 @@
     background: var(--accent-color-light);
     border-color: var(--accent-color);
     color: var(--accent-color-dark);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px var(--accent-color-alpha);
+    transform: var(--hover-lift);
+    box-shadow: var(--shadow-hover);
     
     &::before {
       width: 100%;
@@ -252,7 +252,7 @@
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   cursor: pointer;
-  transition: all 0.3s ease;
+  @include animate-properties('transform, box-shadow, background-color, border-color', var(--animation-normal), var(--ease-out));
   min-width: 32px;
   min-height: 32px;
 
@@ -270,7 +270,8 @@
   &:hover:not(:disabled) {
     background: var(--accent-color-light);
     border-color: var(--accent-color);
-    transform: translateY(-1px);
+    transform: var(--hover-lift);
+    box-shadow: var(--shadow-hover);
   }
 
   &.decrease {
@@ -393,11 +394,12 @@
     color: white;
     font-size: var(--font-size-xs);
     cursor: pointer;
-    transition: all 0.3s ease;
+    @include animate-properties('transform, box-shadow, background-color', var(--animation-normal), var(--ease-out));
 
     &:hover:not(:disabled) {
       background: var(--success-color-dark);
-      transform: translateY(-1px);
+      transform: var(--hover-lift);
+      box-shadow: var(--shadow-hover);
     }
 
     &:disabled {
@@ -456,7 +458,7 @@
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   cursor: pointer;
-  transition: all 0.3s ease;
+  @include animate-properties('transform, box-shadow, background-color, border-color', var(--animation-normal), var(--ease-out));
   font-size: 14px;
   min-width: 32px;
   min-height: 32px;
@@ -467,7 +469,8 @@
   &:hover:not(:disabled) {
     background: var(--accent-color-light);
     border-color: var(--accent-color);
-    transform: translateY(-1px);
+    transform: var(--hover-lift);
+    box-shadow: var(--shadow-hover);
   }
 
   &.active {
