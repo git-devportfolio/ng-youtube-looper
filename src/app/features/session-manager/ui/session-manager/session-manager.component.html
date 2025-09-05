@@ -125,7 +125,9 @@
           (sessionLoad)="onSessionLoad($event)"
           (sessionEdit)="onSessionEdit($event)"
           (sessionDelete)="onSessionDelete($event)"
-          (sessionDuplicate)="onSessionDuplicate($event)">
+          (sessionDuplicate)="onSessionDuplicate($event)"
+          (createSession)="onCreateSessionRequest()"
+          (importSessions)="onImportSessionsRequest()">
         </app-session-list>
         
         <!-- Quick Actions Panel -->

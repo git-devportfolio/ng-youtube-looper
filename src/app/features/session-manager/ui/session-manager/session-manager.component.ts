@@ -209,6 +209,27 @@ export class SessionManagerComponent implements OnInit {
     }
   }
 
+  // === EMPTY STATE EVENTS ===
+
+  /**
+   * Handle create session request from empty state
+   */
+  onCreateSessionRequest(): void {
+    if (this.canCreateSession()) {
+      this.navigateToCreate();
+    } else {
+      // If no video context, navigate to history to select a video
+      this.navigateToView('history');
+    }
+  }
+
+  /**
+   * Handle import sessions request from empty state
+   */
+  onImportSessionsRequest(): void {
+    this.navigateToView('import-export');
+  }
+
   // === SESSION FORM EVENTS ===
 
   onSessionSave(formData: SessionFormData): void {

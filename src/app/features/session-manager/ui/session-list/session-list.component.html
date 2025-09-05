@@ -90,6 +90,24 @@
       <p class="empty-description">
         Créez votre première session pour commencer à sauvegarder vos boucles d'entraînement.
       </p>
+      <div class="empty-actions">
+        <button 
+          class="create-session-btn primary"
+          (click)="onCreateFirstSession()"
+          aria-label="Créer votre première session"
+          type="button">
+          <span class="btn-icon">➕</span>
+          Créer ma première session
+        </button>
+        <button 
+          class="import-sessions-btn secondary"
+          (click)="onImportSessions()"
+          aria-label="Importer des sessions depuis un fichier"
+          type="button">
+          <span class="btn-icon">📤</span>
+          Importer des sessions
+        </button>
+      </div>
     </div>
   }
 

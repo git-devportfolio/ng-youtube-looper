@@ -20,6 +20,8 @@ export interface SessionListEvents {
   sessionDelete: LooperSession;
   sessionDuplicate: LooperSession;
   sessionLoad: LooperSession;
+  createSession: void;
+  importSessions: void;
 }
 
 @Component({
@@ -42,6 +44,8 @@ export class SessionListComponent implements OnInit {
   @Output() sessionDelete = new EventEmitter<LooperSession>();
   @Output() sessionDuplicate = new EventEmitter<LooperSession>();
   @Output() sessionLoad = new EventEmitter<LooperSession>();
+  @Output() createSession = new EventEmitter<void>();
+  @Output() importSessions = new EventEmitter<void>();
 
   // Component state signals
   private readonly _searchQuery = signal<string>('');
@@ -199,6 +203,22 @@ export class SessionListComponent implements OnInit {
   onSessionDuplicate(session: LooperSession, event: Event): void {
     event.stopPropagation();
     this.sessionDuplicate.emit(session);
+  }
+
+  // === EMPTY STATE ACTIONS ===
+
+  /**
+   * Handle create first session action from empty state
+   */
+  onCreateFirstSession(): void {
+    this.createSession.emit();
+  }
+
+  /**
+   * Handle import sessions action from empty state
+   */
+  onImportSessions(): void {
+    this.importSessions.emit();
   }
 
   // === UTILITY METHODS ===

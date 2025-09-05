@@ -936,8 +936,64 @@
         "dependencies": [
           17
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Finaliser l'interface utilisateur du gestionnaire de sessions",
+            "description": "Compléter les composants UI SessionListComponent, SessionFormComponent et SessionManagerComponent avec toutes les fonctionnalités d'interface manquantes (recherche, tri, actions bulk, états empty)",
+            "dependencies": [],
+            "details": "Implémenter les fonctionnalités d'interface manquantes dans session-list.component pour afficher les métadonnées des sessions (nom, URL vidéo, nombre de boucles, dernière modification) avec actions load/delete/rename/duplicate. Ajouter la recherche et le tri dans session-manager.component. Implémenter l'état empty avec CTA de création. Assurer la cohérence visuelle avec les patterns UI existants du projet.",
+            "status": "done",
+            "testStrategy": "Tests unitaires des composants UI, validation des interactions utilisateur, tests d'accessibilité et responsive design"
+          },
+          {
+            "id": 2,
+            "title": "Intégrer le système d'auto-save avec synchronisation en temps réel",
+            "description": "Connecter le système d'auto-save du SessionManagerService avec l'interface utilisateur pour sauvegarder automatiquement les changements de la session courante",
+            "dependencies": [
+              "18.1"
+            ],
+            "details": "Utiliser les effets Angular et les signals existants dans SessionFacade pour détecter les changements dans la session courante. Configurer l'auto-save via les settings (autoSaveEnabled, autoSaveInterval). Ajouter des indicateurs visuels dans l'UI pour montrer l'état de sauvegarde (saving, saved, error). Implémenter la gestion des conflits et la récupération automatique après erreur.",
+            "status": "pending",
+            "testStrategy": "Tests d'intégration de l'auto-save, validation des intervals de sauvegarde, tests de gestion d'erreurs et récupération automatique"
+          },
+          {
+            "id": 3,
+            "title": "Implémenter l'interface d'import/export JSON complète",
+            "description": "Finaliser le composant ImportExportComponent avec interface complète pour export/import de sessions individuelles et multiples avec validation",
+            "dependencies": [
+              "18.1"
+            ],
+            "details": "Créer l'interface ImportExportComponent avec options d'export (toutes les sessions, session sélectionnée, sessions multiples). Implémenter l'import avec validation du format JSON, gestion des erreurs et preview des données. Ajouter la validation de structure JSON, gestion des conflicts de noms, et options de merge/replace. Utiliser les méthodes existantes de SessionFacade (exportAllSessions, exportSelectedSessions, importSessionsFromFile).",
+            "status": "pending",
+            "testStrategy": "Tests de validation des formats JSON, tests d'import/export avec données valides et invalides, tests de gestion des conflits de noms"
+          },
+          {
+            "id": 4,
+            "title": "Optimiser la structure JSON et les performances localStorage",
+            "description": "Optimiser la structure de données JSON stockées dans localStorage pour améliorer les performances et réduire l'usage mémoire",
+            "dependencies": [
+              "18.2",
+              "18.3"
+            ],
+            "details": "Analyser et optimiser la structure JSON utilisée dans LooperStorageService. Implémenter la compression des données de sessions (minification des propriétés, suppression des données redondantes). Ajouter la pagination et le lazy loading pour les grandes listes de sessions. Implémenter un système de cache intelligent avec invalidation automatique. Optimiser les opérations de recherche et filtrage.",
+            "status": "pending",
+            "testStrategy": "Tests de performance avec grandes quantités de données, validation de l'intégrité des données après compression, tests de limite de stockage localStorage"
+          },
+          {
+            "id": 5,
+            "title": "Finaliser la gestion avancée des sessions et l'historique",
+            "description": "Compléter l'implémentation de la gestion de l'historique, des sessions récentes et des fonctionnalités avancées de tri et recherche",
+            "dependencies": [
+              "18.1",
+              "18.4"
+            ],
+            "details": "Finaliser l'intégration de SessionHistoryEntry dans l'interface utilisateur avec affichage des sessions récentes. Implémenter le tri avancé (par date, nom, nombre de boucles, durée). Ajouter les filtres par vidéo et par tags. Implémenter la navigation dans l'historique avec restauration d'état. Optimiser les performances des opérations de recherche avec debouncing et indexation.",
+            "status": "pending",
+            "testStrategy": "Tests de l'historique de navigation, validation du tri et des filtres, tests de performance sur les opérations de recherche, tests d'intégration de l'état global"
+          }
+        ]
       },
       {
         "id": 19,
@@ -1322,7 +1378,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-05T06:07:01.238Z",
+      "updated": "2025-09-05T06:20:41.868Z",
       "description": "Tasks for master context"
     }
   }
