@@ -20,6 +20,8 @@
 <!-- Footer - lazy loaded -->
 @defer (on viewport) {
   <app-footer></app-footer>
+} @placeholder {
+  <div class="footer-placeholder">Footer</div>
 } @loading {
   <div class="footer-placeholder">Chargement du footer...</div>
 }

@@ -936,7 +936,7 @@
         "dependencies": [
           17
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -978,7 +978,7 @@
               "18.3"
             ],
             "details": "Analyser et optimiser la structure JSON utilisée dans LooperStorageService. Implémenter la compression des données de sessions (minification des propriétés, suppression des données redondantes). Ajouter la pagination et le lazy loading pour les grandes listes de sessions. Implémenter un système de cache intelligent avec invalidation automatique. Optimiser les opérations de recherche et filtrage.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests de performance avec grandes quantités de données, validation de l'intégrité des données après compression, tests de limite de stockage localStorage"
           },
           {
@@ -990,7 +990,7 @@
               "18.4"
             ],
             "details": "Finaliser l'intégration de SessionHistoryEntry dans l'interface utilisateur avec affichage des sessions récentes. Implémenter le tri avancé (par date, nom, nombre de boucles, durée). Ajouter les filtres par vidéo et par tags. Implémenter la navigation dans l'historique avec restauration d'état. Optimiser les performances des opérations de recherche avec debouncing et indexation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests de l'historique de navigation, validation du tri et des filtres, tests de performance sur les opérations de recherche, tests d'intégration de l'état global"
           }
         ]
@@ -1378,7 +1378,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-05T13:10:36.422Z",
+      "updated": "2025-09-05T13:43:47.101Z",
       "description": "Tasks for master context"
     }
   }

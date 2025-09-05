@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SecureStorageService } from './storage.service';
-import { StorageOptimizationService, PaginatedResult } from './storage-optimization.service';
+import { StorageOptimizationService } from './storage-optimization.service';
 import { 
   LooperSession,
   SessionSettings,
@@ -10,7 +10,6 @@ import {
   StorageOperationResult,
   CompressedSessionData,
   DEFAULT_SESSION_SETTINGS,
-  DEFAULT_LOOPER_STORAGE_CONFIG,
   LOOPER_STORAGE_KEYS
 } from './looper-storage.types';
 import { LoopSegment } from '@shared/interfaces';
@@ -124,7 +123,7 @@ export class LooperStorageService {
       let compressed = false;
 
       // Essayer de charger la version compressée d'abord
-      const compressedData = this.secureStorage.loadData<CompressedSessionData>(LOOPER_STORAGE_KEYS.SESSIONS + '_compressed', null);
+      const compressedData = this.secureStorage.loadData<CompressedSessionData | null>(LOOPER_STORAGE_KEYS.SESSIONS + '_compressed', null);
       if (compressedData) {
         sessions = this.optimizationService.decompressSessionData(compressedData);
         sourceKey = LOOPER_STORAGE_KEYS.SESSIONS + '_compressed';
@@ -783,7 +782,7 @@ export class LooperStorageService {
   /**
    * Invalide le cache pour une session modifiée
    */
-  invalidateSessionCache(sessionId: string, videoId?: string): void {
+  invalidateSessionCache(_sessionId: string, videoId?: string): void {
     this.optimizationService.invalidateCache('all_sessions');
     this.optimizationService.invalidateCache('sessions_*');
     

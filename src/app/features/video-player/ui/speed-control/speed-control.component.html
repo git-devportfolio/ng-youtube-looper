@@ -24,7 +24,7 @@
         type="button"
         class="speed-preset"
         [class.active]="currentRate === preset.value"
-        [class.transitioning]="isTransitioning"
+        [class.transitioning]="isTransitioning()"
         [disabled]="disabled"
         (click)="setPresetSpeed(preset.value)"
         [title]="preset.label"
@@ -44,7 +44,7 @@
     <button
       type="button"
       class="speed-button decrease"
-      [class.transitioning]="isTransitioning"
+      [class.transitioning]="isTransitioning()"
       [disabled]="disabled || !canDecrease"
       (click)="decreasePlaybackSpeed()"
       [title]="'Diminuer la vitesse (-' + validationService.PLAYBACK_SPEED_STEP + 'x)'"
@@ -57,7 +57,7 @@
     <button
       type="button"
       class="speed-button increase"
-      [class.transitioning]="isTransitioning"
+      [class.transitioning]="isTransitioning()"
       [disabled]="disabled || !canIncrease"
       (click)="increasePlaybackSpeed()"
       [title]="'Augmenter la vitesse (+' + validationService.PLAYBACK_SPEED_STEP + 'x)'"
@@ -98,7 +98,7 @@
       <button
         type="button"
         class="apply-button"
-        [class.loading]="isTransitioning"
+        [class.loading]="isTransitioning()"
         [disabled]="disabled || manualInputError !== null"
         (click)="applyManualSpeed()"
         title="Appliquer la vitesse personnalisée (arrondie automatiquement)"

@@ -5,7 +5,7 @@
       <span class="list-summary">
         {{ vm().totalLoops }} boucle{{ vm().totalLoops > 1 ? 's' : '' }}
         @if (vm().activeLoop) {
-          • <span class="active-indicator">{{ vm().activeLoop.name }} active</span>
+          • <span class="active-indicator">{{ vm().activeLoop!.name }} active</span>
         }
       </span>
     }

@@ -172,7 +172,7 @@ export function getVideoStatus(errorCode?: number, videoId?: string): VideoStatu
       suggestion: 'Une erreur inattendue s\'est produite. Veuillez réessayer.',
       recoverable: true
     },
-    videoId
+    videoId: videoId || ''
   };
 }
 

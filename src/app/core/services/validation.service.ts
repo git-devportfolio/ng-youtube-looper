@@ -1,10 +1,7 @@
 import { Injectable } from '@angular/core';
 import { 
   extractVideoId, 
-  validateVideoId, 
-  getVideoStatus, 
-  YouTubeErrorCode,
-  parsePlayerError
+  validateVideoId
 } from '../utils/youtube.utils';
 import { 
   formatSecondsToMMSS, 
@@ -16,9 +13,9 @@ import {
   providedIn: 'root'
 })
 export class ValidationService {
-  // Garder la regex pour compatibilité, mais utiliser les nouveaux utilitaires
-  private readonly YOUTUBE_URL_REGEX = 
-    /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  // Garder la regex pour compatibilité future
+  // private readonly _YOUTUBE_URL_REGEX = 
+  //   /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
 
   // Speed validation constants
   readonly MIN_PLAYBACK_SPEED = 0.25;

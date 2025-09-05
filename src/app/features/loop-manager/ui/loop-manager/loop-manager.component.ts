@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { LoopManagerFacade } from '../../data-access/loop-manager.facade';
 import { LoopFormComponent } from '../loop-form/loop-form.component';
-import { LoopSegment } from '@core/models/loop.model';
+import { LoopSegment } from '@shared/interfaces/loop.types';
 
 export interface LoopManagerViewModel {
   loops: LoopSegment[];
@@ -61,7 +61,6 @@ export class LoopManagerComponent implements OnInit {
   
   // Animation and interaction state
   private animationInProgress = signal(false);
-  private lastSyncTimestamp = 0;
 
   // Computed view model
   readonly vm = computed<LoopManagerViewModel>(() => {
@@ -102,15 +101,20 @@ export class LoopManagerComponent implements OnInit {
   }
 
   onDuplicateLoop(loop: LoopSegment): void {
-    const duplicated: Partial<LoopSegment> = {
-      ...loop,
-      id: undefined, // Let facade generate new ID
+    const duplicated: Omit<LoopSegment, 'id'> = {
       name: `${loop.name} (copie)`,
+      startTime: loop.startTime,
+      endTime: loop.endTime,
+      playbackSpeed: loop.playbackSpeed,
+      playCount: 0,
+      color: loop.color || '#3B82F6',
+      isActive: false,
+      repeatCount: loop.repeatCount || 1,
       createdAt: new Date(),
       updatedAt: new Date()
     };
     
-    this.loopManagerFacade.createLoop(duplicated as Omit<LoopSegment, 'id'>);
+    this.loopManagerFacade.createLoop(duplicated);
   }
 
   onPlayLoop(loop: LoopSegment): void {
@@ -139,18 +143,18 @@ export class LoopManagerComponent implements OnInit {
     });
   }
 
-  onLoopFormSubmit(loopData: Partial<LoopSegment>): void {
+  onLoopFormSubmit(result: any): void {
     const editingId = this.editingLoopId();
     
-    if (editingId) {
-      this.loopManagerFacade.updateLoop(editingId, loopData);
+    if (editingId && result.type === 'update') {
+      this.loopManagerFacade.updateLoop(editingId, result.data);
       // Sync update with Timeline
       const updatedLoop = this.vm().loops.find(l => l.id === editingId);
       if (updatedLoop) {
         this.syncLoopWithTimeline('update', updatedLoop);
       }
-    } else {
-      this.loopManagerFacade.createLoop(loopData as Omit<LoopSegment, 'id'>);
+    } else if (result.type === 'create') {
+      this.loopManagerFacade.createLoop(result.data as Omit<LoopSegment, 'id'>);
     }
     
     this.closeForm();
@@ -219,6 +223,11 @@ export class LoopManagerComponent implements OnInit {
   }
 
   // Helper methods for template
+  getEditingLoop(): LoopSegment | null {
+    const editingId = this.editingLoopId();
+    return editingId ? this.vm().loops.find(l => l.id === editingId) || null : null;
+  }
+
   formatTime(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
@@ -239,7 +248,6 @@ export class LoopManagerComponent implements OnInit {
     if (!this.timelineSyncEnabled()) return;
 
     const now = Date.now();
-    this.lastSyncTimestamp = now;
 
     this.syncWithTimeline.emit({
       action,

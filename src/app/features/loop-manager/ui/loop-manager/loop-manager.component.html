@@ -56,7 +56,7 @@
             class="search-input"
             placeholder="Rechercher par nom..."
             [value]="searchTerm()"
-            (input)="onSearch($event.target.value)"
+            (input)="onSearch(($any($event.target)).value)"
             aria-describedby="search-help">
           <span id="search-help" class="sr-only">
             Saisissez du texte pour filtrer les boucles par nom
@@ -155,9 +155,9 @@
           </div>
           
           <app-loop-form
-            [loopId]="editingLoopId()"
-            (save)="onLoopFormSubmit($event)"
-            (cancel)="onLoopFormCancel()">
+            [editingLoop]="getEditingLoop()"
+            (formSubmit)="onLoopFormSubmit($event)"
+            (formCancel)="onLoopFormCancel()">
           </app-loop-form>
         </section>
       }

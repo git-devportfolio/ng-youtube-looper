@@ -845,8 +845,7 @@
 }
 
 .clear-search-btn {
-  @extend .create-session-btn;
-  @extend .create-session-btn.primary;
+  @extend .create-session-btn, .primary;
   min-width: auto;
   padding: 0.75rem 1.25rem;
   font-size: 0.875rem;

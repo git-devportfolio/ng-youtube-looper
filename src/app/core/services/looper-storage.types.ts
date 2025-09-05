@@ -106,9 +106,17 @@ export interface StorageOperationResult {
   error?: string;
   metadata?: {
     operation: string;
-    key: string;
+    key?: string;
     size?: number;
     timestamp: Date;
+    // Propriétés supplémentaires pour les opérations spécifiques
+    originalSize?: number;
+    cached?: boolean;
+    compressed?: boolean;
+    page?: number;
+    query?: string;
+    videoId?: string;
+    [key: string]: any; // Pour permettre d'autres propriétés dynamiques
   };
 }
 

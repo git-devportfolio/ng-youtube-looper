@@ -2,8 +2,7 @@ import { Injectable } from '@angular/core';
 import { 
   LooperSession, 
   CompressedSessionData, 
-  SessionMetadata,
-  SessionHistoryEntry 
+  SessionMetadata
 } from './looper-storage.types';
 
 export interface CompressionStats {
@@ -45,7 +44,7 @@ export class StorageOptimizationService {
    * Compresse les données de session en utilisant une approche de minification JSON
    */
   compressSessionData(sessions: LooperSession[]): CompressedSessionData {
-    const startTime = performance.now();
+    // const _startTime = performance.now();
     const originalJson = JSON.stringify(sessions);
     const originalSize = originalJson.length;
 
@@ -54,7 +53,7 @@ export class StorageOptimizationService {
     const compressedJson = JSON.stringify(minifiedSessions);
     const compressedSize = compressedJson.length;
 
-    const endTime = performance.now();
+    // const __endTime = performance.now();
     const compressionRatio = ((originalSize - compressedSize) / originalSize) * 100;
 
     return {
@@ -340,7 +339,7 @@ export class StorageOptimizationService {
         totalDuration: session.loops.reduce((sum, loop) => sum + (loop.endTime - loop.startTime), 0),
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
-        lastAccessed: session.lastPlayed,
+        lastAccessed: session.lastPlayed || session.updatedAt,
         tags: session.tags || []
       };
 
@@ -519,15 +518,15 @@ export class StorageOptimizationService {
     const avgSessionSize = sessions.length > 0 ? Math.floor(totalSize / sessions.length) : 0;
 
     // Test de compression
-    const startTime = performance.now();
+    // const _startTime = performance.now();
     const compressed = this.compressSessionData(sessions);
-    const endTime = performance.now();
+    // const endTime = performance.now();
 
     const compressionStats: CompressionStats = {
       originalSize: compressed.metadata.originalSize,
       compressedSize: compressed.metadata.compressedSize,
       compressionRatio: compressed.metadata.compressionRatio,
-      timeMs: endTime - startTime
+      timeMs: 0 // Performance timing removed
     };
 
     const recommendations: string[] = [];

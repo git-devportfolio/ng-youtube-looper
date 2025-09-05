@@ -1,11 +1,6 @@
 import { Injectable, computed, signal, inject, effect } from '@angular/core';
-import { LoopService, Loop } from '@core/services/loop.service';
-
-// Harmonized interface compatible with LoopService
-export interface LoopSegment extends Loop {
-  // LoopSegment inherits all properties from Loop
-  // This ensures compatibility between facades
-}
+import { LoopService } from '@core/services/loop.service';
+import { LoopSegment } from '@shared/interfaces/loop.types';
 
 // State interface for the LoopManagerFacade
 export interface LoopManagerState {
@@ -78,6 +73,7 @@ export class LoopManagerFacade {
   private readonly _editingLoop = signal<LoopSegment | null>(null);
   private readonly _selectedLoopId = signal<string | null>(null);
   private readonly _error = signal<string | null>(null);
+  private readonly _isLoading = signal<boolean>(false);
 
   // Public readonly signals
   readonly loops = this._loops.asReadonly();
@@ -86,6 +82,10 @@ export class LoopManagerFacade {
   readonly repeatCount = this._repeatCount.asReadonly();
   readonly editingLoop = this._editingLoop.asReadonly();
   readonly error = this._error.asReadonly();
+  readonly isLoading = this._isLoading.asReadonly();
+  
+  // Alias for compatibility with component
+  readonly currentLoop = this.activeLoop;
 
   // Enhanced computed ViewModels
   readonly vm = computed<LoopManagerViewModel>(() => {
@@ -167,8 +167,35 @@ export class LoopManagerFacade {
   }
 
   // Enhanced Commands with LoopService integration
-  createLoop(start: number, end: number, name: string = 'Nouvelle boucle', options: LoopCreationOptions = {}): LoopCommandResult {
+  createLoop(start: number, end: number, name?: string, options?: LoopCreationOptions): LoopCommandResult;
+  createLoop(loopData: Omit<LoopSegment, 'id'>): LoopCommandResult;
+  createLoop(startOrLoopData: number | Omit<LoopSegment, 'id'>, end?: number, name?: string, options?: LoopCreationOptions): LoopCommandResult {
+    // Handle object-based call (new signature)
+    if (typeof startOrLoopData === 'object') {
+      const loopData = startOrLoopData;
+      return this.createLoopFromObject(loopData);
+    }
+    
+    // Handle parameter-based call (original signature)
+    return this.createLoopFromParams(startOrLoopData, end!, name || 'Nouvelle boucle', options || {});
+  }
+
+  private createLoopFromObject(loopData: Omit<LoopSegment, 'id'>): LoopCommandResult {
+    return this.createLoopFromParams(
+      loopData.startTime,
+      loopData.endTime,
+      loopData.name,
+      {
+        playbackSpeed: loopData.playbackSpeed || 1,
+        color: loopData.color || '#3B82F6',
+        repeatCount: loopData.repeatCount || 1
+      }
+    );
+  }
+
+  private createLoopFromParams(start: number, end: number, name: string = 'Nouvelle boucle', options: LoopCreationOptions = {}): LoopCommandResult {
     try {
+      this._isLoading.set(true);
       const existingLoops = this._loops();
       const { loop, validation } = this.loopService.createValidatedLoop(
         name,
@@ -176,7 +203,7 @@ export class LoopManagerFacade {
         end,
         {
           playbackSpeed: options.playbackSpeed || 1,
-          ...(options.color && { color: options.color }),
+          color: options.color || '#3B82F6',
           repeatCount: options.repeatCount || 1
         },
         undefined, // videoDuration will be provided by VideoPlayerFacade integration
@@ -186,11 +213,17 @@ export class LoopManagerFacade {
       if (!validation.isValid) {
         const errorMsg = `Impossible de créer la boucle: ${validation.errors.join(', ')}`;
         this._error.set(errorMsg);
+        this._isLoading.set(false);
         return { success: false, error: errorMsg };
       }
 
-      // Convert Loop to LoopSegment (they're compatible now)
-      const loopSegment = loop as LoopSegment;
+      // Convert Loop to LoopSegment with proper mapping
+      const loopSegment: LoopSegment = {
+        ...loop,
+        playbackSpeed: loop.playbackSpeed || 1,
+        playCount: 0,
+        isActive: loop.isActive || false
+      };
       this._loops.update(loops => [...loops, loopSegment]);
       
       // Auto-start if requested
@@ -199,10 +232,12 @@ export class LoopManagerFacade {
       }
       
       this._error.set(null);
+      this._isLoading.set(false);
       return { success: true, loop: loopSegment };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Erreur lors de la création de la boucle';
       this._error.set(errorMsg);
+      this._isLoading.set(false);
       return { success: false, error: errorMsg };
     }
   }
@@ -309,11 +344,13 @@ export class LoopManagerFacade {
 
   startLoop(loopId?: string): LoopCommandResult {
     try {
+      this._isLoading.set(true);
       const targetLoop = loopId ? this._loops().find(l => l.id === loopId) : this._activeLoop();
       
       if (!targetLoop) {
         const errorMsg = loopId ? 'Boucle non trouvée' : 'Aucune boucle sélectionnée';
         this._error.set(errorMsg);
+        this._isLoading.set(false);
         return { success: false, error: errorMsg };
       }
 
@@ -322,13 +359,20 @@ export class LoopManagerFacade {
       this._repeatCount.set(0);
       this._selectedLoopId.set(targetLoop.id);
       this._error.set(null);
+      this._isLoading.set(false);
       
       return { success: true, loop: targetLoop };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Erreur lors du démarrage';
       this._error.set(errorMsg);
+      this._isLoading.set(false);
       return { success: false, error: errorMsg };
     }
+  }
+
+  // Alias for compatibility with component
+  playLoop(loopId: string): LoopCommandResult {
+    return this.startLoop(loopId);
   }
 
   stopLoop(): LoopCommandResult {
