@@ -1099,7 +1099,7 @@
             "description": "Enrichir les labels ARIA existants, ajouter les attributs manquants (aria-describedby, aria-expanded) et implémenter les live regions pour les états dynamiques",
             "dependencies": [],
             "details": "Réviser et étendre les aria-label existants dans timeline, time-display et time-slider. Ajouter aria-describedby pour les aides contextuelles, aria-expanded pour les éléments pliables. Implémenter aria-live regions pour annoncer les changements d'état (lecture/pause, nouvelle loop créée, erreurs). Ajouter aria-roledescription pour les éléments personnalisés. Compléter les attributs role manquants et optimiser la structure sémantique.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Audit Axe automatisé, tests avec lecteurs d'écran NVDA/JAWS, validation ARIA avec axe-core"
           },
           {
@@ -1479,7 +1479,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-06T08:23:39.357Z",
+      "updated": "2025-09-06T08:35:15.602Z",
       "description": "Tasks for master context"
     }
   }

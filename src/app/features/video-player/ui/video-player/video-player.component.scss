@@ -1,5 +1,50 @@
 @import '../../../../../styles/mixins';
 
+// Screen reader only text
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Accessibility helper styles
+.help-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-top: var(--spacing-xs);
+}
+
+.loading-status {
+  font-size: var(--font-size-sm);
+  color: var(--accent-color);
+  margin-top: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  
+  &::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--accent-color);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 // Enhanced responsive breakpoints for video player
 $player-mobile-max: 479px;
 $player-tablet-min: 480px;

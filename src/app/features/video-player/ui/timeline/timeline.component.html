@@ -1,4 +1,7 @@
-<div [class]="getContainerClasses()">
+<div [class]="getContainerClasses()" role="region" [attr.aria-label]="'Timeline de la vidéo avec ' + effectiveLoops.length + ' boucle' + (effectiveLoops.length > 1 ? 's' : '')">
+  
+  <!-- Live region for timeline announcements -->
+  <div class="sr-only" aria-live="polite" aria-atomic="true" id="timeline-announcements"></div>
   
   <!-- Timeline Track -->
   <div class="timeline-track"
@@ -16,7 +19,9 @@
        [attr.aria-valuemin]="0"
        [attr.aria-valuemax]="duration"
        [attr.aria-valuenow]="currentTime"
-       [attr.aria-label]="'Timeline scrubber - Current time: ' + formatDuration(currentTime) + ' of ' + formatDuration(duration) + (canCreateLoops ? '. Double-click or drag to create loop, Ctrl+L to create at current time' : '') + '. Use arrow keys to navigate, Enter/Space to select'">
+       [attr.aria-label]="'Timeline scrubber - Current time: ' + formatDuration(currentTime) + ' of ' + formatDuration(duration) + (canCreateLoops ? '. Double-click or drag to create loop, Ctrl+L to create at current time' : '') + '. Use arrow keys to navigate, Enter/Space to select'"
+       [attr.aria-roledescription]="'Contrôleur de timeline vidéo'"
+       [attr.aria-describedby]="'timeline-help'">>
     
     <!-- Enhanced Background Track with Visual Guides -->
     <div class="track-background">
@@ -93,7 +98,9 @@
              tabindex="0"
              role="button"
              [attr.aria-pressed]="selectedLoopId === loop.id"
-             [attr.aria-label]="'Loop segment' + (loop.name ? ' ' + loop.name : '') + ' from ' + formatDuration(loop.startTime) + ' to ' + formatDuration(loop.endTime)">
+             [attr.aria-label]="'Loop segment' + (loop.name ? ' ' + loop.name : '') + ' from ' + formatDuration(loop.startTime) + ' to ' + formatDuration(loop.endTime) + (selectedLoopId === loop.id ? ', sélectionnée' : '') + (isLoopPlaying(loop) ? ', en cours de lecture' : '')"
+             [attr.aria-roledescription]="'Segment de boucle vidéo'"
+             [attr.aria-describedby]="'loop-actions-help'">
           
           <!-- Enhanced tooltip -->
           <div class="loop-tooltip"
@@ -227,9 +234,13 @@
   
   <!-- Minimap for Long Videos -->
   @if (shouldShowMinimap()) {
-    <div class="timeline-minimap"
+    <div id="timeline-minimap"
+         class="timeline-minimap"
          [class.expanded]="isMinimapExpanded"
-         (click)="onMinimapClick($event)">
+         (click)="onMinimapClick($event)"
+         role="region"
+         [attr.aria-label]="'Mini-carte de la timeline avec ' + effectiveLoops.length + ' segments'"
+         [attr.aria-hidden]="!isMinimapExpanded">
       <div class="minimap-track">
         <!-- Minimap segments -->
         @for (loop of effectiveLoops; track trackLoopById($index, loop)) {
@@ -248,16 +259,30 @@
       </div>
       <button class="minimap-toggle" 
               (click)="toggleMinimap($event)"
-              [attr.aria-label]="isMinimapExpanded ? 'Collapse minimap' : 'Expand minimap'">
-        {{ isMinimapExpanded ? '▼' : '▲' }}
+              [attr.aria-label]="isMinimapExpanded ? 'Réduire la mini-carte' : 'Agrandir la mini-carte'"
+              [attr.aria-expanded]="isMinimapExpanded"
+              [attr.aria-controls]="'timeline-minimap'"
+              type="button">
+        <span aria-hidden="true">{{ isMinimapExpanded ? '▼' : '▲' }}</span>
       </button>
     </div>
   }
   
   <!-- Loading State -->
   @if (isLoading) {
-    <div class="timeline-loading">
-      <div class="loading-shimmer"></div>
+    <div class="timeline-loading" role="status" aria-label="Chargement de la timeline">
+      <div class="loading-shimmer" aria-hidden="true"></div>
     </div>
   }
+  
+  <!-- Screen reader help text -->
+  <div id="timeline-help" class="sr-only">
+    Timeline interactive : Utilisez les flèches pour naviguer, Entrée pour sélectionner une position. 
+    Ctrl+L pour créer une boucle, Delete pour supprimer la boucle sélectionnée. 
+    Double-clic pour créer une boucle à la position cliquée.
+  </div>
+  
+  <div id="loop-actions-help" class="sr-only">
+    Actions disponibles : Entrée pour lire, Delete pour supprimer, flèches avec Shift pour redimensionner.
+  </div>
 </div>

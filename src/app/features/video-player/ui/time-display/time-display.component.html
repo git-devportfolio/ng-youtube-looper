@@ -2,28 +2,47 @@
      [class.loading]="isLoading"
      [class.error]="hasError"
      role="timer"
-     [attr.aria-label]="'Temps de lecture: ' + timeDisplayString"
+     [attr.aria-label]="'Temps de lecture: ' + timeDisplayString + (isLoading ? ', chargement en cours' : '') + (hasError ? ', erreur de chargement' : '')"
      [attr.aria-valuenow]="progressPercentage"
      [attr.aria-valuemin]="0"
-     [attr.aria-valuemax]="100">
+     [attr.aria-valuemax]="100"
+     [attr.aria-describedby]="hasError ? 'time-display-error' : null"
+     [attr.aria-live]="isLoading ? 'polite' : null">
   
   <!-- Current time -->
-  <span class="current-time">{{ formattedCurrentTime }}</span>
+  <span class="current-time" 
+        role="text"
+        [attr.aria-label]="'Temps actuel: ' + formattedCurrentTime">{{ formattedCurrentTime }}</span>
   
   <!-- Separator and duration (if enabled) -->
   @if (showDuration) {
-    <span class="time-separator"> / </span>
-    <span class="duration">{{ formattedDuration }}</span>
+    <span class="time-separator" aria-hidden="true"> / </span>
+    <span class="duration" 
+          role="text"
+          [attr.aria-label]="'Durée totale: ' + formattedDuration">{{ formattedDuration }}</span>
   }
   
   <!-- Loading indicator -->
   @if (isLoading) {
-    <span class="loading-indicator" aria-label="Chargement du temps">
-      <span class="loading-dots">
+    <span class="loading-indicator" 
+          role="status"
+          aria-label="Chargement du temps en cours"
+          aria-live="polite">
+      <span class="loading-dots" aria-hidden="true">
         <span class="dot"></span>
         <span class="dot"></span>
         <span class="dot"></span>
       </span>
+    </span>
+  }
+  
+  <!-- Error message -->
+  @if (hasError) {
+    <span id="time-display-error" 
+          class="error-message" 
+          role="alert"
+          aria-live="assertive">
+      Erreur lors du chargement du temps
     </span>
   }
 </div>

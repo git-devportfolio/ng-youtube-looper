@@ -1,9 +1,13 @@
-<div class="video-player-container">
+<div class="video-player-container" role="application" aria-label="Lecteur vidéo YouTube avec contrôles de boucles">
+  
+  <!-- Live regions pour les annonces d'accessibilité -->
+  <div class="sr-only" aria-live="polite" aria-atomic="true" id="video-status-announcements"></div>
+  <div class="sr-only" aria-live="assertive" aria-atomic="true" id="video-error-announcements"></div>
   
   <!-- URL Input Section -->
-  <div class="url-input-section">
-    <h2>Charger une vidéo YouTube</h2>
-    <div class="input-group">
+  <section class="url-input-section" role="region" aria-labelledby="url-input-heading">
+    <h2 id="url-input-heading">Charger une vidéo YouTube</h2>
+    <div class="input-group" role="group" aria-labelledby="url-input-heading">
       <input 
         type="url"
         [formControl]="urlControl"
@@ -11,12 +15,19 @@
         class="url-input"
         [class.valid]="facade.isValidUrl()"
         [class.invalid]="urlControl.value && !facade.isValidUrl()"
+        [attr.aria-label]="'URL de la vidéo YouTube' + (facade.isValidUrl() ? ', URL valide' : urlControl.value ? ', URL invalide' : '')"
+        [attr.aria-describedby]="(urlControl.value && !facade.isValidUrl()) ? 'url-error-message' : 'url-help-text'"
+        [attr.aria-invalid]="urlControl.value && !facade.isValidUrl()"
+        autocomplete="url"
+        spellcheck="false"
       >
       <button 
         type="button"
         (click)="loadVideo()"
         [disabled]="!facade.isValidUrl() || loading()"
         class="load-button"
+        [attr.aria-label]="loading() ? 'Chargement de la vidéo en cours' : 'Charger la vidéo YouTube'"
+        [attr.aria-describedby]="loading() ? 'loading-status' : null"
       >
         @if (loading()) {
           <span class="loading-spinner"></span>
@@ -27,15 +38,30 @@
       </button>
     </div>
     
+    <div id="url-help-text" class="help-text sr-only">
+      Entrez une URL vidéo YouTube valide. Formats acceptés : youtube.com/watch?v=ID, youtu.be/ID, ou youtube.com/embed/ID
+    </div>
+    
     @if (urlControl.value && !facade.isValidUrl()) {
-      <div class="error-message">
+      <div id="url-error-message" 
+           class="error-message" 
+           role="alert" 
+           aria-live="polite">
         URL YouTube invalide. Formats supportés : youtube.com/watch?v=..., youtu.be/..., youtube.com/embed/...
       </div>
     }
-  </div>
-
+    
+    @if (loading()) {
+      <div id="loading-status" 
+           class="loading-status" 
+           role="status" 
+           aria-live="polite">
+        Chargement de la vidéo en cours...
+      </div>
+    }
+  </section>
   <!-- Video Player Section -->
-  <div class="player-section">
+  <section class="player-section" role="region" [attr.aria-label]="facade.vm().currentVideo ? 'Lecteur vidéo - ' + facade.vm().currentVideo?.title : 'Lecteur vidéo'">
     @if (facade.vm().currentVideo) {
       <div class="video-container">
         <!-- YouTube Player Container with responsive iframe -->
@@ -43,7 +69,9 @@
              (mouseenter)="onPlayerMouseEnter()"
              (mouseleave)="onPlayerMouseLeave()"
              (click)="onPlayerTouch()"
-             (touchstart)="onPlayerTouch()">
+             (touchstart)="onPlayerTouch()"
+             role="region" 
+             [attr.aria-label]="'Lecteur vidéo YouTube - ' + (facade.vm().currentVideo?.title || 'Vidéo')">
           <iframe
             #youtubePlayer
             id="youtube-player"
@@ -158,7 +186,7 @@
         </div>
       </div>
     }
-  </div>
+  </section>
 
   <!-- Error Display -->
   @if (facade.vm().hasError) {

@@ -1,16 +1,23 @@
 <!-- ng-youtube-looper App -->
 
-<header class="app-header">
+<!-- Live regions for screen reader announcements -->
+<div class="sr-only" aria-live="polite" aria-atomic="true" id="status-announcements"></div>
+<div class="sr-only" aria-live="assertive" aria-atomic="true" id="error-announcements"></div>
+
+<!-- Skip to main content link -->
+<a class="skip-link" href="#main-content">Aller au contenu principal</a>
+
+<header class="app-header" role="banner">
   <h1>{{ title }}</h1>
   <app-theme-toggle></app-theme-toggle>
 </header>
 
-<main class="main-content">
+<main class="main-content" id="main-content" role="main">
   <!-- Demo du système de thématisation - lazy loaded -->
   @defer (on timer(100ms)) {
     <app-theme-demo></app-theme-demo>
   } @loading {
-    <div class="loading-placeholder">Chargement du thème demo...</div>
+    <div class="loading-placeholder" aria-label="Chargement du thème demo en cours">Chargement du thème demo...</div>
   }
   
   <!-- Router content -->

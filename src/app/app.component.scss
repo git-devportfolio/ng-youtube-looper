@@ -1,5 +1,37 @@
 @import '../styles/mixins';
 
+// Accessibility utility classes
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 8px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  border: 2px solid var(--accent-color);
+  z-index: 9999;
+  transition: top 0.2s ease-in-out;
+
+  &:focus {
+    top: 6px;
+  }
+}
+
 .app-header {
   display: flex;
   justify-content: space-between;
