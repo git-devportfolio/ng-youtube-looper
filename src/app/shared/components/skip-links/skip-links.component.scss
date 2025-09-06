@@ -1,0 +1,122 @@
+@import '../../../../styles/mixins';
+
+.skip-links {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  
+  .skip-links-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .skip-link {
+    position: absolute;
+    top: -100px;
+    left: var(--spacing-sm);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
+    border: 2px solid var(--accent-color);
+    box-shadow: var(--shadow-lg);
+    transition: all 0.2s ease-in-out;
+    white-space: nowrap;
+    z-index: 10001;
+
+    &:focus {
+      top: var(--spacing-sm);
+      outline: 3px solid var(--focus-color);
+      outline-offset: 2px;
+    }
+
+    &:hover {
+      background: var(--accent-color);
+      color: var(--bg-primary);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-xl);
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: var(--shadow-md);
+    }
+
+    // Enhanced visual feedback for different link types
+    &[href="#main-content"] {
+      border-color: var(--primary-color);
+    }
+
+    &[href*="video-player"],
+    &[href*="player-controls"],
+    &[href*="timeline"] {
+      border-color: var(--accent-color);
+    }
+
+    &[href*="loop"] {
+      border-color: var(--secondary-color);
+    }
+  }
+
+  // Positioning for multiple skip links
+  .skip-link:nth-child(1) { left: var(--spacing-sm); }
+  .skip-link:nth-child(2) { left: calc(var(--spacing-sm) + 200px); }
+  .skip-link:nth-child(3) { left: calc(var(--spacing-sm) + 400px); }
+  .skip-link:nth-child(4) { left: calc(var(--spacing-sm) + 600px); }
+  .skip-link:nth-child(5) { left: calc(var(--spacing-sm) + 800px); }
+  .skip-link:nth-child(6) { left: calc(var(--spacing-sm) + 1000px); }
+
+  // Responsive adjustments for mobile
+  @include mobile {
+    .skip-link {
+      left: var(--spacing-xs) !important;
+      right: var(--spacing-xs);
+      width: auto;
+      max-width: calc(100vw - 2 * var(--spacing-xs));
+      text-align: center;
+      font-size: var(--font-size-xs);
+      padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    // Stack vertically on mobile when focused
+    .skip-link:focus {
+      position: fixed;
+      top: calc(var(--spacing-sm) + 40px * var(--index, 0));
+      left: var(--spacing-xs) !important;
+      right: var(--spacing-xs);
+    }
+
+    .skip-link:nth-child(1):focus { --index: 0; }
+    .skip-link:nth-child(2):focus { --index: 1; }
+    .skip-link:nth-child(3):focus { --index: 2; }
+    .skip-link:nth-child(4):focus { --index: 3; }
+    .skip-link:nth-child(5):focus { --index: 4; }
+    .skip-link:nth-child(6):focus { --index: 5; }
+  }
+
+  // High contrast mode support
+  @media (prefers-contrast: high) {
+    .skip-link {
+      border-width: 3px;
+      
+      &:focus {
+        outline-width: 4px;
+      }
+    }
+  }
+
+  // Reduced motion support
+  @media (prefers-reduced-motion: reduce) {
+    .skip-link {
+      transition: none;
+    }
+  }
+}

@@ -65,13 +65,15 @@
     @if (facade.vm().currentVideo) {
       <div class="video-container">
         <!-- YouTube Player Container with responsive iframe -->
-        <div class="player-wrapper" 
+        <div id="video-player"
+             class="player-wrapper" 
              (mouseenter)="onPlayerMouseEnter()"
              (mouseleave)="onPlayerMouseLeave()"
              (click)="onPlayerTouch()"
              (touchstart)="onPlayerTouch()"
              role="region" 
-             [attr.aria-label]="'Lecteur vidéo YouTube - ' + (facade.vm().currentVideo?.title || 'Vidéo')">
+             [attr.aria-label]="'Lecteur vidéo YouTube - ' + (facade.vm().currentVideo?.title || 'Vidéo')"
+             tabindex="-1">
           <iframe
             #youtubePlayer
             id="youtube-player"

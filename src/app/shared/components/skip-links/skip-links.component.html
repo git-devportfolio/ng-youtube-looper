@@ -1,0 +1,67 @@
+<nav class="skip-links" aria-label="Liens de navigation rapide">
+  <ul class="skip-links-list">
+    <li>
+      <a 
+        class="skip-link" 
+        href="#main-content"
+        (click)="focusTarget($event, 'main-content')"
+      >
+        Aller au contenu principal
+      </a>
+    </li>
+    
+    @if (showPlayerSkipLinks) {
+      <li>
+        <a 
+          class="skip-link" 
+          href="#video-player"
+          (click)="focusTarget($event, 'video-player')"
+        >
+          Aller au lecteur vidéo
+        </a>
+      </li>
+      
+      <li>
+        <a 
+          class="skip-link" 
+          href="#player-controls"
+          (click)="focusTarget($event, 'player-controls')"
+        >
+          Aller aux contrôles de lecture
+        </a>
+      </li>
+      
+      <li>
+        <a 
+          class="skip-link" 
+          href="#timeline"
+          (click)="focusTarget($event, 'timeline')"
+        >
+          Aller à la timeline
+        </a>
+      </li>
+    }
+    
+    @if (showLoopSkipLinks) {
+      <li>
+        <a 
+          class="skip-link" 
+          href="#loop-list"
+          (click)="focusTarget($event, 'loop-list')"
+        >
+          Aller à la liste des boucles
+        </a>
+      </li>
+      
+      <li>
+        <a 
+          class="skip-link" 
+          href="#loop-controls"
+          (click)="focusTarget($event, 'loop-controls')"
+        >
+          Aller aux contrôles de boucles
+        </a>
+      </li>
+    }
+  </ul>
+</nav>

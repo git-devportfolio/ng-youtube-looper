@@ -1,1 +1,1 @@
-export { LazyImgDirective } from './lazy-img.directive';
+export { FocusTrapDirective } from './focus-trap.directive';

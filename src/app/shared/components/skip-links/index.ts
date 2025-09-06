@@ -1,0 +1,1 @@
+export { SkipLinksComponent } from './skip-links.component';

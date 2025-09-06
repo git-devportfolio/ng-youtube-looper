@@ -4,7 +4,9 @@
   <div class="sr-only" aria-live="polite" aria-atomic="true" id="timeline-announcements"></div>
   
   <!-- Timeline Track -->
-  <div class="timeline-track"
+  <div id="timeline" 
+       class="timeline-track"
+       tabindex="-1"
        [class.creating]="isCreatingLoop"
        [class.has-collision]="creationHasCollision"
        (click)="onTrackClick($event)"

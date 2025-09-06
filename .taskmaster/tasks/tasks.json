@@ -1108,7 +1108,7 @@
             "description": "Ajouter les liens de navigation rapide, améliorer la gestion du focus et implémenter les focus trap complets dans les composants modaux",
             "dependencies": [],
             "details": "Créer un composant skip-links pour navigation rapide (Aller au contenu, Aller aux contrôles, Aller aux loops). Améliorer le focus management avec restoration du focus après fermeture de modal. Compléter les focus trap dans loop-creation-modal avec gestion des éléments focusables dynamiques. Implémenter une directive focus-trap réutilisable. Gérer le focus initial approprié dans chaque page/modal.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests navigation skip links, validation focus trap, tests restauration focus après modal"
           },
           {
@@ -1479,7 +1479,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-06T08:35:15.602Z",
+      "updated": "2025-09-06T08:48:55.444Z",
       "description": "Tasks for master context"
     }
   }

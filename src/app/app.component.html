@@ -4,8 +4,11 @@
 <div class="sr-only" aria-live="polite" aria-atomic="true" id="status-announcements"></div>
 <div class="sr-only" aria-live="assertive" aria-atomic="true" id="error-announcements"></div>
 
-<!-- Skip to main content link -->
-<a class="skip-link" href="#main-content">Aller au contenu principal</a>
+<!-- Skip Links Navigation -->
+<app-skip-links 
+  [showPlayerSkipLinks]="showPlayerSkipLinks()" 
+  [showLoopSkipLinks]="showLoopSkipLinks()">
+</app-skip-links>
 
 <header class="app-header" role="banner">
   <h1>{{ title }}</h1>
