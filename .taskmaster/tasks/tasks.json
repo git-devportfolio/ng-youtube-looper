@@ -1362,8 +1362,62 @@
           22,
           25
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer la structure et les signals privés de SessionManagerFacade",
+            "description": "Implémenter la structure de base de SessionManagerFacade avec l'injection des services nécessaires et les signals privés pour l'état interne (_sessions, _currentSession, _autoSave, _lastSaved)",
+            "dependencies": [],
+            "details": "Créer le service SessionManagerFacade dans src/app/features/session-manager/data-access/ avec injection de SessionManagerService. Définir les signals privés: _sessions (LooperSession[]), _currentSession (LooperSession|null), _autoSave (boolean), _lastSaved (Date|null). Inclure les signals publics asReadonly() et setup des effets de base.",
+            "status": "done",
+            "testStrategy": "Tests unitaires de l'initialisation du service, injection des dépendances, création des signals et leur accessibilité en lecture seule"
+          },
+          {
+            "id": 2,
+            "title": "Développer le ViewModel computed et les computed dérivés",
+            "description": "Créer les signals computed pour exposer l'état agrégé via un ViewModel principal et les computed dérivés pour les informations calculées",
+            "dependencies": [
+              "26.1"
+            ],
+            "details": "Implémenter le computed principal 'vm' exposant SessionManagerViewModel avec toutes les propriétés nécessaires. Ajouter les computed dérivés: hasActiveSessions, sessionCount, canSave, saveStatus, autoSaveEnabled. Suivre le pattern des autres facades existantes pour la cohérence architecturale.",
+            "status": "done",
+            "testStrategy": "Tests unitaires des computed signals, validation des valeurs calculées, tests de réactivité lors des changements d'état"
+          },
+          {
+            "id": 3,
+            "title": "Implémenter les commandes de gestion des sessions",
+            "description": "Développer les méthodes publiques createSession(), saveSession(), loadSession(), deleteSession() avec gestion d'état et synchronisation",
+            "dependencies": [
+              "26.2"
+            ],
+            "details": "Créer les commandes publiques utilisant SessionManagerService en interne. Gérer les états de loading, erreurs et succès. Synchroniser les signals privés avec les opérations. Inclure la validation des paramètres et la gestion des cas d'erreur. Pattern similar au VideoPlayerFacade existant.",
+            "status": "done",
+            "testStrategy": "Tests unitaires de chaque commande, tests d'intégration avec SessionManagerService, validation des états d'erreur et de succès"
+          },
+          {
+            "id": 4,
+            "title": "Développer les fonctionnalités d'export et import",
+            "description": "Implémenter exportSession() et importSession() avec support JSON, validation des données et gestion des fichiers",
+            "dependencies": [
+              "26.3"
+            ],
+            "details": "Créer exportSession() pour exporter une session ou toutes les sessions en JSON. Implémenter importSession() avec validation du format, gestion des conflits et mise à jour des signals. Inclure les utilitaires de téléchargement de fichiers et lecture de fichiers. S'inspirer des méthodes existantes dans SessionFacade.",
+            "status": "done",
+            "testStrategy": "Tests unitaires d'export/import JSON, validation des formats, tests de gestion des erreurs de fichiers, tests de conflits de données"
+          },
+          {
+            "id": 5,
+            "title": "Intégrer la sauvegarde automatique et détection des changements",
+            "description": "Implémenter le système de sauvegarde automatique avec détection des changements non sauvegardés et gestion des intervalles",
+            "dependencies": [
+              "26.4"
+            ],
+            "details": "Créer la logique de détection des changements via effects sur _currentSession. Implémenter scheduleAutoSave() avec debounce, performAutoSave() et clearAutoSaveTimer(). Gérer les signals _autoSave et _lastSaved. Intégrer avec les settings de sauvegarde automatique du SessionManagerService.",
+            "status": "done",
+            "testStrategy": "Tests unitaires de la sauvegarde automatique, tests de détection des changements, tests des timers et debounce, validation des états de sauvegarde"
+          }
+        ]
       },
       {
         "id": 27,
@@ -1536,7 +1590,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-06T09:02:39.943Z",
+      "updated": "2025-09-06T09:06:16.621Z",
       "description": "Tasks for master context"
     }
   }
