@@ -1073,7 +1073,7 @@
         "dependencies": [
           19
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1117,7 +1117,7 @@
             "description": "Analyser et corriger tous les contrastes couleurs pour respecter le ratio 4.5:1 minimum, créer les utilitaires de validation et la documentation d'accessibilité",
             "dependencies": [],
             "details": "Audit complet des contrastes dans les thèmes light/dark en utilisant les variables CSS existantes. Corriger les contrastes insuffisants dans _variables.scss. Créer des utilitaires Sass pour validation automatique des contrastes. Implémenter des classes d'aide pour textes haute visibilité. Créer la documentation d'accessibilité avec guide des bonnes pratiques, raccourcis disponibles et compatibilité lecteurs d'écran. Ajouter des tests automatisés de contraste.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests automatisés contraste avec axe-core, audit Lighthouse accessibilité, validation WCAG 2.1 AA complète"
           }
         ]
@@ -1479,7 +1479,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-06T08:48:55.444Z",
+      "updated": "2025-09-06T08:58:05.604Z",
       "description": "Tasks for master context"
     }
   }

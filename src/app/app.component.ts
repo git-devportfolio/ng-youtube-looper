@@ -5,11 +5,11 @@ import { ThemeService } from '@core/services/theme.service';
 import { ThemeToggleComponent } from '@shared/components/theme-toggle/theme-toggle.component';
 import { ThemeDemoComponent } from '@shared/components/theme-demo/theme-demo.component';
 import { FooterComponent } from '@shared/components/footer/footer.component';
-import { SkipLinksComponent } from '@shared/components';
+import { SkipLinksComponent, AccessibilityHelpComponent } from '@shared/components';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ThemeToggleComponent, ThemeDemoComponent, FooterComponent, SkipLinksComponent],
+  imports: [RouterOutlet, ThemeToggleComponent, ThemeDemoComponent, FooterComponent, SkipLinksComponent, AccessibilityHelpComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })

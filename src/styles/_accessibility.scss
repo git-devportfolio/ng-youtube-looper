@@ -1,0 +1,273 @@
+// Accessibility utilities and contrast validation
+// Based on WCAG 2.1 AA guidelines
+
+// Contrast calculation functions
+// Note: These are approximations for development guidance
+// Use actual WCAG color contrast tools for final validation
+
+// High contrast color variations for better accessibility
+:root {
+  // Enhanced contrast colors for text
+  --text-high-contrast: #000000;
+  --text-medium-contrast: #1f2937;
+  --bg-high-contrast: #ffffff;
+  
+  // Error and warning colors with better contrast
+  --error-color-dark: #dc2626; // Higher contrast red
+  --warning-color: #f59e0b;
+  --warning-color-dark: #d97706;
+  
+  // Success color with better contrast
+  --success-color-dark: #059669;
+  
+  // Interactive elements with enhanced visibility
+  --interactive-color: #2563eb;
+  --interactive-hover: #1d4ed8;
+  --interactive-active: #1e40af;
+}
+
+// Dark theme enhancements
+[data-theme="dark"] {
+  --text-high-contrast: #ffffff;
+  --text-medium-contrast: #f9fafb;
+  --bg-high-contrast: #000000;
+  
+  --error-color-dark: #f87171;
+  --warning-color-dark: #fbbf24;
+  --success-color-dark: #34d399;
+  
+  --interactive-color: #60a5fa;
+  --interactive-hover: #3b82f6;
+  --interactive-active: #2563eb;
+}
+
+// Accessibility utility classes
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.sr-only-focusable {
+  @extend .sr-only;
+  
+  &:focus,
+  &:focus-within {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    padding: inherit !important;
+    margin: inherit !important;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: inherit !important;
+  }
+}
+
+// High contrast text utilities
+.text-high-contrast {
+  color: var(--text-high-contrast) !important;
+}
+
+.text-medium-contrast {
+  color: var(--text-medium-contrast) !important;
+}
+
+.bg-high-contrast {
+  background-color: var(--bg-high-contrast) !important;
+}
+
+// Enhanced focus indicators
+.focus-enhanced {
+  &:focus {
+    outline: 3px solid var(--focus-color) !important;
+    outline-offset: 2px !important;
+    box-shadow: var(--focus-ring) !important;
+  }
+}
+
+.focus-ring {
+  &:focus {
+    box-shadow: var(--focus-ring) !important;
+  }
+}
+
+// Minimum touch target sizes
+.touch-target {
+  min-width: var(--min-touch-target);
+  min-height: var(--min-touch-target);
+}
+
+// Enhanced button styles for better accessibility
+.btn-accessible {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--min-touch-target);
+  min-width: var(--min-touch-target);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 2px solid transparent;
+  border-radius: var(--border-radius-md);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  
+  // Default accessible colors
+  background-color: var(--interactive-color);
+  color: white;
+  
+  &:hover:not(:disabled) {
+    background-color: var(--interactive-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  &:active:not(:disabled) {
+    background-color: var(--interactive-active);
+    transform: translateY(0);
+  }
+  
+  &:focus {
+    outline: 3px solid var(--focus-color);
+    outline-offset: 2px;
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+// Accessible link styles
+.link-accessible {
+  color: var(--interactive-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  
+  &:hover {
+    color: var(--interactive-hover);
+    text-decoration: underline;
+  }
+  
+  &:focus {
+    outline: 2px solid var(--focus-color);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  
+  &:visited {
+    color: var(--secondary-color);
+  }
+}
+
+// Error state with high contrast
+.error-accessible {
+  color: var(--error-color-dark);
+  border-color: var(--error-color-dark);
+  
+  &:focus {
+    outline-color: var(--error-color-dark);
+  }
+}
+
+// Success state with high contrast
+.success-accessible {
+  color: var(--success-color-dark);
+  border-color: var(--success-color-dark);
+  
+  &:focus {
+    outline-color: var(--success-color-dark);
+  }
+}
+
+// Warning state with high contrast
+.warning-accessible {
+  color: var(--warning-color-dark);
+  border-color: var(--warning-color-dark);
+  
+  &:focus {
+    outline-color: var(--warning-color-dark);
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  :root {
+    --text-primary: var(--text-high-contrast);
+    --text-secondary: var(--text-medium-contrast);
+    --border-color: var(--text-primary);
+  }
+  
+  .btn-accessible {
+    border: 2px solid currentColor;
+  }
+  
+  .link-accessible {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .btn-accessible,
+  .link-accessible,
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+// Large text sizes for better readability
+@media (prefers-color-scheme: no-preference) {
+  .text-readable {
+    font-size: 1.125rem;
+    line-height: 1.75;
+  }
+}
+
+// Color blind friendly patterns
+.pattern-accessible {
+  // Use patterns/textures in addition to color for important information
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    currentColor 2px,
+    currentColor 4px
+  );
+  background-size: 8px 8px;
+}
+
+// Skeleton loading with proper contrast
+.skeleton-accessible {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--bg-tertiary) 50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-accessible {
+    animation: none;
+    background: var(--bg-tertiary);
+  }
+}

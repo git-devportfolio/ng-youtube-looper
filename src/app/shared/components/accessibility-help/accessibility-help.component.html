@@ -1,0 +1,236 @@
+<div class="accessibility-help" [appFocusTrap]="isVisible" [initialFocus]="'.close-button'">
+  <!-- Help Modal -->
+  @if (isVisible) {
+    <div class="help-overlay" (click)="close()" role="dialog" aria-labelledby="help-title" aria-describedby="help-content">
+      <div class="help-modal" (click)="$event.stopPropagation()">
+        <header class="help-header">
+          <h2 id="help-title" class="help-title">Guide d'accessibilité</h2>
+          <button 
+            type="button" 
+            class="close-button btn-accessible"
+            (click)="close()"
+            aria-label="Fermer le guide d'accessibilité"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        
+        <div id="help-content" class="help-content">
+          
+          <!-- Keyboard Shortcuts Section -->
+          <section class="help-section" role="region" aria-labelledby="shortcuts-title">
+            <h3 id="shortcuts-title" class="section-title">Raccourcis clavier</h3>
+            
+            <div class="shortcuts-grid">
+              
+              <!-- Player Controls -->
+              <div class="shortcut-category">
+                <h4 class="category-title">Contrôles de lecture</h4>
+                <dl class="shortcuts-list">
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>Espace</kbd> ou <kbd>K</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Lecture/Pause</dd>
+                  </div>
+                  
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>J</kbd> ou <kbd>Ctrl</kbd> + <kbd>←</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Reculer de 10 secondes</dd>
+                  </div>
+                  
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>L</kbd> ou <kbd>Ctrl</kbd> + <kbd>→</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Avancer de 10 secondes</dd>
+                  </div>
+                  
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>Ctrl</kbd> + <kbd>↑</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Augmenter la vitesse</dd>
+                  </div>
+                  
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>Ctrl</kbd> + <kbd>↓</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Diminuer la vitesse</dd>
+                  </div>
+                </dl>
+              </div>
+              
+              <!-- Timeline and Loops -->
+              <div class="shortcut-category">
+                <h4 class="category-title">Timeline et boucles</h4>
+                <dl class="shortcuts-list">
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>Ctrl</kbd> + <kbd>L</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Créer une boucle</dd>
+                  </div>
+                  
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>Delete</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Supprimer la boucle sélectionnée</dd>
+                  </div>
+                  
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>P</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Lire la boucle sélectionnée</dd>
+                  </div>
+                  
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>E</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Modifier la boucle</dd>
+                  </div>
+                  
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>D</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Dupliquer la boucle</dd>
+                  </div>
+                </dl>
+              </div>
+              
+              <!-- Navigation -->
+              <div class="shortcut-category">
+                <h4 class="category-title">Navigation</h4>
+                <dl class="shortcuts-list">
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>Tab</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Naviguer entre les éléments</dd>
+                  </div>
+                  
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>Shift</kbd> + <kbd>Tab</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Navigation inverse</dd>
+                  </div>
+                  
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>Entrée</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Activer l'élément sélectionné</dd>
+                  </div>
+                  
+                  <div class="shortcut-item">
+                    <dt class="shortcut-key">
+                      <kbd>Échap</kbd>
+                    </dt>
+                    <dd class="shortcut-desc">Fermer les modales/menus</dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+          </section>
+          
+          <!-- Accessibility Features Section -->
+          <section class="help-section" role="region" aria-labelledby="features-title">
+            <h3 id="features-title" class="section-title">Fonctionnalités d'accessibilité</h3>
+            
+            <div class="features-grid">
+              <div class="feature-item">
+                <h4 class="feature-title">Navigation par liens rapides</h4>
+                <p class="feature-desc">
+                  Utilisez Tab au début de la page pour accéder aux liens de navigation rapide 
+                  vers les différentes sections (lecteur, contrôles, timeline, boucles).
+                </p>
+              </div>
+              
+              <div class="feature-item">
+                <h4 class="feature-title">Lecteurs d'écran</h4>
+                <p class="feature-desc">
+                  Compatible avec NVDA, JAWS, VoiceOver et autres lecteurs d'écran. 
+                  Toutes les actions sont annoncées avec des descriptions contextuelles.
+                </p>
+              </div>
+              
+              <div class="feature-item">
+                <h4 class="feature-title">Navigation au clavier</h4>
+                <p class="feature-desc">
+                  Tous les éléments interactifs sont accessibles au clavier. 
+                  Utilisez les flèches pour naviguer dans les listes et contrôles.
+                </p>
+              </div>
+              
+              <div class="feature-item">
+                <h4 class="feature-title">Thèmes et contraste</h4>
+                <p class="feature-desc">
+                  Thème sombre/clair disponible. Respect des préférences système 
+                  pour le contraste élevé et la réduction des mouvements.
+                </p>
+              </div>
+            </div>
+          </section>
+          
+          <!-- Technical Info Section -->
+          <section class="help-section" role="region" aria-labelledby="technical-title">
+            <h3 id="technical-title" class="section-title">Informations techniques</h3>
+            
+            <div class="tech-info">
+              <dl class="tech-list">
+                <div class="tech-item">
+                  <dt class="tech-label">Standard de conformité</dt>
+                  <dd class="tech-value">WCAG 2.1 AA</dd>
+                </div>
+                
+                <div class="tech-item">
+                  <dt class="tech-label">Ratio de contraste minimum</dt>
+                  <dd class="tech-value">4.5:1 pour le texte normal</dd>
+                </div>
+                
+                <div class="tech-item">
+                  <dt class="tech-label">Taille minimum des éléments tactiles</dt>
+                  <dd class="tech-value">44×44 pixels</dd>
+                </div>
+                
+                <div class="tech-item">
+                  <dt class="tech-label">Lecteurs d'écran testés</dt>
+                  <dd class="tech-value">NVDA, JAWS, VoiceOver, TalkBack</dd>
+                </div>
+              </dl>
+            </div>
+          </section>
+        </div>
+        
+        <footer class="help-footer">
+          <p class="help-note">
+            Pour tout problème d'accessibilité, veuillez 
+            <a href="#" class="link-accessible">nous contacter</a>.
+          </p>
+        </footer>
+      </div>
+    </div>
+  }
+  
+  <!-- Help Button Trigger -->
+  @if (!isVisible) {
+    <button 
+      type="button" 
+      class="help-trigger btn-accessible"
+      (click)="open()"
+      [attr.aria-label]="'Ouvrir le guide d\'accessibilité'"
+      title="Guide d'accessibilité et raccourcis clavier"
+    >
+      <span class="help-icon" aria-hidden="true">?</span>
+      <span class="help-text">Aide</span>
+    </button>
+  }
+</div>
