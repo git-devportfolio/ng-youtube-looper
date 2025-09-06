@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, OnInit, OnDestroy, effect, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnInit, OnDestroy, effect, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
 import { trigger, style, transition, animate } from '@angular/animations';
@@ -378,5 +378,106 @@ export class SpeedControlComponent implements OnInit, OnDestroy {
       this.currentRate = globalSpeed;
       this.manualSpeedControl.setValue(globalSpeed, { emitEvent: false });
     }
+  }
+
+  // Keyboard navigation event handler
+  @HostListener('keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    if (this.disabled) return;
+
+    switch (event.key) {
+      case 'ArrowUp':
+        event.preventDefault();
+        this.increasePlaybackSpeed();
+        break;
+
+      case 'ArrowDown':
+        event.preventDefault();
+        this.decreasePlaybackSpeed();
+        break;
+
+      case 'ArrowLeft':
+      case 'ArrowRight':
+        // Navigate between speed buttons
+        const focusableElements = this.getFocusableSpeedElements();
+        const currentIndex = focusableElements.indexOf(event.target as HTMLElement);
+        
+        if (currentIndex !== -1) {
+          event.preventDefault();
+          let nextIndex: number;
+          
+          if (event.key === 'ArrowLeft') {
+            nextIndex = currentIndex > 0 ? currentIndex - 1 : focusableElements.length - 1;
+          } else {
+            nextIndex = currentIndex < focusableElements.length - 1 ? currentIndex + 1 : 0;
+          }
+          
+          focusableElements[nextIndex]?.focus();
+        }
+        break;
+
+      case 'Enter':
+      case ' ':
+        // Activate focused speed button
+        const target = event.target as HTMLElement;
+        if (target.classList.contains('speed-preset') || target.classList.contains('speed-btn')) {
+          event.preventDefault();
+          target.click();
+        }
+        break;
+
+      case '+':
+      case '=':
+        // Increase speed with + key
+        event.preventDefault();
+        this.increasePlaybackSpeed();
+        break;
+
+      case '-':
+      case '_':
+        // Decrease speed with - key
+        event.preventDefault();
+        this.decreasePlaybackSpeed();
+        break;
+
+      case 'r':
+      case 'R':
+        // Reset to 1x speed
+        event.preventDefault();
+        this.setPresetSpeed(1);
+        break;
+        
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+        // Quick preset selection with number keys
+        event.preventDefault();
+        const presets = [0.25, 0.5, 0.75, 1, 1.25, 1.5];
+        const presetIndex = parseInt(event.key);
+        if (presets[presetIndex]) {
+          this.setPresetSpeed(presets[presetIndex]);
+        }
+        break;
+
+      case 'Escape':
+        // Close manual input if open
+        if (this.showManualInput) {
+          event.preventDefault();
+          this.showManualInput = false;
+        }
+        break;
+    }
+  }
+
+  // Get all focusable speed control elements
+  private getFocusableSpeedElements(): HTMLElement[] {
+    const container = document.querySelector('app-speed-control');
+    if (!container) return [];
+
+    const selector = 'button:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
+    return Array.from(container.querySelectorAll(selector)) as HTMLElement[];
   }
 }

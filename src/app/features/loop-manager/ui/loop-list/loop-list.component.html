@@ -13,12 +13,19 @@
 
   @if (vm().hasLoops) {
     <div class="loops-grid">
-      @for (loop of sortedLoops(); track loop.id) {
+      @for (loop of sortedLoops(); track loop.id; let i = $index) {
         <div 
           class="loop-card"
           [class.active]="isActiveLoop(loop)"
           [class.playing]="isActiveLoop(loop) && vm().isLooping"
-          (click)="onSelectLoop(loop)"
+          [attr.data-loop-id]="loop.id"
+          (click)="onLoopCardClick($event, loop, i)"
+          (keydown.enter)="onLoopCardClick($event, loop, i)"
+          (keydown.space)="onLoopCardClick($event, loop, i)"
+          tabindex="0"
+          role="button"
+          [attr.aria-label]="'Boucle ' + (loop.name || loop.id) + ' de ' + formatTimeRange(loop) + ', durée ' + formatDuration(calculateDuration(loop)) + (isActiveLoop(loop) ? ', active' : '')"
+          [attr.aria-pressed]="isActiveLoop(loop)"
         >
           <!-- Indicateur de couleur -->
           <div 
@@ -61,8 +68,9 @@
             <button 
               class="action-btn play-btn"
               [class.active]="isActiveLoop(loop) && vm().isLooping"
-              (click)="onPlayLoop(loop); $event.stopPropagation()"
-              [attr.aria-label]="isActiveLoop(loop) && vm().isLooping ? 'Arrêter la boucle' : 'Lire la boucle'"
+              (click)="onActionClick($event, 'play', loop, i)"
+              [attr.aria-label]="(isActiveLoop(loop) && vm().isLooping ? 'Arrêter la boucle' : 'Lire la boucle') + ' (P)'"
+              tabindex="-1"
             >
               @if (isActiveLoop(loop) && vm().isLooping) {
                 <span class="icon">⏸️</span>
@@ -73,24 +81,27 @@
 
             <button 
               class="action-btn edit-btn"
-              (click)="onEditLoop(loop); $event.stopPropagation()"
-              aria-label="Modifier la boucle"
+              (click)="onActionClick($event, 'edit', loop, i)"
+              [attr.aria-label]="'Modifier la boucle (E)'"
+              tabindex="-1"
             >
               <span class="icon">✏️</span>
             </button>
 
             <button 
               class="action-btn duplicate-btn"
-              (click)="onDuplicateLoop(loop); $event.stopPropagation()"
-              aria-label="Dupliquer la boucle"
+              (click)="onActionClick($event, 'duplicate', loop, i)"
+              [attr.aria-label]="'Dupliquer la boucle (D)'"
+              tabindex="-1"
             >
               <span class="icon">📋</span>
             </button>
 
             <button 
               class="action-btn delete-btn"
-              (click)="onDeleteLoop(loop); $event.stopPropagation()"
-              aria-label="Supprimer la boucle"
+              (click)="onActionClick($event, 'delete', loop, i)"
+              [attr.aria-label]="'Supprimer la boucle (Delete)'"
+              tabindex="-1"
             >
               <span class="icon">🗑️</span>
             </button>

@@ -37,7 +37,9 @@
       class="control-button seek-button"
       (click)="seekBack()"
       [disabled]="controlsDisabledValue || !canSeekValue"
+      [attr.aria-label]="'Reculer de 10 secondes (Ctrl+Flèche gauche ou J)'"
       title="Reculer de 10 secondes"
+      tabindex="0"
     >
       <span class="control-icon">⏪</span>
       <span class="seek-label">-10s</span>
@@ -51,7 +53,10 @@
       [class.playing]="isPlayingValue"
       (click)="togglePlayPause()"
       [disabled]="controlsDisabledValue || (!canPlayValue && !canPauseValue)"
+      [attr.aria-label]="(isPlayingValue ? 'Mettre en pause' : 'Lire') + ' (Espace ou K)'"
       [title]="isPlayingValue ? 'Mettre en pause' : 'Lire'"
+      [attr.aria-pressed]="isPlayingValue"
+      tabindex="0"
     >
       @if (isLoadingValue) {
         <span class="control-icon loading">⏳</span>
@@ -70,7 +75,9 @@
       class="control-button stop-button"
       (click)="stop()"
       [disabled]="controlsDisabledValue || !canSeekValue"
+      [attr.aria-label]="'Arrêter la lecture'"
       title="Arrêter"
+      tabindex="0"
     >
       <span class="control-icon">⏹️</span>
     </button>
@@ -81,7 +88,9 @@
       class="control-button seek-button"
       (click)="seekForward()"
       [disabled]="controlsDisabledValue || !canSeekValue"
+      [attr.aria-label]="'Avancer de 10 secondes (Ctrl+Flèche droite ou L)'"
       title="Avancer de 10 secondes"
+      tabindex="0"
     >
       <span class="control-icon">⏩</span>
       <span class="seek-label">+10s</span>

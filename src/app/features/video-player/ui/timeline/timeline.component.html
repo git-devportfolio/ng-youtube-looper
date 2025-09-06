@@ -16,7 +16,7 @@
        [attr.aria-valuemin]="0"
        [attr.aria-valuemax]="duration"
        [attr.aria-valuenow]="currentTime"
-       [attr.aria-label]="'Timeline scrubber - Current time: ' + formatDuration(currentTime) + ' of ' + formatDuration(duration) + (canCreateLoops ? '. Double-click or drag to create loop, Ctrl+L to create at current time' : '')">
+       [attr.aria-label]="'Timeline scrubber - Current time: ' + formatDuration(currentTime) + ' of ' + formatDuration(duration) + (canCreateLoops ? '. Double-click or drag to create loop, Ctrl+L to create at current time' : '') + '. Use arrow keys to navigate, Enter/Space to select'">
     
     <!-- Enhanced Background Track with Visual Guides -->
     <div class="track-background">
@@ -121,9 +121,11 @@
           <!-- Left resize handle -->
           <div class="resize-handle left"
                (mousedown)="onLoopMouseDown($event, loop, 'resize-left')"
-               tabindex="0"
+               (keydown.enter)="onLoopMouseDown($event, loop, 'resize-left')"
+               (keydown.space)="onLoopMouseDown($event, loop, 'resize-left')"
+               tabindex="-1"
                role="button"
-               [attr.aria-label]="'Resize loop start - Current start time: ' + formatDuration(loop.startTime)">
+               [attr.aria-label]="'Resize loop start - Current start time: ' + formatDuration(loop.startTime) + ' (Shift+Left/Right arrows to resize)'">
           </div>
           
           <!-- Enhanced loop segment body -->
@@ -164,9 +166,11 @@
           <!-- Right resize handle -->
           <div class="resize-handle right"
                (mousedown)="onLoopMouseDown($event, loop, 'resize-right')"
-               tabindex="0"
+               (keydown.enter)="onLoopMouseDown($event, loop, 'resize-right')"
+               (keydown.space)="onLoopMouseDown($event, loop, 'resize-right')"
+               tabindex="-1"
                role="button"
-               [attr.aria-label]="'Resize loop end - Current end time: ' + formatDuration(loop.endTime)">
+               [attr.aria-label]="'Resize loop end - Current end time: ' + formatDuration(loop.endTime) + ' (Shift+Left/Right arrows to resize)'">
           </div>
         </div>
       }

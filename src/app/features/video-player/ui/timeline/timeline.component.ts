@@ -597,30 +597,146 @@ export class TimelineComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle keyboard shortcuts for loop creation
+   * Handle keyboard shortcuts for timeline navigation and loop management
    */
   onKeyDown(event: KeyboardEvent): void {
-    if (!this.isReady || !this.canCreateLoops) return;
+    if (!this.isReady) return;
     
-    // Ctrl+L or Cmd+L to create loop at current time
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'l') {
-      event.preventDefault();
-      
-      const loopDuration = 5; // 5 seconds
-      const startTime = Math.max(0, this.currentTime - loopDuration / 2);
-      const endTime = Math.min(this.duration, startTime + loopDuration);
-      
-      if (!this.checkLoopCollision('', startTime, endTime)) {
-        this.loopCreate.emit({ startTime, endTime });
-      }
-    }
-    
-    // Delete key to delete selected loop
     const selectedId = this._selectedLoopId();
-    if (event.key === 'Delete' && selectedId) {
-      event.preventDefault();
-      this.loopDelete.emit(selectedId);
-      this.updateSelectedLoopBatch(null);
+    const loops = this.effectiveLoops;
+    
+    switch (event.key) {
+      case 'ArrowLeft':
+        if (event.shiftKey && selectedId) {
+          // Resize selected loop start (move left edge)
+          event.preventDefault();
+          this.resizeSelectedLoop('left', -1);
+        } else if (event.ctrlKey || event.metaKey) {
+          // Seek backward
+          event.preventDefault();
+          const newTime = Math.max(0, this.currentTime - 10);
+          this.seekTo.emit(newTime);
+        } else if (loops.length > 0) {
+          // Navigate to previous loop
+          event.preventDefault();
+          this.navigateToPrevLoop();
+        }
+        break;
+        
+      case 'ArrowRight':
+        if (event.shiftKey && selectedId) {
+          // Resize selected loop end (move right edge)
+          event.preventDefault();
+          this.resizeSelectedLoop('right', 1);
+        } else if (event.ctrlKey || event.metaKey) {
+          // Seek forward
+          event.preventDefault();
+          const newTime = Math.min(this.duration, this.currentTime + 10);
+          this.seekTo.emit(newTime);
+        } else if (loops.length > 0) {
+          // Navigate to next loop
+          event.preventDefault();
+          this.navigateToNextLoop();
+        }
+        break;
+        
+      case 'ArrowUp':
+        if (selectedId) {
+          // Move selected loop up in timeline (earlier)
+          event.preventDefault();
+          this.moveSelectedLoop(-5); // Move 5 seconds earlier
+        }
+        break;
+        
+      case 'ArrowDown':
+        if (selectedId) {
+          // Move selected loop down in timeline (later)
+          event.preventDefault();
+          this.moveSelectedLoop(5); // Move 5 seconds later
+        }
+        break;
+        
+      case 'Enter':
+      case ' ':
+        if (selectedId) {
+          // Play selected loop
+          event.preventDefault();
+          const selectedLoop = loops.find(l => l.id === selectedId);
+          if (selectedLoop && this.useFacade) {
+            this.seekTo.emit(selectedLoop.startTime);
+          }
+        } else {
+          // Toggle play/pause at current position
+          event.preventDefault();
+          // This would need to be handled by parent component
+        }
+        break;
+        
+      case 'Delete':
+      case 'Backspace':
+        if (selectedId) {
+          event.preventDefault();
+          this.loopDelete.emit(selectedId);
+          this.updateSelectedLoopBatch(null);
+        }
+        break;
+        
+      case 'l':
+      case 'L':
+        if ((event.ctrlKey || event.metaKey) && this.canCreateLoops) {
+          // Ctrl+L or Cmd+L to create loop at current time
+          event.preventDefault();
+          const loopDuration = 5; // 5 seconds
+          const startTime = Math.max(0, this.currentTime - loopDuration / 2);
+          const endTime = Math.min(this.duration, startTime + loopDuration);
+          
+          if (!this.checkLoopCollision('', startTime, endTime)) {
+            this.loopCreate.emit({ startTime, endTime });
+          }
+        }
+        break;
+        
+      case 'c':
+      case 'C':
+        if ((event.ctrlKey || event.metaKey) && selectedId) {
+          // Copy/duplicate selected loop
+          event.preventDefault();
+          const selectedLoop = loops.find(l => l.id === selectedId);
+          if (selectedLoop) {
+            const duration = selectedLoop.endTime - selectedLoop.startTime;
+            const newStartTime = Math.min(this.duration - duration, selectedLoop.endTime + 1);
+            const newEndTime = newStartTime + duration;
+            
+            if (!this.checkLoopCollision('', newStartTime, newEndTime)) {
+              this.loopCreate.emit({ startTime: newStartTime, endTime: newEndTime });
+            }
+          }
+        }
+        break;
+        
+      case 'Escape':
+        // Deselect current loop and cancel any creation mode
+        event.preventDefault();
+        if (selectedId) {
+          this.updateSelectedLoopBatch(null);
+          this.loopDeselect.emit();
+        }
+        if (this.isCreatingLoop) {
+          this.cancelVisualLoopCreation();
+        }
+        break;
+        
+      case 'Home':
+        // Go to beginning of timeline
+        event.preventDefault();
+        this.seekTo.emit(0);
+        break;
+        
+      case 'End':
+        // Go to end of timeline
+        event.preventDefault();
+        this.seekTo.emit(this.duration);
+        break;
     }
   }
 
@@ -2048,6 +2164,69 @@ export class TimelineComponent implements OnInit, OnDestroy {
    */
   get supportsHapticFeedback(): boolean {
     return 'vibrate' in navigator;
+  }
+
+  /**
+   * Resize selected loop by moving one of its edges
+   */
+  private resizeSelectedLoop(edge: 'left' | 'right', deltaSeconds: number): void {
+    const selectedId = this._selectedLoopId();
+    if (!selectedId) return;
+    
+    const loop = this.effectiveLoops.find(l => l.id === selectedId);
+    if (!loop) return;
+    
+    let newStartTime = loop.startTime;
+    let newEndTime = loop.endTime;
+    
+    if (edge === 'left') {
+      newStartTime = Math.max(0, Math.min(loop.startTime + deltaSeconds, loop.endTime - 1));
+    } else {
+      newEndTime = Math.min(this.duration, Math.max(loop.endTime + deltaSeconds, loop.startTime + 1));
+    }
+    
+    // Apply precision and magnetic guides
+    newStartTime = this.applyMagneticGuides(newStartTime);
+    newEndTime = this.applyMagneticGuides(newEndTime);
+    
+    // Check for collisions
+    if (!this.checkLoopCollision(selectedId, newStartTime, newEndTime)) {
+      this.loopResize.emit({ id: selectedId, startTime: newStartTime, endTime: newEndTime });
+    }
+  }
+
+  /**
+   * Move selected loop in time by a delta
+   */
+  private moveSelectedLoop(deltaSeconds: number): void {
+    const selectedId = this._selectedLoopId();
+    if (!selectedId) return;
+    
+    const loop = this.effectiveLoops.find(l => l.id === selectedId);
+    if (!loop) return;
+    
+    const duration = loop.endTime - loop.startTime;
+    let newStartTime = loop.startTime + deltaSeconds;
+    let newEndTime = loop.endTime + deltaSeconds;
+    
+    // Ensure bounds
+    if (newStartTime < 0) {
+      newStartTime = 0;
+      newEndTime = duration;
+    }
+    if (newEndTime > this.duration) {
+      newEndTime = this.duration;
+      newStartTime = this.duration - duration;
+    }
+    
+    // Apply precision and magnetic guides
+    newStartTime = this.applyMagneticGuides(newStartTime);
+    newEndTime = this.applyMagneticGuides(newStartTime + duration);
+    
+    // Check for collisions
+    if (!this.checkLoopCollision(selectedId, newStartTime, newEndTime)) {
+      this.loopMove.emit({ id: selectedId, startTime: newStartTime, endTime: newEndTime });
+    }
   }
 
   // === ENHANCED VISUALIZATION METHODS FOR TASK 6.4 ===

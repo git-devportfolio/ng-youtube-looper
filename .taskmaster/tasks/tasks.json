@@ -1005,7 +1005,7 @@
         "dependencies": [
           18
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1024,7 +1024,7 @@
               "19.1"
             ],
             "details": "Améliorer les mixins button-base existants dans _mixins.scss pour ajouter les micro-interactions avec translateY(-1px) sur hover, box-shadow dynamiques, et les états focus-visible conformes aux standards WCAG. Appliquer ces effets aux PlayerControls, TimeSlider, SpeedControl, et tous les boutons de l'application. Créer des variantes pour les cards interactives et les éléments cliquables.",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": "Tests d'accessibilité focus-visible, validation hover states sur devices tactiles vs souris, tests de performance des transformations CSS, vérification compatibilité touch-device"
           },
           {
@@ -1035,7 +1035,7 @@
               "19.1"
             ],
             "details": "Développer des composants skeleton pour VideoPlayer, Timeline, LoopList, et SessionList. Utiliser l'animation shimmer existante dans _mixins.scss et créer des variants pour différentes formes (rectangulaire, circulaire, ligne). Implémenter un service SkeletonService pour gérer les états de loading et intégrer avec les façades existantes. Créer des directives appSkeleton pour application automatique.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests de rendu skeleton sur connexions lentes, validation animation shimmer 60fps, tests d'intégration avec les façades de données, vérification prefers-reduced-motion"
           },
           {
@@ -1046,7 +1046,7 @@
               "19.1"
             ],
             "details": "Créer ToastNotificationService avec méthodes success(), error(), info(), warning(). Développer ToastComponent avec animations slide-in depuis le haut/côté, auto-dismiss configurable, et gestion de pile de notifications. Intégrer avec les actions utilisateur (création boucle, sauvegarde session, erreurs validation). Utiliser les animations CSS créées en 19.1 et supporter les positions multiples (top-right, top-center, bottom-right).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests de timing auto-dismiss, validation animations slide-in/out, tests de pile de notifications multiples, vérification accessibilité screen readers"
           },
           {
@@ -1058,7 +1058,7 @@
               "19.2"
             ],
             "details": "Améliorer TimelineComponent avec animations de drag feedback lors de déplacement des boucles, visual feedback création de nouvelles boucles, et animations de collision detection. Implémenter les états visuels pour loop creation preview, drag indicators, et enhanced hover states. Utiliser les animations CSS de base et créer des animations spécifiques au contexte timeline. Intégrer avec LoopManagerFacade pour les changements d'état.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Tests de drag performance sur mobile et desktop, validation feedback visuel creation boucles, tests collision detection animations, vérification fluidité 60fps pendant drag"
           }
         ]
@@ -1074,7 +1074,53 @@
           19
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implémenter le système de raccourcis clavier globaux",
+            "description": "Créer un service de gestion des raccourcis clavier avec les touches Space (play/pause), L (nouvelle loop), 1-9 (sélection loop), Échap (fermeture modal) et navigation par flèches",
+            "dependencies": [],
+            "details": "Développer keyboard-shortcut.service.ts pour gérer les raccourcis globaux avec @HostListener sur document. Implémenter les raccourcis : Space pour play/pause, L pour créer une nouvelle loop, touches 1-9 pour sélectionner les loops, Échap pour fermer les modales et naviguer avec les flèches. Intégrer avec les façades existantes (video-player, loop-manager) pour déclencher les actions appropriées. Gérer les conflits avec les champs de saisie et désactiver les raccourcis quand nécessaire.",
+            "status": "done",
+            "testStrategy": "Tests unitaires des raccourcis, tests d'intégration avec les composants, validation du comportement dans les champs de saisie"
+          },
+          {
+            "id": 2,
+            "title": "Améliorer la navigation clavier complète des composants",
+            "description": "Implémenter la navigation Tab/Shift+Tab, Space/Enter pour activation, et flèches directionnelles dans tous les composants interactifs",
+            "dependencies": [],
+            "details": "Réviser tous les composants UI pour ajouter tabindex appropriés, gérer les événements keydown pour Space/Enter sur les éléments interactifs. Implémenter la navigation par flèches dans timeline, loop-list et player-controls. Améliorer les focus trap existants dans loop-creation-modal. Ajouter des focus indicators visuels cohérents. Gérer la navigation logique entre les éléments avec roving tabindex où approprié.",
+            "status": "done",
+            "testStrategy": "Tests automatisés de navigation clavier, validation focus management, tests avec simulateur de navigation clavier"
+          },
+          {
+            "id": 3,
+            "title": "Compléter et optimiser les labels ARIA et attributs d'accessibilité",
+            "description": "Enrichir les labels ARIA existants, ajouter les attributs manquants (aria-describedby, aria-expanded) et implémenter les live regions pour les états dynamiques",
+            "dependencies": [],
+            "details": "Réviser et étendre les aria-label existants dans timeline, time-display et time-slider. Ajouter aria-describedby pour les aides contextuelles, aria-expanded pour les éléments pliables. Implémenter aria-live regions pour annoncer les changements d'état (lecture/pause, nouvelle loop créée, erreurs). Ajouter aria-roledescription pour les éléments personnalisés. Compléter les attributs role manquants et optimiser la structure sémantique.",
+            "status": "pending",
+            "testStrategy": "Audit Axe automatisé, tests avec lecteurs d'écran NVDA/JAWS, validation ARIA avec axe-core"
+          },
+          {
+            "id": 4,
+            "title": "Implémenter les skip links et focus management avancé",
+            "description": "Ajouter les liens de navigation rapide, améliorer la gestion du focus et implémenter les focus trap complets dans les composants modaux",
+            "dependencies": [],
+            "details": "Créer un composant skip-links pour navigation rapide (Aller au contenu, Aller aux contrôles, Aller aux loops). Améliorer le focus management avec restoration du focus après fermeture de modal. Compléter les focus trap dans loop-creation-modal avec gestion des éléments focusables dynamiques. Implémenter une directive focus-trap réutilisable. Gérer le focus initial approprié dans chaque page/modal.",
+            "status": "pending",
+            "testStrategy": "Tests navigation skip links, validation focus trap, tests restauration focus après modal"
+          },
+          {
+            "id": 5,
+            "title": "Valider et optimiser le contraste couleurs WCAG 2.1 AA",
+            "description": "Analyser et corriger tous les contrastes couleurs pour respecter le ratio 4.5:1 minimum, créer les utilitaires de validation et la documentation d'accessibilité",
+            "dependencies": [],
+            "details": "Audit complet des contrastes dans les thèmes light/dark en utilisant les variables CSS existantes. Corriger les contrastes insuffisants dans _variables.scss. Créer des utilitaires Sass pour validation automatique des contrastes. Implémenter des classes d'aide pour textes haute visibilité. Créer la documentation d'accessibilité avec guide des bonnes pratiques, raccourcis disponibles et compatibilité lecteurs d'écran. Ajouter des tests automatisés de contraste.",
+            "status": "pending",
+            "testStrategy": "Tests automatisés contraste avec axe-core, audit Lighthouse accessibilité, validation WCAG 2.1 AA complète"
+          }
+        ]
       },
       {
         "id": 21,
@@ -1433,7 +1479,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-05T19:30:27.919Z",
+      "updated": "2025-09-06T08:23:39.357Z",
       "description": "Tasks for master context"
     }
   }

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, computed, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, computed, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { VideoPlayerViewModel } from '../../data-access/video-player.facade';
 import { TimeDisplayComponent } from '../time-display';
@@ -178,5 +178,116 @@ export class PlayerControlsComponent {
 
   get controlsDisabledValue(): boolean {
     return this.controlsDisabled();
+  }
+
+  // Keyboard navigation event handler
+  @HostListener('keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    if (this.controlsDisabledValue) return;
+
+    // Handle keyboard shortcuts for player controls
+    switch (event.key) {
+      case ' ':
+      case 'Enter':
+        // Space or Enter on focused element
+        const target = event.target as HTMLElement;
+        if (target.classList.contains('play-pause-button')) {
+          event.preventDefault();
+          this.togglePlayPause();
+        } else if (target.classList.contains('seek-button')) {
+          event.preventDefault();
+          target.click();
+        } else if (target.classList.contains('stop-button')) {
+          event.preventDefault();
+          this.stop();
+        }
+        break;
+
+      case 'ArrowLeft':
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          this.seekBack();
+        }
+        break;
+
+      case 'ArrowRight':
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          this.seekForward();
+        }
+        break;
+
+      case 'ArrowUp':
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          this.increaseSpeed();
+        }
+        break;
+
+      case 'ArrowDown':
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          this.decreaseSpeed();
+        }
+        break;
+
+      case 'k':
+      case 'K':
+        // Toggle play/pause with 'k' key (YouTube-style)
+        event.preventDefault();
+        this.togglePlayPause();
+        break;
+
+      case 'j':
+      case 'J':
+        // Jump back 10s with 'j' key
+        event.preventDefault();
+        this.seekBack();
+        break;
+
+      case 'l':
+      case 'L':
+        // Jump forward 10s with 'l' key (if not creating loop)
+        if (!event.ctrlKey && !event.metaKey) {
+          event.preventDefault();
+          this.seekForward();
+        }
+        break;
+    }
+  }
+
+  // Handle focus management for arrow key navigation
+  @HostListener('keydown.ArrowLeft', ['$event'])
+  @HostListener('keydown.ArrowRight', ['$event'])
+  onArrowNavigation(event: KeyboardEvent): void {
+    if (this.controlsDisabledValue) return;
+
+    // Don't interfere with Ctrl+Arrow shortcuts
+    if (event.ctrlKey || event.metaKey) return;
+
+    const focusableElements = this.getFocusableControlElements();
+    const currentIndex = focusableElements.indexOf(event.target as HTMLElement);
+
+    if (currentIndex === -1) return;
+
+    event.preventDefault();
+    let nextIndex: number;
+
+    if (event.key === 'ArrowLeft') {
+      nextIndex = currentIndex > 0 ? currentIndex - 1 : focusableElements.length - 1;
+    } else {
+      nextIndex = currentIndex < focusableElements.length - 1 ? currentIndex + 1 : 0;
+    }
+
+    focusableElements[nextIndex]?.focus();
+  }
+
+  // Get all focusable control elements in order
+  private getFocusableControlElements(): HTMLElement[] {
+    const container = document.querySelector('.player-controls');
+    if (!container) return [];
+
+    const selector = 'button:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
+    return Array.from(container.querySelectorAll(selector)) as HTMLElement[];
   }
 }

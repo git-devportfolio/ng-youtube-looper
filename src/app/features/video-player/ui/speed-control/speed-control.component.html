@@ -22,14 +22,15 @@
     @for (preset of speedPresets; track preset.value) {
       <button
         type="button"
-        class="speed-preset"
+        class="speed-preset speed-btn"
         [class.active]="currentRate === preset.value"
         [class.transitioning]="isTransitioning()"
         [disabled]="disabled"
         (click)="setPresetSpeed(preset.value)"
-        [title]="preset.label"
-        [attr.aria-label]="preset.label + (currentRate === preset.value ? ', sélectionné' : '')"
+        [title]="preset.label + ' (Touche ' + ($index + 1) + ')'"
+        [attr.aria-label]="preset.label + (currentRate === preset.value ? ', sélectionné' : '') + ' (Raccourci: Touche ' + ($index + 1) + ')'"
         [attr.aria-pressed]="currentRate === preset.value"
+        tabindex="0"
       >
         <span class="preset-value">{{ preset.value }}x</span>
         @if (currentRate === preset.value) {
@@ -43,12 +44,13 @@
   <div class="speed-buttons" role="group" aria-label="Contrôles de vitesse par étapes">
     <button
       type="button"
-      class="speed-button decrease"
+      class="speed-button speed-btn decrease"
       [class.transitioning]="isTransitioning()"
       [disabled]="disabled || !canDecrease"
       (click)="decreasePlaybackSpeed()"
-      [title]="'Diminuer la vitesse (-' + validationService.PLAYBACK_SPEED_STEP + 'x)'"
-      [attr.aria-label]="'Diminuer la vitesse de ' + validationService.PLAYBACK_SPEED_STEP + 'x, vitesse actuelle: ' + currentRate + 'x'"
+      [title]="'Diminuer la vitesse (-' + validationService.PLAYBACK_SPEED_STEP + 'x) - Raccourci: Flèche bas ou -'"
+      [attr.aria-label]="'Diminuer la vitesse de ' + validationService.PLAYBACK_SPEED_STEP + 'x, vitesse actuelle: ' + currentRate + 'x (Flèche bas ou -)'"
+      tabindex="0"
     >
       <span class="speed-icon" aria-hidden="true">🐌</span>
       <span class="speed-text" aria-hidden="true">-</span>
@@ -56,12 +58,13 @@
 
     <button
       type="button"
-      class="speed-button increase"
+      class="speed-button speed-btn increase"
       [class.transitioning]="isTransitioning()"
       [disabled]="disabled || !canIncrease"
       (click)="increasePlaybackSpeed()"
-      [title]="'Augmenter la vitesse (+' + validationService.PLAYBACK_SPEED_STEP + 'x)'"
-      [attr.aria-label]="'Augmenter la vitesse de ' + validationService.PLAYBACK_SPEED_STEP + 'x, vitesse actuelle: ' + currentRate + 'x'"
+      [title]="'Augmenter la vitesse (+' + validationService.PLAYBACK_SPEED_STEP + 'x) - Raccourci: Flèche haut ou +'"
+      [attr.aria-label]="'Augmenter la vitesse de ' + validationService.PLAYBACK_SPEED_STEP + 'x, vitesse actuelle: ' + currentRate + 'x (Flèche haut ou +)'"
+      tabindex="0"
     >
       <span class="speed-icon" aria-hidden="true">🐰</span>
       <span class="speed-text" aria-hidden="true">+</span>
@@ -97,12 +100,13 @@
       >
       <button
         type="button"
-        class="apply-button"
+        class="apply-button speed-btn"
         [class.loading]="isTransitioning()"
         [disabled]="disabled || manualInputError !== null"
         (click)="applyManualSpeed()"
         title="Appliquer la vitesse personnalisée (arrondie automatiquement)"
-        aria-label="Appliquer la vitesse personnalisée"
+        [attr.aria-label]="'Appliquer la vitesse personnalisée (Entrée)'"
+        tabindex="0"
       >
         @if (isTransitioning()) {
           <span class="spinner" aria-hidden="true">⟳</span>
@@ -144,14 +148,15 @@
   <!-- Toggle Manual Input -->
   <button
     type="button"
-    class="toggle-manual"
+    class="toggle-manual speed-btn"
     [class.active]="showManualInput"
     [class.pulse]="showManualInput"
     (click)="toggleManualInput()"
     [disabled]="disabled"
-    [title]="showManualInput ? 'Fermer la saisie manuelle' : 'Ouvrir la saisie manuelle'"
-    [attr.aria-label]="showManualInput ? 'Fermer la saisie manuelle' : 'Ouvrir la saisie manuelle'"
+    [title]="(showManualInput ? 'Fermer la saisie manuelle' : 'Ouvrir la saisie manuelle') + ' (Échap pour fermer)'"
+    [attr.aria-label]="(showManualInput ? 'Fermer la saisie manuelle' : 'Ouvrir la saisie manuelle') + ' (Échap pour fermer)'"
     [attr.aria-expanded]="showManualInput"
+    tabindex="0"
   >
     <span class="toggle-icon" [attr.aria-hidden]="true">
       {{ showManualInput ? '⌨️' : '⚙️' }}
