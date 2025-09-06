@@ -1388,8 +1388,65 @@
         "dependencies": [
           24
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Créer la structure basique du composant SpeedControlComponent",
+            "description": "Générer le composant avec Angular CLI, configurer les imports et exports, et créer les fichiers de base avec la structure standalone",
+            "dependencies": [],
+            "details": "Utiliser ng generate component pour créer le composant dans features/video-player/ui/speed-control. Configurer le composant comme standalone avec les imports CommonModule et ReactiveFormsModule. Créer le fichier index.ts pour l'export barrel. Définir les inputs/outputs de base selon les spécifications : currentRate, disabled, rateChange.",
+            "status": "done",
+            "testStrategy": "Tests unitaires de création du composant, validation des imports/exports, vérification de la configuration standalone"
+          },
+          {
+            "id": 2,
+            "title": "Implémenter la logique des presets de vitesse",
+            "description": "Développer la fonctionnalité des boutons de vitesse prédéfinie avec gestion des états actifs",
+            "dependencies": [
+              "28.1"
+            ],
+            "details": "Créer la liste des presets (0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x). Implémenter la méthode setPresetSpeed() avec validation des limites. Gérer l'état actif des boutons (comparaison avec currentRate). Ajouter les animations de transition et les retours visuels. Intégrer avec ValidationService pour la cohérence des vitesses.",
+            "status": "done",
+            "testStrategy": "Tests unitaires des interactions de preset, validation des états actifs, tests des animations de transition"
+          },
+          {
+            "id": 3,
+            "title": "Développer la saisie manuelle de vitesse personnalisée",
+            "description": "Créer le système d'input personnalisé avec validation en temps réel et gestion des erreurs",
+            "dependencies": [
+              "28.2"
+            ],
+            "details": "Implémenter le FormControl avec validators pour la saisie manuelle. Créer toggleManualInput() et applyManualSpeed(). Ajouter la validation temps réel avec limites 0.25-2.0. Gérer les messages d'erreur et les états visuels. Implémenter la logique de fermeture avec Escape et application avec Enter.",
+            "status": "done",
+            "testStrategy": "Tests de validation de vitesse personnalisée, tests des limites min/max, tests d'interaction clavier (Enter/Escape)"
+          },
+          {
+            "id": 4,
+            "title": "Implémenter l'émission d'événements speedChange",
+            "description": "Développer le système d'événements pour communiquer les changements de vitesse au composant parent",
+            "dependencies": [
+              "28.2",
+              "28.3"
+            ],
+            "details": "Configurer l'EventEmitter speedChange dans les outputs. Intégrer l'émission dans setPresetSpeed() et applyManualSpeed(). Ajouter la gestion des événements increase/decrease pour les boutons +/-. Synchroniser avec le currentRate et valider les émissions. Assurer la cohérence avec les autres composants du player.",
+            "status": "done",
+            "testStrategy": "Tests d'émission d'événements speedChange, validation des valeurs émises, tests d'intégration avec composants parents"
+          },
+          {
+            "id": 5,
+            "title": "Créer le styling SCSS avec design responsive et états visuels",
+            "description": "Développer les styles SCSS complets avec animations, états hover/focus/active et adaptation mobile",
+            "dependencies": [
+              "28.1",
+              "28.2",
+              "28.3"
+            ],
+            "details": "Créer les styles pour boutons preset avec état actif visuel. Implémenter les animations de transition et hover effects. Styliser l'input manuel avec validation visuelle. Ajouter le responsive design mobile avec ajustements de taille. Intégrer les CSS variables du thème et les mixins existants. Gérer les états disabled et les animations d'accessibilité.",
+            "status": "done",
+            "testStrategy": "Tests visuels des états hover/focus/active, validation responsive sur différentes tailles d'écran, tests d'accessibilité des animations"
+          }
+        ]
       },
       {
         "id": 29,
@@ -1479,7 +1536,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:42:32.942Z",
-      "updated": "2025-09-06T08:58:05.604Z",
+      "updated": "2025-09-06T09:02:39.943Z",
       "description": "Tasks for master context"
     }
   }
