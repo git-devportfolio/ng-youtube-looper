@@ -16,13 +16,6 @@
 </header>
 
 <main class="main-content" id="main-content" role="main">
-  <!-- Demo du système de thématisation - lazy loaded -->
-  @defer (on timer(100ms)) {
-    <app-theme-demo></app-theme-demo>
-  } @loading {
-    <div class="loading-placeholder" aria-label="Chargement du thème demo en cours">Chargement du thème demo...</div>
-  }
-  
   <!-- Router content -->
   <router-outlet />
 </main>

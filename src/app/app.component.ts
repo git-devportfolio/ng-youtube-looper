@@ -3,13 +3,12 @@ import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs';
 import { ThemeService } from '@core/services/theme.service';
 import { ThemeToggleComponent } from '@shared/components/theme-toggle/theme-toggle.component';
-import { ThemeDemoComponent } from '@shared/components/theme-demo/theme-demo.component';
 import { FooterComponent } from '@shared/components/footer/footer.component';
 import { SkipLinksComponent, AccessibilityHelpComponent } from '@shared/components';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ThemeToggleComponent, ThemeDemoComponent, FooterComponent, SkipLinksComponent, AccessibilityHelpComponent],
+  imports: [RouterOutlet, ThemeToggleComponent, FooterComponent, SkipLinksComponent, AccessibilityHelpComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
